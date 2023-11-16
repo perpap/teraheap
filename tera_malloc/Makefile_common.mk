@@ -11,6 +11,7 @@
 
 ## Library path
 PREFIX := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
 ## Install path
 INSTALL_PREFIX := /usr/local
 
@@ -19,6 +20,8 @@ SRCDIR = $(PREFIX)/src
 TESTDIR = $(PREFIX)/tests
 LIBDIR = $(PREFIX)/lib
 INCLUDEDIR = $(PREFIX)/include
+
+
 
 ## Depended files
 LIBHEADERS =  $(INCLUDEDIR)/tera_allocator.h  $(INCLUDEDIR)/tera_assert.h
@@ -41,7 +44,7 @@ WALLFLAG = -Wall -Werror -pedantic
 OPTIMZEFLAG = -O3
 
 LDFLAGS = 
-CFLAGS = $(BINFLAG) $(WALLFLAG) $(OPTIMIZEFLAG)
+CFLAGS = $(BINFLAG) $(WALLFLAG) $(OPTIMIZEFLAG) 
 
 ## Commands
 RM = rm -fr

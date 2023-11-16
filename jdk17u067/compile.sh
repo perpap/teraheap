@@ -15,7 +15,7 @@
 PROJECT_DIR="$(pwd)/.."
 CC=gcc-8
 CXX=g++-8
-
+jvm_build="release"
 
 function usage()
 {
@@ -40,12 +40,16 @@ function release()
   make dist-clean
   CC=$CC CXX=$CXX \
   bash ./configure \
+    --with-debug-level=release \
+    --disable-warnings-as-errors \
+    --enable-ccache \
     --with-jobs="$(nproc)" \
     --with-extra-cflags="-O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
     --with-extra-cxxflags="-O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-target-bits=64
+    --with-target-bits=64 \
+    --with-boot-jdk=$BOOT_JDK
   
-  intercept-build make
+  intercept-build make CONF=linux-x86_64-server-release
   cd ../ 
   compdb -p jdk17u067 list > compile_commands.json
   mv compile_commands.json jdk17u067
@@ -59,13 +63,16 @@ function debug_symbols_on()
   CC=$CC CXX=$CXX \
   bash ./configure \
     --with-debug-level=fastdebug \
+    --disable-warnings-as-errors \
     --with-native-debug-symbols=internal \
+    --enable-ccache \
     --with-target-bits=64 \
     --with-jobs="$(nproc)" \
     --with-extra-cflags="-I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-extra-cxxflags="-I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+    --with-extra-cxxflags="-I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-boot-jdk=$BOOT_JDK
 
-  intercept-build make
+  intercept-build make CONF=linux-x86_64-server-fastdebug
   cd ../ 
   compdb -p jdk17u067 list > compile_commands.json
   mv compile_commands.json jdk17u067
@@ -74,13 +81,19 @@ function debug_symbols_on()
 
 function clean_make()
 {
-  make clean
-  make
+  if [[ "$jvm_build" == "release" ]]; then
+    make CONF=linux-x86_64-server-release clean
+  elif [ "$jvm_build" == "fastdebug" ]; then  
+    make CONF=linux-x86_64-server-fastdebug clean
+  else
+    echo "Mutliple configurations exist. Please provide a configuarion eg. release or fastdebug"
+  fi
 }
 
 export_env_vars()
 {
-	export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+	#export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+	export JAVA_HOME="/spare/openjdk/jdk17"
 
 	### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
@@ -104,6 +117,7 @@ do
       release
       ;;
     d)
+      build="fastdebug"
       export_env_vars
       debug_symbols_on
       ;;

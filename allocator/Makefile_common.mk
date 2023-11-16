@@ -1,4 +1,5 @@
 
+
 ###################################################
 #
 # file: Makefile_common.mk
@@ -47,7 +48,7 @@ DEBUGFLAG = -g
 OFLAG = -o
 WALLFLAG = -Wall -Werror -pedantic
 OPTIMZEFLAG = -O3
-AIOFLAG = -lrt
+AIOFLAG = -lrt 
 
 LDFLAGS = $(AIOFLAG)
 CFLAGS = $(BINFLAG) $(WALLFLAG) $(OPTIMIZEFLAG)

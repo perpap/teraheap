@@ -6,7 +6,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DEV "/mnt/fmap/file.txt"	     //< Device name
+//#define DEV "/mnt/fmap/file.txt"	     //< Device name
+#define DEV "/spare/_region_allocator.txt"   //< Device name
 #define DEV_SIZE (700*1024LU*1024*1024)  //< Device size (in bytes)
 
 //#define ASSERT
@@ -14,9 +15,11 @@
 #ifdef ASSERT
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))
 #define log_error(M, ...) fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
-#define assertf(A, M, ...) if(!(A)) {log_error(M, ##__VA_ARGS__); assert(A);}
+//#define assertf(A, M, ...) if(!(A)) {log_error(M, ##__VA_ARGS__); assert(A);}
+#define assertf(A, ...) if(!(A)) {log_error(__VA_ARGS__); assert(A);}
 #else
-#define assertf(A, M, ...) ;
+//#define assertf(A, M, ...) ;
+#define assertf(A, ...) ;
 #endif
 
 #define ANONYMOUS  0                //< Set to 1 for small mmaps
