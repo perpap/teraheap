@@ -40,7 +40,8 @@ TC_SYNC_EXE = tc_sync_write.bin
 TC_ASYNC_EXE = tc_async_write.bin
 TC_ALLOCATE_MULTI_REGION_EXE = tc_allocate_multi_regions.bin
 
-CC = gcc
+#CC = gcc
+CC = aarch64-linux-gnu-gcc
 
 ## Flags
 BINFLAG = -c

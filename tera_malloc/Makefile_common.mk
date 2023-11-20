@@ -34,7 +34,8 @@ TERA_MALLOC_OBJ = $(TESTDIR)/tera_alloc_malloc.o
 TERA_CREATE_EXE = tera_alloc_create.bin
 TERA_MALLOC_EXE = tera_alloc_malloc.bin
 
-CC = gcc
+#CC = gcc
+CC = aarch64-linux-gnu-gcc
 
 ## Flags
 BINFLAG = -c
