@@ -114,7 +114,7 @@ export_env_vars()
 
 	### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
-	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LD_LIBRARY_PATH                                                                                           
+	export LD_LIBRARY_PATH=/spare/miniconda3/envs/teraheap-aarch64-env/aarch64-conda-linux-gnu/sysroot/usr/lib:${PROJECT_DIR}/allocator/lib:$LD_LIBRARY_PATH                                                                                           
 	export PATH=${PROJECT_DIR}/allocator/include:$PATH
 	export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$C_INCLUDE_PATH                                                                                         
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$CPLUS_INCLUDE_PATH
