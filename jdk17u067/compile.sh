@@ -18,13 +18,16 @@ PROJECT_DIR="$(pwd)/.."
 PLATFORM="$(uname -p)"
 # Default CC
 CC=gcc
+CXX=g++
 
 # Conditional setting of CC based on platform
 if [[ $PLATFORM == x86_64 ]]; then
     CC=aarch64-linux-gnu-gcc
+    CXX=aarch64-linux-gnu-g++
     echo "Detected x86_64 platform, using cross compiler: $CC"
 elif [[ $PLATFORM == aarch64 ]]; then
     CC=gcc
+    CXX=g++
     echo "Detected aarch64 platform, using default compiler: $CC"
 else
     echo "Unknown platform: $PLATFORM, using default compiler: $CC"
@@ -66,7 +69,7 @@ function release()
     --with-target-bits=64 \
     --with-boot-jdk=$BOOT_JDK
   
-  intercept-build make CONF=linux-x86_64-server-release
+  intercept-build make CONF=linux-$PLATFORM-server-release
   cd ../ 
   compdb -p jdk17u067 list > compile_commands.json
   mv compile_commands.json jdk17u067
@@ -89,7 +92,7 @@ function debug_symbols_on()
     --with-extra-cxxflags="-I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
     --with-boot-jdk=$BOOT_JDK
 
-  intercept-build make CONF=linux-x86_64-server-fastdebug
+  intercept-build make CONF=linux-$PLATFORM-server-fastdebug
   cd ../ 
   compdb -p jdk17u067 list > compile_commands.json
   mv compile_commands.json jdk17u067
