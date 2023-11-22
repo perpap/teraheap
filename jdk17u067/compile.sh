@@ -124,8 +124,8 @@ export_env_vars()
 	export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH                                                                                         
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$CPLUS_INCLUDE_PATH
 	
-	export LD_LIBRARY_PATH=/spare/miniconda3/envs/teraheap-aarch64-env/aarch64-conda-linux-gnu/sysroot/usr/lib64/:$LD_LIBRARY_PATH
-	echo "set LIBRARY_PATH to '$LD_LIBRARY_PATH'"
+	export LD_LIBRARY_PATH=/spare/miniconda3/envs/teraheap-aarch64-env/aarch64-conda-linux-gnu/sysroot/usr/lib64:$LD_LIBRARY_PATH
+	echo "set LD_LIBRARY_PATH to '$LD_LIBRARY_PATH'"
 }
 
 while getopts ":drcmh" opt
