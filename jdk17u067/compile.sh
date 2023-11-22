@@ -13,8 +13,25 @@
 ###################################################
 	
 PROJECT_DIR="$(pwd)/.."
-CC=gcc-8
-CXX=g++-8
+
+# Detect the platform
+PLATFORM="$(uname -p)"
+# Default CC
+CC=gcc
+
+# Conditional setting of CC based on platform
+if [[ $PLATFORM == x86_64 ]]; then
+    CC=aarch64-linux-gnu-gcc
+    echo "Detected x86_64 platform, using cross compiler: $CC"
+elif [[ $PLATFORM == aarch64 ]]; then
+    CC=gcc
+    echo "Detected aarch64 platform, using default compiler: $CC"
+else
+    echo "Unknown platform: $PLATFORM, using default compiler: $CC"
+fi
+
+#CC=gcc-8
+#CXX=g++-8
 jvm_build="release"
 
 function usage()
@@ -83,7 +100,7 @@ function clean_make()
 {
   if [[ "$jvm_build" == "release" ]]; then
     make CONF=linux-x86_64-server-release clean
-  elif [ "$jvm_build" == "fastdebug" ]; then  
+  elif [ "$jvm_build" == "fx86_64astdebug" ]; then  
     make CONF=linux-x86_64-server-fastdebug clean
   else
     echo "Mutliple configurations exist. Please provide a configuarion eg. release or fastdebug"
@@ -93,7 +110,7 @@ function clean_make()
 export_env_vars()
 {
 	#export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
-	export JAVA_HOME="/spare/openjdk/jdk17"
+	export JAVA_HOME="/spare/openjdk/jdk-17.0.8.1+1"
 
 	### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
@@ -102,7 +119,7 @@ export_env_vars()
 	export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$C_INCLUDE_PATH                                                                                         
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$CPLUS_INCLUDE_PATH
 	
-  export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
+    export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
 	export LD_LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LD_LIBRARY_PATH                                                                                           
 	export PATH=${PROJECT_DIR}/tera_malloc/include:$PATH
 	export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH                                                                                         
