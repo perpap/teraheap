@@ -1,6 +1,6 @@
 #include "gc/teraHeap/teraTimers.hpp"
 #include "gc/shared/gc_globals.hpp"
-#include "gc/teraheap/cycleCounting.hpp"
+#include "gc/teraHeap/cycleCounting.hpp"
 #include "runtime/java.hpp"
 
 //#define CYCLES_PER_SECOND 2.4e9; // CPU frequency of 2.4 GHz
