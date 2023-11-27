@@ -56,7 +56,7 @@ uint64_t get_cpu_frequency() {
     uint64_t frequency = 0;
 
     while (fgets(buffer, sizeof(buffer), fp)) {
-        if (sscanf(buffer, "cpu MHz : %llu", &frequency)) {
+        if (sscanf(buffer, "cpu MHz : %lu", &frequency)) {
             frequency *= 1000000; // Convert MHz to Hz
             break;
         }
