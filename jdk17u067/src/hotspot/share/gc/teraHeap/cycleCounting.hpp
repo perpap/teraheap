@@ -39,7 +39,7 @@ static inline uint64_t get_cycles()
 #if defined(_WIN32)
 #include <windows.h>
 
-uint64_t get_cpu_frequency() {
+static inline uint64_t get_cpu_frequency() {
     LARGE_INTEGER frequency;
     QueryPerformanceFrequency(&frequency);
     return frequency.QuadPart;
@@ -48,7 +48,7 @@ uint64_t get_cpu_frequency() {
 #elif defined(__linux__)
 #include <stdio.h>
 
-uint64_t get_cpu_frequency() {
+static inline uint64_t get_cpu_frequency() {
     FILE *fp = fopen("/proc/cpuinfo", "r");
     if (!fp) return 0;
 
@@ -70,7 +70,7 @@ uint64_t get_cpu_frequency() {
 #error "Unsupported platform"
 #endif
 
-uint64_t get_cycles_per_second() {
+static inline uint64_t get_cycles_per_second() {
     static uint64_t cpu_frequency = 0;
     if (cpu_frequency == 0) {
         cpu_frequency = get_cpu_frequency();
