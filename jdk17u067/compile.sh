@@ -120,12 +120,14 @@ export_env_vars()
 	export PATH=${PROJECT_DIR}/allocator/include:$PATH
 	export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$C_INCLUDE_PATH                                                                                         
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$CPLUS_INCLUDE_PATH
+	export ALLOCATOR_HOME=${PROJECT_DIR}/allocator
 	
     export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
 	export LD_LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LD_LIBRARY_PATH                                                                                           
 	export PATH=${PROJECT_DIR}/tera_malloc/include:$PATH
 	export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH                                                                                         
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$CPLUS_INCLUDE_PATH
+	export TERA_MALLOC_HOME=${PROJECT_DIR}/tera_malloc
 	
 	#export LD_LIBRARY_PATH=/spare/miniconda3/envs/teraheap-aarch64-env/aarch64-conda-linux-gnu/sysroot/usr/lib64:$LD_LIBRARY_PATH
 	echo "set LD_LIBRARY_PATH to '$LD_LIBRARY_PATH'"
