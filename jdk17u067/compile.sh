@@ -113,7 +113,7 @@ function clean_make()
 export_env_vars()
 {
 	#export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
-	export JAVA_HOME="/spare/openjdk/jdk-17.0.8.1+1"
+	export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
 	### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
 	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LD_LIBRARY_PATH                                                                                           
