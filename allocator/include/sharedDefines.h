@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #define DEV "/mnt/fmap/H2.txt"   //< Device name
-#define DEV_SIZE (700*1024LU*1024*1024)  //< Device size (in bytes)
+#define DEV_SIZE (800*1024LU*1024*1024)  //< Device size (in bytes)
 
 //#define ASSERT
 
