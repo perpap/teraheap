@@ -814,6 +814,17 @@ public:
   void store_check(Register obj);                // store check for obj - register is destroyed afterwards
   void store_check(Register obj, Address dst);   // same as above, dst is exact store location (reg. is destroyed)
 
+#if 1//perpap
+  // split store_check(Register obj) to enhance instruction interleaving
+  void store_check_part_1(Register obj);
+  void store_check_part_2(Register obj);
+
+#ifdef TERA_INTERPRETER
+  void h2_store_check_part_1(Register obj);
+  void h2_store_check_part_2(Register obj);
+#endif
+#endif//perpap
+
   void resolve_jobject(Register value, Register thread, Register tmp);
 
   // C 'boolean' to Java boolean: x == 0 ? 0 : 1
