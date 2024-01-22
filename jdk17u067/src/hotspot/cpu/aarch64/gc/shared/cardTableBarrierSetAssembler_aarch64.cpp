@@ -33,6 +33,54 @@
 
 #define __ masm->
 
+#ifdef TERA_INTERPRETER
+void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
+	Label L_in_h2;
+	Label L_Done;
+
+	if (EnableTeraHeap) {
+		// Push the teraCache address in r11
+		__ lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
+		__ cmp(obj, r11);
+		__ br(Assembler::GE, L_in_h2);
+		// Does a store check for the oop in register obj. The content of
+		// register obj is destroyed afterwards.
+		store_check_part1(masm, obj);
+		store_check_part2(masm, obj);
+		__ b(L_Done);
+		__ bind(L_in_h2);
+		h2_store_check_part1(masm, obj);
+		h2_store_check_part2(masm, obj);
+		__ bind(L_Done);
+	} else {
+		store_check_part1(masm, obj);
+		store_check_part2(masm, obj);
+	}
+}
+#else
+void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
+
+	BarrierSet* bs = BarrierSet::barrier_set();
+	assert(bs->kind() == BarrierSet::CardTableBarrierSet, "Wrong barrier set kind");
+
+	__ lsr(obj, obj, CardTable::card_shift);
+
+	assert(CardTable::dirty_card_val() == 0, "must be");
+
+	__ load_byte_map_base(rscratch1);
+
+	if (UseCondCardMark) {
+		Label L_already_dirty;
+		__ ldrb(rscratch2,  Address(obj, rscratch1));
+		__ cbz(rscratch2, L_already_dirty);
+		__ strb(zr, Address(obj, rscratch1));
+		__ bind(L_already_dirty);
+	} else {
+		__ strb(zr, Address(obj, rscratch1));
+	}
+}
+#endif //#ifdef TERA_INTERPRETER
+
 void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
                                                                     Register start, Register count, Register scratch, RegSet saved_regs) {
   Label L_loop, L_done;
@@ -54,60 +102,6 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
   __ br(Assembler::GE, L_loop);
   __ bind(L_done);
 }
-
-#ifdef TERA_INTERPRETER
-void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
-  Label L_in_h2;
-	Label L_Done;
-
-  if (EnableTeraHeap) {
-    AddressLiteral h2_start_addr((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none);
-    // Push the teraCache address in r11
-    __ lea(r11, h2_start_addr);
-
-    __ cmpptr(obj, r11);
-
-		__ jcc(Assembler::greaterEqual, L_in_h2);
-
-    // Does a store check for the oop in register obj. The content of
-    // register obj is destroyed afterwards.
-		store_check_part1(masm, obj);
-		store_check_part2(masm, obj);
-		__ jmp(L_Done);
-
-    __ BIND(L_in_h2);
-    h2_store_check_part1(masm, obj);
-		h2_store_check_part2(masm, obj);
-
-		__ BIND(L_Done);
-  } else {
-    store_check_part1(masm, obj);
-    store_check_part2(masm, obj);
-  }
-}
-#else
-void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
-
-  BarrierSet* bs = BarrierSet::barrier_set();
-  assert(bs->kind() == BarrierSet::CardTableBarrierSet, "Wrong barrier set kind");
-
-  __ lsr(obj, obj, CardTable::card_shift);
-
-  assert(CardTable::dirty_card_val() == 0, "must be");
-
-  __ load_byte_map_base(rscratch1);
-
-  if (UseCondCardMark) {
-    Label L_already_dirty;
-    __ ldrb(rscratch2,  Address(obj, rscratch1));
-    __ cbz(rscratch2, L_already_dirty);
-    __ strb(zr, Address(obj, rscratch1));
-    __ bind(L_already_dirty);
-  } else {
-    __ strb(zr, Address(obj, rscratch1));
-  }
-}
-#endif //TERA_INTERPRETER
 
 void CardTableBarrierSetAssembler::oop_store_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
                                                 Address dst, Register val, Register tmp1, Register tmp2) {
