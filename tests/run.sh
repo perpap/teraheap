@@ -179,8 +179,8 @@ usage() {
 
 check_args() {
   # Check if required options are present
-  if [[ -z "$jvm_build" || "$MODE" || "${#PARALLEL_GC_THREADS[@]}" -eq 0 ]]; then
-    echo "Usage: $0 -j <jvm_build> -m <mode> -t <#gcThreads,#gcThreads,#gcThreads> [-r|-d][-h]"
+  if [[ -z "$MODE" || "${#PARALLEL_GC_THREADS[@]}" -eq 0 ]]; then
+    echo "Usage: $0 -j <jvm_build> -m <mode> -t <#gcThreads,#gcThreads,#gcThreads> [-h]"
     echo "Example: ./run.sh -j release -m 0 -t 2 -r //execute a release jvm variant(-j release) using tiered compilation(-m 0) and 2 GC threads(-t 2)"
     echo "Example: ./run.sh -j fastdebug -m 0 -t 2 -d //execute a fastdebug jvm variant(-j fastdebug) using tiered compilation(-m 0) and 2 GC threads(-t 2)"
     exit 1
