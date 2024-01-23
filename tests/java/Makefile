@@ -10,9 +10,10 @@
 # Makefile for test files
 #
 ####################################################
+cpu_arch=$(shell uname -p)
 
 JAVA_REPO := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))../../jdk17u067
-JAVAC=$(JAVA_REPO)/build/linux-aarch64-server-release/jdk/bin/javac
+JAVAC=$(JAVA_REPO)/build/linux-$(cpu_arch)-server-release/jdk/bin/javac
 PROJECT_DIR := $(shell pwd)/../..
 
 TARGET=Array.class Array_List.class Array_List_Int.class List_Large.class \
