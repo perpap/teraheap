@@ -4526,6 +4526,17 @@ void MacroAssembler::load_byte_map_base(Register reg) {
   mov(reg, (uint64_t)byte_map_base);
 }
 
+#ifdef TERA_INTERPRETER
+void MacroAssembler::load_th_byte_map_base(Register reg) {
+  CardTable::CardValue* byte_map_base =
+    ((CardTableBarrierSet*)(BarrierSet::barrier_set()))->card_table()->th_byte_map_base();
+
+  // Strictly speaking the byte_map_base isn't an address at all, and it might
+  // even be negative. It is thus materialised as a constant.
+  mov(reg, (uint64_t)byte_map_base);
+}
+#endif
+
 void MacroAssembler::build_frame(int framesize) {
   assert(framesize >= 2 * wordSize, "framesize must include space for FP/LR");
   assert(framesize % (2*wordSize) == 0, "must preserve 2*wordSize alignment");

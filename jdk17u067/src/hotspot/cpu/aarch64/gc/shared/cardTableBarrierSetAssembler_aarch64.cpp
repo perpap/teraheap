@@ -33,41 +33,41 @@
 
 #define __ masm->
 
-#ifdef TERA_INTERPRETER
-void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
-	Label L_in_h2;
-	Label L_Done;
-
-	if (EnableTeraHeap) {
-		// Push the teraCache address in r11
-		__ lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
-		__ cmp(obj, r11);
-		__ br(Assembler::GE, L_in_h2);
-		// Does a store check for the oop in register obj. The content of
-		// register obj is destroyed afterwards.
-		store_check_part1(masm, obj);
-		store_check_part2(masm, obj);
-		__ b(L_Done);
-		__ bind(L_in_h2);
-		h2_store_check_part1(masm, obj);
-		h2_store_check_part2(masm, obj);
-		__ bind(L_Done);
-	} else {
-		store_check_part1(masm, obj);
-		store_check_part2(masm, obj);
-	}
-}
-#else
 void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
 
 	BarrierSet* bs = BarrierSet::barrier_set();
 	assert(bs->kind() == BarrierSet::CardTableBarrierSet, "Wrong barrier set kind");
 
+#ifdef TERA_INTERPRETER
+	if(EnableTeraHeap){
+		Label L_Done, L_h2;
+		// Load the TeraHeap's H2 address in r11
+		__ lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
+		__ cmp(obj, r11);
+		__ br(Assembler::GE, L_h2);
+		// Does a store check for the oop in register obj. The content of
+		// register obj is destroyed afterwards.
+		__ lsr(obj, obj, CardTable::card_shift);//store_check_part1(masm, obj);
+		assert(CardTable::dirty_card_val() == 0, "must be");
+		__ load_byte_map_base(rscratch1);//store_check_part2(masm, obj);
+		__ b(L_Done);
+		__ bind(L_h2);
+		__ lsr(obj, obj, CardTable::th_card_shift);//h2_store_check_part1(masm, obj);
+		assert(CardTable::dirty_card_val() == 0, "must be");
+		__ load_th_byte_map_base(rscratch1);//h2_store_check_part2(masm, obj);
+		__ bind(L_Done);
+	}else{
+		__ lsr(obj, obj, CardTable::card_shift);
+		assert(CardTable::dirty_card_val() == 0, "must be");
+		__ load_byte_map_base(rscratch1);
+	}
+#else
 	__ lsr(obj, obj, CardTable::card_shift);
-
 	assert(CardTable::dirty_card_val() == 0, "must be");
-
 	__ load_byte_map_base(rscratch1);
+#endif
+	//assert(CardTable::dirty_card_val() == 0, "must be");
+	//__ load_byte_map_base(rscratch1);
 
 	if (UseCondCardMark) {
 		Label L_already_dirty;
@@ -79,28 +79,75 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 		__ strb(zr, Address(obj, rscratch1));
 	}
 }
-#endif //#ifdef TERA_INTERPRETER
 
 void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
-                                                                    Register start, Register count, Register scratch, RegSet saved_regs) {
-  Label L_loop, L_done;
-  const Register end = count;
+		Register start, Register count, Register scratch, RegSet saved_regs) {
+	Label L_loop, L_done;
+	const Register end = count;
 
-  __ cbz(count, L_done); // zero count - nothing to do
+	__ cbz(count, L_done); // zero count - nothing to do
 
-  __ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
-  __ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
-  __ lsr(start, start, CardTable::card_shift);
-  __ lsr(end, end, CardTable::card_shift);
-  __ sub(count, end, start); // number of bytes to copy
+#ifdef TERA_INTERPRETER
+	if(EnableTeraHeap){
+		Label L_h2_done, L_h2;
+		__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+		__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
+		// Load the TeraHeap's H2 address in scratch
+		__ lea(scratch, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
+		// Check if array is in H1 or H2
+		__ cmp(start, scratch);
+		__ br(Assembler::GE, L_h2);
 
-  __ load_byte_map_base(scratch);
-  __ add(start, start, scratch);
-  __ bind(L_loop);
-  __ strb(zr, Address(start, count));
-  __ subs(count, count, 1);
-  __ br(Assembler::GE, L_loop);
-  __ bind(L_done);
+		__ lsr(start, start, CardTable::card_shift);
+		__ lsr(end, end, CardTable::card_shift);
+		__ sub(count, end, start); // number of bytes to copy
+
+		__ load_byte_map_base(scratch);
+		__ add(start, start, scratch);
+		__ b(L_h2_done);
+
+		__ bind(L_h2);
+
+		__ lsr(start, start, CardTable::th_card_shift);
+		__ lsr(end, end, CardTable::th_card_shift);
+		__ sub(count, end, start); // number of bytes to copy
+
+		__ load_th_byte_map_base(scratch);
+		__ add(start, start, scratch);
+		__ b(L_h2_done);
+
+		__ bind(L_h2_done);
+		__ bind(L_loop);
+		__ strb(zr, Address(start, count));
+		__ subs(count, count, 1);
+		__ br(Assembler::GE, L_loop);
+	}else{
+		__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+		__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
+		__ lsr(start, start, CardTable::card_shift);
+		__ lsr(end, end, CardTable::card_shift);
+		__ sub(count, end, start); // number of bytes to copy
+		__ load_byte_map_base(scratch);
+		__ add(start, start, scratch);
+		__ bind(L_loop);
+		__ strb(zr, Address(start, count));
+		__ subs(count, count, 1);
+		__ br(Assembler::GE, L_loop);
+	}
+#else
+	__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+	__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
+	__ lsr(start, start, CardTable::card_shift);
+	__ lsr(end, end, CardTable::card_shift);
+	__ sub(count, end, start); // number of bytes to copy
+	__ load_byte_map_base(scratch);
+	__ add(start, start, scratch);
+	__ bind(L_loop);
+	__ strb(zr, Address(start, count));
+	__ subs(count, count, 1);
+	__ br(Assembler::GE, L_loop);
+#endif// TERA_INTERPRETER
+	__ bind(L_done);
 }
 
 void CardTableBarrierSetAssembler::oop_store_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,

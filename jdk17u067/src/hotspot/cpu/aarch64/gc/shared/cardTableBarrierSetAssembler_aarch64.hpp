@@ -32,11 +32,10 @@ class CardTableBarrierSetAssembler: public ModRefBarrierSetAssembler {
 protected:
   void store_check(MacroAssembler* masm, Register obj, Address dst);
 
-#if 1//perpap
+#if 0//perpap
 #ifdef TERA_INTERPRETER
   void store_check_part1(MacroAssembler* masm, Register obj);
   void store_check_part2(MacroAssembler* masm, Register obj);
-
   void h2_store_check_part1(MacroAssembler* masm, Register obj);
   void h2_store_check_part2(MacroAssembler* masm, Register obj);
 #endif // TERA_INTERPRETER
