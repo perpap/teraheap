@@ -195,9 +195,9 @@ check_jvm_build() {
 	    exit 1
 	fi
 	# Use the appropriate java binary based on jvm_build
-	if [ "$jvm_build" == "fastdebug" || "$jvm_build" == "f" ]; then
+	if [[ "$jvm_build" == "fastdebug" || "$jvm_build" == "f" ]]; then
 	    JAVA="$(pwd)/../jdk17u067/build/linux-$cpu_arch-server-fastdebug/jdk/bin/java"
-	elif [ "$jvm_build" == "release" || "$jvm_build" == "r" ]; then
+	elif [[ "$jvm_build" == "release" || "$jvm_build" == "r" ]]; then
 	    JAVA="$(pwd)/../jdk17u067/build/linux-$cpu_arch-server-release/jdk/bin/java"
 	fi
 }
