@@ -3,9 +3,11 @@
 MODE=""
 PARALLEL_GC_THREADS=()
 STRIPE_SIZE=32768
+jvm_build=""
+cpu_arch=$(uname -p)
 
 #JAVA="$(pwd)/../jdk17u067/build/linux-x86_64-server-fastdebug/jdk/bin/java"
-JAVA="$(pwd)/../jdk17u067/build/linux-aarch64-server-release/jdk/bin/java"
+#JAVA="$(pwd)/../jdk17u067/build/linux-aarch64-server-release/jdk/bin/java"
 
 EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList" \
 	"Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference" \
@@ -166,6 +168,7 @@ usage() {
   echo -n "      $0 [option ...] [-h]"
   echo
   echo "Options:"
+  echo "      -j  jvm build ([release|r], [fastdebug|f], Default: release)"
   echo "      -m  Mode (0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)"
   echo "      -t  Number of GC threads (2, 4, 8, 16, 32)"
   echo "      -h  Show usage"
@@ -176,10 +179,27 @@ usage() {
 
 check_args() {
   # Check if required options are present
-  if [[ -z "$MODE" || "${#PARALLEL_GC_THREADS[@]}" -eq 0 ]]; then
-    echo "Usage: $0 -m <mode> -t <#gcThreads,#gcThreads,#gcThreads> [-h]"
+  if [[ -z "$jvm_build" || "$MODE" || "${#PARALLEL_GC_THREADS[@]}" -eq 0 ]]; then
+    echo "Usage: $0 -j <jvm_build> -m <mode> -t <#gcThreads,#gcThreads,#gcThreads> [-r|-d][-h]"
+    echo "Example: ./run.sh -j release -m 0 -t 2 -r //execute a release jvm variant(-j release) using tiered compilation(-m 0) and 2 GC threads(-t 2)"
+    echo "Example: ./run.sh -j fastdebug -m 0 -t 2 -d //execute a fastdebug jvm variant(-j fastdebug) using tiered compilation(-m 0) and 2 GC threads(-t 2)"
     exit 1
   fi
+}
+
+check_jvm_build() {
+	# Validate jvm_build value
+	if [[ "$jvm_build" != "" && "$jvm_build" != "fastdebug" && "$jvm_build" != "f" && "$jvm_build" != "release" && "$jvm_build" != "r" ]]; then
+	    echo "Error: jvm_build should be empty(for vanilla) or one of: fastdebug, f, release, r"
+	    usage
+	    exit 1
+	fi
+	# Use the appropriate java binary based on jvm_build
+	if [ "$jvm_build" == "fastdebug" || "$jvm_build" == "f" ]; then
+	    JAVA="$(pwd)/../jdk17u067/build/linux-$cpu_arch-server-fastdebug/jdk/bin/java"
+	elif [ "$jvm_build" == "release" || "$jvm_build" == "r" ]; then
+	    JAVA="$(pwd)/../jdk17u067/build/linux-$cpu_arch-server-release/jdk/bin/java"
+	fi
 }
 
 print_msg() {
@@ -211,9 +231,13 @@ print_msg() {
 }
 
 # Check for the input arguments
-while getopts "m:t:h" opt
+while getopts "j:m:t:h" opt
 do
   case "${opt}" in
+    j)
+      jvm_build=${OPTARG}
+      check_jvm_build
+      ;;
     m)
       MODE=${OPTARG}
       ;;
