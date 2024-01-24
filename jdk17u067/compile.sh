@@ -64,7 +64,6 @@ function detect_platform()
 	else
 	    echo "Build and deployment platforms have the same cpu arch($PLATFORM), using default compiler: $CC"
 	    #echo "Unknown platform: $PLATFORM, using default compiler: $CC"
-	    exit 1
 	fi
 }
 
