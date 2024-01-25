@@ -71,7 +71,9 @@ function release()
     --with-extra-cflags='-O3' \
     --with-extra-cxxflags='-O3' \
     --with-target-bits=64 \
-    --with-extra-ldflags=-lregions
+    --with-extra-ldflags=-lregions \
+    --with-freetype-include=/usr/include/freetype2/freetype/freetype.h \
+    --with-freetype-lib=/usr/lib64/libfreetype.so.6
   intercept-build make
   cd ../ 
   compdb -p jdk8u345 list > compile_commands.json
@@ -105,7 +107,6 @@ function clean_make()
 
 export_env_vars()
 {
-	detect_platform
 	local PROJECT_DIR="$(pwd)/../"
 
 	#export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
