@@ -35,10 +35,8 @@
 #define __ masm->
 
 void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register obj, Address dst) {
-
 	BarrierSet* bs = BarrierSet::barrier_set();
 	assert(bs->kind() == BarrierSet::CardTableBarrierSet, "Wrong barrier set kind");
-
 #ifdef TERA_INTERPRETER
 	if(EnableTeraHeap){
 		Label L_Done, L_h2;
@@ -66,7 +64,8 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 	__ lsr(obj, obj, CardTable::card_shift);
 	assert(CardTable::dirty_card_val() == 0, "must be");
 	__ load_byte_map_base(rscratch1);
-#endif
+#endif//TERA_INTERPRETER
+
 	if (UseCondCardMark) {
 		Label L_already_dirty;
 		__ ldrb(rscratch2,  Address(obj, rscratch1));
@@ -114,6 +113,7 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 		__ strb(zr, Address(start, count));
 		__ subs(count, count, 1);
 		__ br(Assembler::GE, L_loop);
+		__ b(L_done);//FIXME
 	/*}else{
 		__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
 		__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
@@ -127,7 +127,20 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 		__ subs(count, count, 1);
 		__ br(Assembler::GE, L_loop);
 	}*/
-#else
+/*#else
+	__ bind(L_h1);//FIXME
+	__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+	__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
+	__ lsr(start, start, CardTable::card_shift);
+	__ lsr(end, end, CardTable::card_shift);
+	__ sub(count, end, start); // number of bytes to copy
+	__ load_byte_map_base(scratch);
+	__ add(start, start, scratch);
+	__ bind(L_loop);
+	__ strb(zr, Address(start, count));
+	__ subs(count, count, 1);
+	__ br(Assembler::GE, L_loop);*/
+#endif// TERA_INTERPRETER
 	__ bind(L_h1);//FIXME
 	__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
 	__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
@@ -140,7 +153,7 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	__ strb(zr, Address(start, count));
 	__ subs(count, count, 1);
 	__ br(Assembler::GE, L_loop);
-#endif// TERA_INTERPRETER
+
 	__ bind(L_done);
 }
 
