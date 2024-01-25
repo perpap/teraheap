@@ -85,8 +85,8 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	__ cbz(count, L_done); // zero count - nothing to do
 
 #ifdef TERA_INTERPRETER
-	__ mov(scratch, EnableTeraHeap); //FIXME
-	__ cbz(scratch, L_h1);//FIXME
+	__ mov(rscratch2, EnableTeraHeap); //FIXME
+	__ cbz(rscratch2, L_h1);//FIXME
 	//if(EnableTeraHeap){
 		Label L_h2, L_h2_loop;//L_h2_done;
 		__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
