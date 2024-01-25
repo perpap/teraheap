@@ -46,14 +46,15 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 		// Load the TeraHeap's H2 address in r11
 		__ lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
 		__ cmp(obj, r11);
-		__ br(Assembler::GE, L_h2);
+		//__ br(Assembler::GE, L_h2);
+		__ br(Assembler::LT, L_h1);
 		// Does a store check for the oop in register obj. The content of
 		// register obj is destroyed afterwards.
-		__ lsr(obj, obj, CardTable::card_shift);
-		assert(CardTable::dirty_card_val() == 0, "must be");
-		__ load_byte_map_base(rscratch1);
-		__ b(L_done);
-		__ bind(L_h2);
+		//__ lsr(obj, obj, CardTable::card_shift);
+		//assert(CardTable::dirty_card_val() == 0, "must be");
+		//__ load_byte_map_base(rscratch1);
+		//__ b(L_done);
+		//__ bind(L_h2);
 		__ lsr(obj, obj, CardTable::th_card_shift);
 		assert(CardTable::dirty_card_val() == 0, "must be");
 		__ load_th_byte_map_base(rscratch1);
