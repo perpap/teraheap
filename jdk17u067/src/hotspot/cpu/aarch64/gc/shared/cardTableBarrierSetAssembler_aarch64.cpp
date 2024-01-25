@@ -80,23 +80,12 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 #ifdef TERA_INTERPRETER
 	__ movi(r11, EnableTeraHeap);
 	__ cbz(r11, L_h1);
-	//Label L_h2
 	Label L_h2_loop;
-	//__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
-	//__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
 	// Load the TeraHeap's H2 address in scratch
 	__ lea(scratch, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
 	// Check if array is in H1 or H2
 	__ cmp(start, scratch);
-	//__ br(Assembler::GE, L_h2);
 	__ br(Assembler::LT, L_h1);
-	/*__ lsr(start, start, CardTable::card_shift);
-	__ lsr(end, end, CardTable::card_shift);
-	__ sub(count, end, start); // number of bytes to copy
-	__ load_byte_map_base(scratch);
-	__ add(start, start, scratch);
-	__ b(L_h2_loop);
-	__ bind(L_h2);*/
 	__ lsr(start, start, CardTable::th_card_shift);
 	__ lsr(end, end, CardTable::th_card_shift);
 	__ sub(count, end, start); // number of bytes to copy
@@ -109,8 +98,6 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	__ b(L_done);
 #endif// TERA_INTERPRETER
 	__ bind(L_h1);
-	//__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
-	//__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
 	__ lsr(start, start, CardTable::card_shift);
 	__ lsr(end, end, CardTable::card_shift);
 	__ sub(count, end, start); // number of bytes to copy
