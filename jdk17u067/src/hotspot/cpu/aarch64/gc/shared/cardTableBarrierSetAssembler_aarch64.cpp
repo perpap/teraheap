@@ -80,7 +80,7 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
 		Register start, Register count, Register scratch, RegSet saved_regs) {
 	Label L_h1;
-	L_h1_loop, L_done;
+	Label L_h1_loop, L_done;
 	const Register end = count;
 
 	__ cbz(count, L_done); // zero count - nothing to do
