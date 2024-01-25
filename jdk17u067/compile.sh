@@ -40,7 +40,7 @@ openjdk_dir=$(pwd)
 
 # Detect the platform
 PLATFORM=""
-TARGET_PLATFORM=""
+TARGET_PLATFORM="aarch64"
 # Default CC
 CC=gcc
 CXX=g++
