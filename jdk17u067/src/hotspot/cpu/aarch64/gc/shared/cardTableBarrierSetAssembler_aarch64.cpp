@@ -41,40 +41,22 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 #ifdef TERA_INTERPRETER
 	__ movi(r11, EnableTeraHeap);
 	__ cbz(r11, L_h1);
-	//if(EnableTeraHeap){
-		Label L_h2;
-		// Load the TeraHeap's H2 address in r11
-		__ lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
-		__ cmp(obj, r11);
-		//__ br(Assembler::GE, L_h2);
-		__ br(Assembler::LT, L_h1);
-		// Does a store check for the oop in register obj. The content of
-		// register obj is destroyed afterwards.
-		//__ lsr(obj, obj, CardTable::card_shift);
-		//assert(CardTable::dirty_card_val() == 0, "must be");
-		//__ load_byte_map_base(rscratch1);
-		//__ b(L_done);
-		//__ bind(L_h2);
-		__ lsr(obj, obj, CardTable::th_card_shift);
-		assert(CardTable::dirty_card_val() == 0, "must be");
-		__ load_th_byte_map_base(rscratch1);
-		//__ bind(L_h2_done);
-		__ b(L_done);
-	/*}else{
-		__ lsr(obj, obj, CardTable::card_shift);
-		assert(CardTable::dirty_card_val() == 0, "must be");
-		__ load_byte_map_base(rscratch1);
-	}
-#else
-	__ lsr(obj, obj, CardTable::card_shift);
+	// Load the TeraHeap's H2 address in r11
+	__ lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
+	__ cmp(obj, r11);
+	__ br(Assembler::LT, L_h1);
+	__ lsr(obj, obj, CardTable::th_card_shift);
 	assert(CardTable::dirty_card_val() == 0, "must be");
-	__ load_byte_map_base(rscratch1);*/
+	__ load_th_byte_map_base(rscratch1);
+	__ b(L_done);
 #endif//TERA_INTERPRETER
 	__ bind(L_h1);
+	// Does a store check for the oop in register obj. The content of
+	// register obj is destroyed afterwards.
 	__ lsr(obj, obj, CardTable::card_shift);
 	assert(CardTable::dirty_card_val() == 0, "must be");
 	__ load_byte_map_base(rscratch1);
-	__ bind(L_done);//FIXME
+	__ bind(L_done);
 
 	if (UseCondCardMark) {
 		Label L_already_dirty;
@@ -93,24 +75,28 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	const Register end = count;
 
 	__ cbz(count, L_done); // zero count - nothing to do
+	__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+	__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
 #ifdef TERA_INTERPRETER
 	__ movi(r11, EnableTeraHeap);
 	__ cbz(r11, L_h1);
-	Label L_h2, L_h2_loop;
-	__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
-	__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
+	//Label L_h2
+	Label L_h2_loop;
+	//__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+	//__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
 	// Load the TeraHeap's H2 address in scratch
 	__ lea(scratch, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
 	// Check if array is in H1 or H2
 	__ cmp(start, scratch);
-	__ br(Assembler::GE, L_h2);
-	__ lsr(start, start, CardTable::card_shift);
+	//__ br(Assembler::GE, L_h2);
+	__ br(Assembler::LT, L_h1);
+	/*__ lsr(start, start, CardTable::card_shift);
 	__ lsr(end, end, CardTable::card_shift);
 	__ sub(count, end, start); // number of bytes to copy
 	__ load_byte_map_base(scratch);
 	__ add(start, start, scratch);
 	__ b(L_h2_loop);
-	__ bind(L_h2);
+	__ bind(L_h2);*/
 	__ lsr(start, start, CardTable::th_card_shift);
 	__ lsr(end, end, CardTable::th_card_shift);
 	__ sub(count, end, start); // number of bytes to copy
@@ -123,8 +109,8 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	__ b(L_done);
 #endif// TERA_INTERPRETER
 	__ bind(L_h1);
-	__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
-	__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
+	//__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
+	//__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
 	__ lsr(start, start, CardTable::card_shift);
 	__ lsr(end, end, CardTable::card_shift);
 	__ sub(count, end, start); // number of bytes to copy
