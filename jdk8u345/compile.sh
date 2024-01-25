@@ -12,8 +12,36 @@
 #
 ###################################################
 
-CC=gcc-7.2.0
-CXX=g++-7.2.0
+#CC=gcc-7.2.0
+#CXX=g++-7.2.0
+# Detect the platform
+PLATFORM=""
+TARGET_PLATFORM="aarch64"
+# Default CC
+CC=gcc
+CXX=g++
+
+function detect_platform()
+{
+	PLATFORM="$(uname -p)"
+	# Conditional setting of CC based on platform
+	#if [[ $PLATFORM == x86_64 ]]; then
+	if [[ $PLATFORM != $TARGET_PLATFORM ]]; then
+	    CC=$TARGET_PLATFORM-linux-gnu-gcc
+	    CXX=$TARGET_PLATFORM-linux-gnu-g++
+	    echo "Build platform's cpu arch($PLATFORM) differs from deployment's platform cpu arch($TARGET_PLATFORM), using cross compiler: $CC"
+	    #CC=aarch64-linux-gnu-gcc
+	    #CXX=aarch64-linux-gnu-g++
+	    #echo "Detected x86_64 platform, using cross compiler: $CC"
+	#elif [[ $PLATFORM == aarch64 ]]; then
+	#    CC=gcc
+	#    CXX=g++
+	#    echo "Detected aarch64 platform, using default compiler: $CC"
+	else
+	    echo "Build and deployment platforms have the same cpu arch($PLATFORM), using default compiler: $CC"
+	    #echo "Unknown platform: $PLATFORM, using default compiler: $CC"
+	fi
+}
 
 function usage()
 {
@@ -77,6 +105,7 @@ function clean_make()
 
 export_env_vars()
 {
+	detect_platform
 	local PROJECT_DIR="$(pwd)/../"
 
 	#export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
