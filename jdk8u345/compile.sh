@@ -79,8 +79,8 @@ export_env_vars()
 {
 	local PROJECT_DIR="$(pwd)/../"
 
-	export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
-
+	#export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
+	export JAVA_HOME=/spare/$(whoami)/openjdk/jdk8u402-b06
 	### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LIBRARY_PATH
 	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LD_LIBRARY_PATH                                                                                           
