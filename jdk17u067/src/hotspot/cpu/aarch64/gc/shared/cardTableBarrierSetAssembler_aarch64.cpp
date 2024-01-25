@@ -79,7 +79,7 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 
 void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembler* masm, DecoratorSet decorators,
 		Register start, Register count, Register scratch, RegSet saved_regs) {
-	Label L_h1, L_loop, L_done;
+	Label L_h1, L_h1_loop, L_done;
 	const Register end = count;
 
 	__ cbz(count, L_done); // zero count - nothing to do
@@ -88,7 +88,7 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	__ mov(scratch, EnableTeraHeap); //FIXME
 	__ cbz(scratch, L_h1);//FIXME
 	//if(EnableTeraHeap){
-		Label L_h2_done, L_h2;
+		Label L_h2, L_h2_loop;//L_h2_done;
 		__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
 		__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
 		// Load the TeraHeap's H2 address in scratch
@@ -101,18 +101,18 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 		__ sub(count, end, start); // number of bytes to copy
 		__ load_byte_map_base(scratch);
 		__ add(start, start, scratch);
-		__ b(L_h2_done);
+		__ b(L_h2_loop);
 		__ bind(L_h2);
 		__ lsr(start, start, CardTable::th_card_shift);
 		__ lsr(end, end, CardTable::th_card_shift);
 		__ sub(count, end, start); // number of bytes to copy
 		__ load_th_byte_map_base(scratch);
 		__ add(start, start, scratch);
-		__ bind(L_h2_done);
-		__ bind(L_loop);
+		//__ bind(L_h2_done);
+		__ bind(L_h2_loop);
 		__ strb(zr, Address(start, count));
 		__ subs(count, count, 1);
-		__ br(Assembler::GE, L_loop);
+		__ br(Assembler::GE, L_h2_loop);
 		__ b(L_done);//FIXME
 	/*}else{
 		__ lea(end, Address(start, count, Address::lsl(LogBytesPerHeapOop))); // end = start + count << LogBytesPerHeapOop
@@ -149,10 +149,10 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	__ sub(count, end, start); // number of bytes to copy
 	__ load_byte_map_base(scratch);
 	__ add(start, start, scratch);
-	__ bind(L_loop);
+	__ bind(L_h1_loop);
 	__ strb(zr, Address(start, count));
 	__ subs(count, count, 1);
-	__ br(Assembler::GE, L_loop);
+	__ br(Assembler::GE, L_h1_loop);
 
 	__ bind(L_done);
 }
