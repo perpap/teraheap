@@ -48,14 +48,14 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 		__ br(Assembler::GE, L_h2);
 		// Does a store check for the oop in register obj. The content of
 		// register obj is destroyed afterwards.
-		__ lsr(obj, obj, CardTable::card_shift);//store_check_part1(masm, obj);
+		__ lsr(obj, obj, CardTable::card_shift);
 		assert(CardTable::dirty_card_val() == 0, "must be");
-		__ load_byte_map_base(rscratch1);//store_check_part2(masm, obj);
+		__ load_byte_map_base(rscratch1);
 		__ b(L_Done);
 		__ bind(L_h2);
-		__ lsr(obj, obj, CardTable::th_card_shift);//h2_store_check_part1(masm, obj);
+		__ lsr(obj, obj, CardTable::th_card_shift);
 		assert(CardTable::dirty_card_val() == 0, "must be");
-		__ load_th_byte_map_base(rscratch1);//h2_store_check_part2(masm, obj);
+		__ load_th_byte_map_base(rscratch1);
 		__ bind(L_Done);
 	}else{
 		__ lsr(obj, obj, CardTable::card_shift);
@@ -67,9 +67,6 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 	assert(CardTable::dirty_card_val() == 0, "must be");
 	__ load_byte_map_base(rscratch1);
 #endif
-	//assert(CardTable::dirty_card_val() == 0, "must be");
-	//__ load_byte_map_base(rscratch1);
-
 	if (UseCondCardMark) {
 		Label L_already_dirty;
 		__ ldrb(rscratch2,  Address(obj, rscratch1));
@@ -98,25 +95,18 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 		// Check if array is in H1 or H2
 		__ cmp(start, scratch);
 		__ br(Assembler::GE, L_h2);
-
 		__ lsr(start, start, CardTable::card_shift);
 		__ lsr(end, end, CardTable::card_shift);
 		__ sub(count, end, start); // number of bytes to copy
-
 		__ load_byte_map_base(scratch);
 		__ add(start, start, scratch);
 		__ b(L_h2_done);
-
 		__ bind(L_h2);
-
 		__ lsr(start, start, CardTable::th_card_shift);
 		__ lsr(end, end, CardTable::th_card_shift);
 		__ sub(count, end, start); // number of bytes to copy
-
 		__ load_th_byte_map_base(scratch);
 		__ add(start, start, scratch);
-		__ b(L_h2_done);
-
 		__ bind(L_h2_done);
 		__ bind(L_loop);
 		__ strb(zr, Address(start, count));
