@@ -72,7 +72,7 @@ function release()
     --with-extra-cxxflags='-O3' \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions \
-    --with-<LIB>-include="/usr/include/freetype2/freetype/freetype.h" --with-<LIB>-lib="/usr/lib64/libfreetype.so.6"
+    --with-include="/usr/include/freetype2/freetype/freetype.h" --with-lib="/usr/lib64/libfreetype.so.6"
   intercept-build make
   cd ../ 
   compdb -p jdk8u345 list > compile_commands.json
