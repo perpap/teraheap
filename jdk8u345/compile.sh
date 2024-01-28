@@ -128,6 +128,7 @@ export_env_vars()
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$CPLUS_INCLUDE_PATH
 }
 
+detect_platform
 #Default GCC 
 OPTIONS=g:rfch
 LONGOPTIONS=gcc-version:,help
@@ -155,17 +156,17 @@ while true; do
       		release
       		shift
       		;;
-      	-f|--fastdebug)
+        -f|--fastdebug)
         	export_env_vars
       		fastdebug
       		shift
       		;;
-      	-c|--clean-and-make)
+        -c|--clean-and-make)
       		export_env_vars
       		clean_make
       		shift
       		;;
-    	-m|--make)
+        -m|--make)
       		export_env_vars
       		make
       		shift
@@ -174,11 +175,11 @@ while true; do
             usage
             return 0 2>/dev/null || exit 0  # This will return if sourced, and exit if run as a standalone script
             ;;
-	--)
+	    --)
             shift
             break
             ;;
-	*)
+         *)
             echo "Programming error"
             return ${ERRORS[PROGRAMMING_ERROR]} 2>/dev/null || exit ${ERRORS[PROGRAMMING_ERROR]}  # This will return if sourced, and exit if run as a standalone script
             ;;
