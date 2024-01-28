@@ -103,13 +103,13 @@ function fastdebug()
   cd - || exit
 }
 
-function clean_make()
+function run_clean_make()
 {
   	make clean
   	make
 }
 
-function make()
+function run_make()
 {
 	make
 }
@@ -163,12 +163,12 @@ while true; do
       		;;
         -c|--clean-and-make)
       		export_env_vars
-      		clean_make
+      		run_clean_make
       		shift
       		;;
         -m|--make)
       		export_env_vars
-      		make
+      		run_make
       		shift
       		;;
         -h|--help)
