@@ -12,8 +12,16 @@
 #
 ###################################################
 
-#CC=gcc-7.2.0
-#CXX=g++-7.2.0
+# Declare an associative array used for error handling
+declare -A ERRORS
+
+# Define the "error" values
+ERRORS[INVALID_OPTION]=1
+ERRORS[INVALID_ARG]=2
+ERRORS[PROGRAMMING_ERROR]=3
+
+#CC=gcc-7.4.0
+#CXX=g++-7.4.0
 # Detect the platform
 PLATFORM=""
 TARGET_PLATFORM="aarch64"
@@ -45,19 +53,17 @@ function detect_platform()
 
 function usage()
 {
+  	echo "Usage: $0 [options]"
+  	echo "Options:"
     echo
-    echo "Usage:"
-    echo -n "      $0 [option ...] [-h]"
-    echo
-    echo "Options:"
-    echo "      -r  Build release without debug symbols"
-    echo "      -d  Build with debug symbols"
-    echo "      -c  Clean and make"
-    echo "      -u  Update JVM in root directory"
-    echo "      -h  Show usage"
+    echo "      -r, --release  			Run configure and build a release version"
+    echo "      -f, --fastdeug			Run configure and build a fastdebug version"
+    echo "      -c, --clean-and-make  	Run clean and make"
+    echo "      -m,	--make  			Run make"
+    echo "      -h, --help		 	 	Display this help message and exit"
     echo
 
-    exit 1
+    return 0 2>/dev/null || exit 0
 }
   
 # Compile without debug symbols
@@ -80,7 +86,7 @@ function release()
 }
 
 # Compile with debug symbols and assertions
-function debug_symbols_on() 
+function fastdebug() 
 {
   make dist-clean
   CC=$CC CXX=$CXX \
@@ -99,8 +105,13 @@ function debug_symbols_on()
 
 function clean_make()
 {
-  make clean
-  make
+  	make clean
+  	make
+}
+
+function make()
+{
+	make
 }
 
 export_env_vars()
@@ -117,31 +128,57 @@ export_env_vars()
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$CPLUS_INCLUDE_PATH
 }
 
-while getopts ":drcmh" opt
-do
-  case "${opt}" in
-    r)
-      export_env_vars
-      release
-      ;;
-    d)
-      export_env_vars
-      debug_symbols_on
-      ;;
-    c)
-      export_env_vars
-      clean_make
-      ;;
-    m)
-      export_env_vars
-      make
-      ;;
-    h)
-      usage
-      ;;
-    *)
-      usage
-      ;;
-  esac
-done
+#Default GCC 
+OPTIONS=g:rfch
+LONGOPTIONS=gcc-version:,help
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 
+# Check for errors in getopt
+if [[ $? -ne 0 ]]; then
+    return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+fi
+
+# Evaluate the parsed options
+eval set -- "$PARSED"
+
+while true; do
+    case "$1" in
+        -g|--gcc-version)
+            CC="$CC-$2"
+            CXX="$CXX-$2"
+            shift 2
+            ;;
+        -r|--release)
+        	export_env_vars
+      		release
+      		shift
+      		;;
+      	-f|--fastdebug)
+        	export_env_vars
+      		fastdebug
+      		shift
+      		;;
+      	-c|--clean-and-make)
+      		export_env_vars
+      		clean_make
+      		shift
+      		;;
+    	-m|--make)
+      		export_env_vars
+      		make
+      		shift
+      		;;
+        -h|--help)
+            usage
+            return 0 2>/dev/null || exit 0  # This will return if sourced, and exit if run as a standalone script
+            ;;
+	--)
+            shift
+            break
+            ;;
+	*)
+            echo "Programming error"
+            return ${ERRORS[PROGRAMMING_ERROR]} 2>/dev/null || exit ${ERRORS[PROGRAMMING_ERROR]}  # This will return if sourced, and exit if run as a standalone script
+            ;;
+    esac
+done
