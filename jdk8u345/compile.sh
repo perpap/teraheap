@@ -26,8 +26,8 @@ ERRORS[PROGRAMMING_ERROR]=3
 PLATFORM=""
 TARGET_PLATFORM="aarch64"
 # Default CC
-CC=/archive/users/$(whoami)/gcc-7.4.0/bin/gcc
-CXX=/archive/users/$(whoami)/gcc-7.4.0/bin/g++
+CC=/archive/users/$(whoami)/gcc-7.4.0/bin/gcc-7.4.0
+CXX=/archive/users/$(whoami)/gcc-7.4.0/bin/g++-7.4.0
 
 function detect_platform()
 {
