@@ -146,6 +146,8 @@ while true; do
         -g|--gcc-version)
             CC="$CC-$2"
             CXX="$CXX-$2"
+            echo "CC = $CC"
+            echo "CXX = $CXX"
             shift 2
             ;;
         -r|--release)
