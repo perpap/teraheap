@@ -57,10 +57,10 @@ function usage()
   	echo "Options:"
     echo
     echo "      -r, --release  			Run configure and build a release version"
-    echo "      -f, --fastdeug			Run configure and build a fastdebug version"
-    echo "      -c, --clean-and-make  	Run clean and make"
-    echo "      -m,	--make  			Run make"
-    echo "      -h, --help		 	 	Display this help message and exit"
+    echo "      -f, --fastdebug			Run configure and build a fastdebug version"
+    echo "      -c, --clean-and-make	Run clean and make"
+    echo "      -m,	--make				Run make"
+    echo "      -h, --help				Display this help message and exit"
     echo
 
     return 0 2>/dev/null || exit 0
