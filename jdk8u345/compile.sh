@@ -75,7 +75,8 @@ function release()
     --with-extra-cflags='-O3' \
     --with-extra-cxxflags='-O3' \
     --with-target-bits=64 \
-    --with-extra-ldflags=-lregions 
+    --with-extra-ldflags=-lregions \
+    --with-boot-jdk=$BOOT_JDK8
   intercept-build make
   cd ../ 
   compdb -p jdk8u345 list > compile_commands.json
@@ -93,7 +94,8 @@ function fastdebug()
     --with-native-debug-symbols=internal \
     --with-target-bits=64 \
     --with-jobs=32 \
-    --with-extra-ldflags=-lregions
+    --with-extra-ldflags=-lregions \
+    --with-boot-jdk=$BOOT_JDK8
   intercept-build make
   cd ../ 
   compdb -p jdk8u345 list > compile_commands.json
