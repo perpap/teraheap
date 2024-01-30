@@ -117,7 +117,7 @@ export_env_vars()
     local PROJECT_DIR="$(pwd)/../"
     detect_platform
     if [[ $TARGET_PLATFORM == aarch64 ]]; then
-        export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64"
+        export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64/jre"
     elif [[ $TARGET_PLATFORM == x86_64 ]]; then
         export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
         #export JAVA_HOME=/spare/$(whoami)/openjdk/jdk8u402-b06
