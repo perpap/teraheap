@@ -19,35 +19,26 @@ declare -A ERRORS
 ERRORS[INVALID_OPTION]=1
 ERRORS[INVALID_ARG]=2
 ERRORS[PROGRAMMING_ERROR]=3
+ERROS[UNKNOWN_PLATFORM]=4
 
-#CC=gcc-7.4.0
-#CXX=g++-7.4.0
-# Detect the platform
+# Detect the build and target platforms
 PLATFORM=""
 TARGET_PLATFORM="aarch64"
-# Default CC
-CC=/archive/users/$(whoami)/gcc-7.4.0/bin/gcc-7.4.0
-CXX=/archive/users/$(whoami)/gcc-7.4.0/bin/g++-7.4.0
+# Default compilers
+CC=gcc
+CXX=g++
 
 function detect_platform()
 {
 	PLATFORM="$(uname -p)"
-	# Conditional setting of CC based on platform
-	#if [[ $PLATFORM == x86_64 ]]; then
+	# Conditional setting of CC and CXX based on host and target platform
 	if [[ $PLATFORM != $TARGET_PLATFORM ]]; then
 	    CC=$TARGET_PLATFORM-linux-gnu-gcc
 	    CXX=$TARGET_PLATFORM-linux-gnu-g++
-	    echo "Build platform's cpu arch($PLATFORM) differs from deployment's platform cpu arch($TARGET_PLATFORM), using cross compiler: $CC"
-	    #CC=aarch64-linux-gnu-gcc
-	    #CXX=aarch64-linux-gnu-g++
-	    #echo "Detected x86_64 platform, using cross compiler: $CC"
-	#elif [[ $PLATFORM == aarch64 ]]; then
-	#    CC=gcc
-	#    CXX=g++
-	#    echo "Detected aarch64 platform, using default compiler: $CC"
+	    echo "Build platform's cpu arch($PLATFORM) differs from target's platform cpu arch($TARGET_PLATFORM), using cross compilers: $CC, $CXX"
 	else
-	    echo "Build and deployment platforms have the same cpu arch($PLATFORM), using default compiler: $CC"
-	    #echo "Unknown platform: $PLATFORM, using default compiler: $CC"
+	    TARGET_PLATFORM=$PLATFORM
+	    echo "Build and target platforms have the same cpu arch($PLATFORM), using default compilers: $CC, $CXX"
 	fi
 }
 
@@ -56,12 +47,19 @@ function usage()
   	echo "Usage: $0 [options]"
   	echo "Options:"
     echo
+    echo "      -t, --target            Select the target platorm architecture for cross-compilation eg. aarch64, x86_64"
+    echo "      -g, --gcc               Select an installed gcc version eg. 7.4.0"
     echo "      -r, --release           Run configure and build a release version"
     echo "      -f, --fastdebug         Run configure and build a fastdebug version"
-    echo "      -c, --clean-and-make    Run clean and make"
+    echo "      -c, --clean             Run clean and make"
     echo "      -m, --make              Run make"
     echo "      -h, --help              Display this help message and exit"
     echo
+    echo "Examples:"
+    echo
+    echo "  ./compile.sh -r             Run configure and build a release version using default gcc"
+    echo "  ./compile.sh --release      Run configure and build a release version using default gcc"
+    echo "  ./compile.sh -g 7.4.0 -r    Run configure and build a release version using gcc-7.4.0"
 
     return 0 2>/dev/null || exit 0
 }
@@ -116,10 +114,18 @@ function run_make()
 
 export_env_vars()
 {
-	local PROJECT_DIR="$(pwd)/../"
-
-	#export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
-	export JAVA_HOME=/spare/$(whoami)/openjdk/jdk8u402-b06
+    local PROJECT_DIR="$(pwd)/../"
+    if [[ $TARGET_PLATFORM == aarch64 ]]; then
+		export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64"
+	elif [[ $TARGET_PLATFORM == x86_64 ]]; then
+		export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
+		#export JAVA_HOME=/spare/$(whoami)/openjdk/jdk8u402-b06
+	else
+		echo "Unknown platform"
+		return ${ERRORS[UNKNOWN_PLATFORM]} 2>/dev/null || exit ${ERRORS[UNKNOWN_PLATFORM]}  # This will return if sourced, and exit if run as a standalone script
+	fi
+	echo "JAVA_HOME = $JAVA_HOME"
+	
 	### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LIBRARY_PATH
 	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LD_LIBRARY_PATH                                                                                           
@@ -130,8 +136,8 @@ export_env_vars()
 
 detect_platform
 #Default GCC 
-OPTIONS=g:rfch
-LONGOPTIONS=gcc-version:,help
+OPTIONS=t:g:rfcmh
+LONGOPTIONS=target:,gcc:,release,fastdebug,clean,make,help
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 
 # Check for errors in getopt
@@ -144,7 +150,12 @@ eval set -- "$PARSED"
 
 while true; do
     case "$1" in
-        -g|--gcc-version)
+        -t|--target)
+            TARGET_PLATFORM="$2"
+            echo "TARGET_PLATFORM = $TARGET_PLATFORM"
+            shift 2
+            ;;
+        -g|--gcc)
             CC="$CC-$2"
             CXX="$CXX-$2"
             echo "CC = $CC"
@@ -161,7 +172,7 @@ while true; do
       		fastdebug
       		shift
       		;;
-        -c|--clean-and-make)
+        -c|--clean)
       		export_env_vars
       		run_clean_make
       		shift
