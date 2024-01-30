@@ -44,8 +44,8 @@ function detect_platform()
 
 function usage()
 {
-  	echo "Usage: $0 [options]"
-  	echo "Options:"
+    echo "Usage: $0 [options]"
+    echo "Options:"
     echo
     echo "      -t, --target            Select the target platorm architecture for cross-compilation eg. aarch64, x86_64"
     echo "      -g, --gcc               Select an installed gcc version eg. 7.4.0"
@@ -116,22 +116,22 @@ export_env_vars()
 {
     local PROJECT_DIR="$(pwd)/../"
     if [[ $TARGET_PLATFORM == aarch64 ]]; then
-		export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64"
-	elif [[ $TARGET_PLATFORM == x86_64 ]]; then
-		export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
-		#export JAVA_HOME=/spare/$(whoami)/openjdk/jdk8u402-b06
-	else
-		echo "Unknown platform"
-		return ${ERRORS[UNKNOWN_PLATFORM]} 2>/dev/null || exit ${ERRORS[UNKNOWN_PLATFORM]}  # This will return if sourced, and exit if run as a standalone script
-	fi
+        export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64"
+    elif [[ $TARGET_PLATFORM == x86_64 ]]; then
+        export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
+        #export JAVA_HOME=/spare/$(whoami)/openjdk/jdk8u402-b06
+    else
+        echo "Unknown platform"
+        return ${ERRORS[UNKNOWN_PLATFORM]} 2>/dev/null || exit ${ERRORS[UNKNOWN_PLATFORM]}  # This will return if sourced, and exit if run as a standalone script
+    fi
 	echo "JAVA_HOME = $JAVA_HOME"
 	
 	### TeraHeap Allocator
-	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LIBRARY_PATH
-	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LD_LIBRARY_PATH                                                                                           
-	export PATH=${PROJECT_DIR}/allocator/include/:$PATH
-	export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$C_INCLUDE_PATH                                                                                         
-	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$CPLUS_INCLUDE_PATH
+    export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LIBRARY_PATH
+    export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LD_LIBRARY_PATH                                                                                           
+    export PATH=${PROJECT_DIR}/allocator/include/:$PATH
+    export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$C_INCLUDE_PATH                                                                                         
+    export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$CPLUS_INCLUDE_PATH
 }
 
 detect_platform
@@ -163,30 +163,30 @@ while true; do
             shift 2
             ;;
         -r|--release)
-        	export_env_vars
-      		release
-      		shift
-      		;;
+            export_env_vars
+            release
+            shift
+            ;;
         -f|--fastdebug)
-        	export_env_vars
-      		fastdebug
-      		shift
-      		;;
+            export_env_vars
+            fastdebug
+            shift
+            ;;
         -c|--clean)
-      		export_env_vars
-      		run_clean_make
-      		shift
-      		;;
+            export_env_vars
+            run_clean_make
+            shift
+            ;;
         -m|--make)
-      		export_env_vars
-      		run_make
-      		shift
-      		;;
+            export_env_vars
+            run_make
+            shift
+            ;;
         -h|--help)
             usage
             return 0 2>/dev/null || exit 0  # This will return if sourced, and exit if run as a standalone script
             ;;
-	    --)
+        --)
             shift
             break
             ;;
