@@ -115,6 +115,7 @@ function run_make()
 export_env_vars()
 {
     local PROJECT_DIR="$(pwd)/../"
+    detect_platform
     if [[ $TARGET_PLATFORM == aarch64 ]]; then
         export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64"
     elif [[ $TARGET_PLATFORM == x86_64 ]]; then
@@ -134,7 +135,6 @@ export_env_vars()
     export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$CPLUS_INCLUDE_PATH
 }
 
-detect_platform
 #Default GCC 
 OPTIONS=t:g:rfcmh
 LONGOPTIONS=target:,gcc:,release,fastdebug,clean,make,help
