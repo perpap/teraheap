@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define rdtsc get_cycles //FIXME
+
 #define HIST_SIZE 5
 #define GC_HIST_SIZE 1
 #define NUM_ACTIONS 8
@@ -16,6 +18,7 @@
 
 class TeraDynamicResizingPolicy : public CHeapObj<mtInternal> {
 private:
+  static const uint64_t CYCLES_PER_SECOND;//FIXME
   char state_name[NUM_STATES][NAME_LEN]; //< Define state names
   char action_name[NUM_ACTIONS][NAME_LEN]; //< Define state names
   uint64_t window_start_time;         //< Window start time
