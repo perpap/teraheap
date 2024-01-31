@@ -95,7 +95,7 @@ function fastdebug()
     --with-native-debug-symbols=internal \
     --disable-warnings-as-errors \
     --with-extra-cflags='-std=c11' \
-    --with-extra-cxxflags='-std=c++14' \
+    --with-extra-cxxflags='-std=c++11' \
     --with-target-bits=64 \
     --with-jobs=32 \
     --with-extra-ldflags=-lregions \
