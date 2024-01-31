@@ -74,7 +74,7 @@ function release()
   bash ./configure \
     --with-jobs=$NUM_CORES \
     --disable-debug-symbols \
-    --with-extra-cxxflags='-std=c++14 -O3' \
+    --with-extra-cxxflags="-std=c++14 -O3" \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions \
     --with-boot-jdk=$BOOT_JDK8
@@ -93,7 +93,7 @@ function fastdebug()
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
-    --with-extra-cxxflags='-std=c++14' \
+    --with-extra-cxxflags="-std=c++14 -O3" \
     --with-target-bits=64 \
     --with-jobs=$NUM_CORES \
     --with-extra-ldflags=-lregions \
