@@ -74,10 +74,9 @@ function release()
   bash ./configure \
     --with-jobs=$NUM_CORES \
     --disable-debug-symbols \
-    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a" \
+    --with-extra-cxxflags="-O3 -march=armv8.2-a" \
     --with-target-bits=64 \
-    --with-extra-ldflags=-lregions \
-    --with-boot-jdk=$BOOT_JDK8
+    --with-extra-ldflags=-lregions
   intercept-build make
   cd ../ 
   compdb -p jdk8u345 list > compile_commands.json
@@ -121,7 +120,7 @@ export_env_vars()
     local PROJECT_DIR="$(pwd)/../"
     detect_platform
     if [[ $TARGET_PLATFORM == aarch64 ]]; then
-        export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64/jre"
+        export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.312.b07-2.el8_5.aarch64"
     elif [[ $TARGET_PLATFORM == x86_64 ]]; then
         export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
         #export JAVA_HOME=/spare/$(whoami)/openjdk/jdk8u402-b06
