@@ -74,8 +74,7 @@ function release()
   bash ./configure \
     --with-jobs=$NUM_CORES \
     --disable-debug-symbols \
-    --with-extra-cflags="-std=c99 -O3 -march=armv8.2-a -mtune=Neoverse-N1" \
-    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a -mtune=Neoverse-N1" \
+    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a -W-no-error" \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions \
     --with-boot-jdk=$BOOT_JDK8
@@ -94,7 +93,7 @@ function fastdebug()
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
-    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a -mtune=Neoverse-N1" \
+    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a" \
     --with-target-bits=64 \
     --with-jobs=$NUM_CORES \
     --with-extra-ldflags=-lregions \
