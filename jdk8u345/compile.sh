@@ -72,7 +72,6 @@ function release()
   bash ./configure \
     --with-jobs=32 \
     --disable-debug-symbols \
-    --disable-warnings-as-errors \
     --with-extra-cflags='-O3' \
     --with-extra-cxxflags='-std=c++11 -O3' \
     --with-target-bits=64 \
@@ -93,7 +92,6 @@ function fastdebug()
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
-    --disable-warnings-as-errors \
     --with-extra-cxxflags='-std=c++11' \
     --with-target-bits=64 \
     --with-jobs=32 \
