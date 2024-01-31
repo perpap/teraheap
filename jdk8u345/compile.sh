@@ -73,7 +73,7 @@ function release()
     --with-jobs=32 \
     --disable-debug-symbols \
     --with-extra-cflags='-O3' \
-    --with-extra-cxxflags='-O3' \
+    --with-extra-cxxflags='-std=c++14 -O3' \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions \
     --with-boot-jdk=$BOOT_JDK8
@@ -92,6 +92,7 @@ function fastdebug()
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
+    --with-extra-cxxflags='-std=c++14' \
     --with-target-bits=64 \
     --with-jobs=32 \
     --with-extra-ldflags=-lregions \
