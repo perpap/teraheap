@@ -24,6 +24,8 @@ ERROS[UNKNOWN_PLATFORM]=4
 # Detect the build and target platforms
 PLATFORM=""
 TARGET_PLATFORM="aarch64"
+# Get the number of available CPU cores
+NUM_CORES=$(nproc)
 # Default compilers
 CC=gcc
 CXX=g++
@@ -70,10 +72,9 @@ function release()
   make dist-clean
   CC=$CC CXX=$CXX \
   bash ./configure \
-    --with-jobs=32 \
+    --with-jobs=$NUM_CORES \
     --disable-debug-symbols \
-    --with-extra-cflags='-O3' \
-    --with-extra-cxxflags='-std=c++11 -O3' \
+    --with-extra-cxxflags='-std=c++14 -O3' \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions \
     --with-boot-jdk=$BOOT_JDK8
@@ -92,9 +93,9 @@ function fastdebug()
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
-    --with-extra-cxxflags='-std=c++11' \
+    --with-extra-cxxflags='-std=c++14' \
     --with-target-bits=64 \
-    --with-jobs=32 \
+    --with-jobs=$NUM_CORES \
     --with-extra-ldflags=-lregions \
     --with-boot-jdk=$BOOT_JDK8
   intercept-build make
