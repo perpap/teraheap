@@ -102,12 +102,7 @@ private:
   // Count timer. We avoid to use os::elapsed_time() because internally
   // uses the clock_get_time which adds extra overhead. This function
   // is executed in the common path.
-  uint64_t rdtsc() {
-    unsigned int lo, hi;
-    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64_t)hi << 32) | lo;
-  }
-
+  //uint64_t rdtsc(); //FIXME
   // Find the average of the array elements
   double calc_avg_time(double *arr, int size);
 
