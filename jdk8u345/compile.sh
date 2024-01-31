@@ -74,7 +74,7 @@ function release()
   bash ./configure \
     --with-jobs=$NUM_CORES \
     --disable-debug-symbols \
-    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a -W-no-error" \
+    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a" \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions \
     --with-boot-jdk=$BOOT_JDK8
