@@ -59,8 +59,8 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 		assert(CardTable::dirty_card_val() == 0, "must be");
 		__ load_byte_map_base(rscratch1);
 
-		__ bind(L_done)
-	}elses{
+		__ bind(L_done);
+	}else{
 		// Does a store check for the oop in register obj. The content of
 		// register obj is destroyed afterwards.
 		__ lsr(obj, obj, CardTable::card_shift);
