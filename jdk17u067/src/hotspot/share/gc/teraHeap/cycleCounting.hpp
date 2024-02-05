@@ -28,9 +28,31 @@ static inline uint64_t get_cycles()
 static inline uint64_t get_cycles()
 {
     uint64_t val;
-    asm volatile("mrs %0, PMCCNTR_EL0" : "=r" (val));
+    asm volatile("mrs %0, cntvct_el0" : "=r" (val));
     return val;
 }
+/*
+
+#include <stdio.h>
+#include <stdint.h>
+
+static inline uint64_t
+read_cntvct_el0(void)
+{
+        uint64_t val;
+        asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+        return val;
+}
+
+int main(){
+
+        uint64_t counter = read_cntvct_el0();
+        printf("value:%lu\n",counter);
+        return 0;
+}
+
+*/
+
 
 #else
 #error "Unsupported architecture, x86-64 and AArch64 only."
@@ -76,7 +98,7 @@ static inline uint64_t get_cycles_per_second() {
         cpu_frequency = get_cpu_frequency();
         if (cpu_frequency == 0) {
             // Fallback to a default value if detection fails
-            cpu_frequency = 2000000000; // Example: 2 GHz
+            cpu_frequency = 3000000000; // 3 GHz, ampere max clock via cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
         }
     }
     return cpu_frequency;

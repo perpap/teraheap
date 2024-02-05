@@ -28,7 +28,7 @@ static inline uint64_t get_cycles()
 static inline uint64_t get_cycles()
 {
     uint64_t val;
-    asm volatile("mrs %0, PMCCNTR_EL0" : "=r" (val));
+    asm volatile("mrs %0, cntvct_el0" : "=r" (val));
     return val;
 }
 
