@@ -246,6 +246,11 @@ bool PSScavenge::invoke() {
 
   if (EnableTeraHeap && DynamicHeapResizing) {
     TeraHeap *th = Universe::teraHeap();
+
+    // Print the dirty pages in H2
+    if (TraceH2DirtyPages)
+      th->trace_dirty_h2_pages();
+
     TeraDynamicResizingPolicy *tera_policy = th->get_resizing_policy();
     tera_policy->dram_repartition(&need_full_gc, &need_resizing);
   }
@@ -341,6 +346,7 @@ void PSScavenge::h2_scavenge_back_references() {
     thlog_or_tty->print_cr("[STATISTICS] | PHASE0 = %llu\n",
                            (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
                            (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
+    thlog_or_tty->flush();
   }
 }
 #endif //TERA_MINOR_GC

@@ -65,6 +65,21 @@ function usage()
 
     return 0 2>/dev/null || exit 0
 }
+
+# Compile without debug symbols for ASPLOS'23 Artifact Evaluation
+function artifact_evaluation() 
+{
+  make dist-clean
+  CC=$CC CXX=$CXX \
+  bash ./configure \
+    --with-jobs=32 \
+    --disable-debug-symbols \
+    --with-extra-cflags='-O3' \
+    --with-extra-cxxflags='-O3' \
+    --with-target-bits=64 \
+    --with-extra-ldflags=-lregions
+  make
+}
   
 # Compile without debug symbols
 function release() 
@@ -139,8 +154,8 @@ export_env_vars()
 }
 
 #Default GCC 
-OPTIONS=t:g:rfcmh
-LONGOPTIONS=target:,gcc:,release,fastdebug,clean,make,help
+OPTIONS=t:g:arfcmh
+LONGOPTIONS=target:,gcc:,asplos,release,fastdebug,clean,make,help
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 
 # Check for errors in getopt
@@ -164,6 +179,11 @@ while true; do
             echo "CC = $CC"
             echo "CXX = $CXX"
             shift 2
+            ;;
+        -a|--asplos)
+            export_env_vars
+            artifact_evaluation
+            shift
             ;;
         -r|--release)
             export_env_vars

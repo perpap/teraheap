@@ -99,6 +99,11 @@ void PSMarkSweep::invoke(bool maximum_heap_compaction) {
     TeraDynamicResizingPolicy *tera_policy = th->get_resizing_policy();
     bool need_full_gc = false;
     bool need_resizing = false;
+
+    // Print the dirty pages in H2
+    if (TraceH2DirtyPages)
+      th->trace_dirty_h2_pages();
+
     tera_policy->dram_repartition(&need_full_gc, &need_resizing);
     tera_policy->set_last_minor_gc(os::elapsedTime());
 
@@ -689,6 +694,7 @@ void PSMarkSweep::mark_sweep_phase1(bool clear_all_softrefs) {
       thlog_or_tty->print_cr("[STATISTICS] | PHASE1 = %llu\n",
                              (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
                              (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
+      thlog_or_tty->flush();
 
       if (TeraHeapAllocatorStatistics)
         Universe::teraHeap()->print_h2_active_regions();
@@ -774,7 +780,8 @@ void PSMarkSweep::mark_sweep_phase2() {
     thlog_or_tty->print_cr("[STATISTICS] | PHASE2 = %llu\n",
                            (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
                            (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
-	}
+	  thlog_or_tty->flush();
+  }
 #endif // TERA_MAJOR_GC
 }
 
@@ -843,6 +850,7 @@ void PSMarkSweep::mark_sweep_phase3() {
     thlog_or_tty->print_cr("[STATISTICS] | PHASE3 = %llu\n",
                            (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
                            (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
+    thlog_or_tty->flush();
   }
 #endif // TERA_MAJOR_GC
 }
@@ -893,7 +901,7 @@ void PSMarkSweep::mark_sweep_phase4() {
       thlog_or_tty->print_cr("[STATISTICS] | PHASE4 = %llu\n",
                              (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
                              (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
-
+      thlog_or_tty->flush();
     }
 
     if (DynamicHeapResizing) {

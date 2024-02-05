@@ -47,6 +47,8 @@ function interpreter_mode() {
 		-XX:-UseCompressedClassPointers \
 		-XX:+TeraHeapStatistics \
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
+    -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
 }
 
@@ -70,6 +72,8 @@ function c1_mode() {
 		-Xms${XMS}g \
 		-XX:-UseCompressedOops \
 		-XX:+TeraHeapStatistics \
+    -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
 }
 	 
@@ -93,6 +97,8 @@ function c2_mode() {
 		-XX:TeraCacheThreshold=0 \
 		-XX:-UseCompressedOops \
 		-XX:+TeraCacheStatistics \
+    -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:H2FileSize=751619276800 \
 		-Xlogtc:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
 } 
 
@@ -114,6 +120,8 @@ function run_tests_msg_box() {
 		-XX:-UseCompressedClassPointers \
 		-XX:+TeraHeapStatistics \
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
+    -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
 }
 
@@ -134,7 +142,8 @@ function run_tests() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
-    -XX:TeraHeapPolicy="DefaultPolicy" \
+    -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:H2FileSize=751619276800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
   }
 
@@ -156,6 +165,8 @@ function run_tests_debug() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
+    -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:H2FileSize=751619276800 \
     -Xlogth:llarge_teraCache.txt "${class_file}"
 }
 

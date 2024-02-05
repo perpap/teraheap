@@ -1994,6 +1994,11 @@ void PSParallelCompact::invoke(bool maximum_heap_compaction) {
     TeraDynamicResizingPolicy *tera_policy = th->get_resizing_policy();
     bool need_full_gc = false;
     bool need_resizing = false;
+
+    // Print the dirty pages in H2
+    if (TraceH2DirtyPages)
+      th->trace_dirty_h2_pages();
+
     tera_policy->dram_repartition(&need_full_gc, &need_resizing);
     tera_policy->set_last_minor_gc(os::elapsedTime());
 
@@ -2707,7 +2712,6 @@ void PSParallelCompact::adjust_backward_references() {
 
   while (obj != NULL) {
     Universe::teraHeap()->enable_groups(NULL, (HeapWord*) obj);
-    fprintf(stderr, "Adjust backward ref: %p | %s\n", obj, (*obj)->klass()->internal_name());
     adjust_pointer(obj, cm);
     Universe::teraHeap()->disable_groups();
     obj = Universe::teraHeap()->h2_adjust_next_back_reference();

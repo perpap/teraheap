@@ -21,7 +21,12 @@ long int TeraHeap::cur_obj_part_id;
 TeraHeap::TeraHeap() {
 
   uint64_t align = CardTable::th_ct_max_alignment_constraint();
-  init(align);
+
+  if (AllocateH2At == NULL || H2FileSize == 0) {
+    ShouldNotReachHere();
+  }
+
+  init(align, AllocateH2At, H2FileSize);
 
   _start_addr = start_addr_mem_pool();
   _stop_addr = stop_addr_mem_pool();
@@ -43,6 +48,10 @@ TeraHeap::TeraHeap() {
 
   if (DynamicHeapResizing)
     dynamic_resizing_policy = new TeraDynamicResizingPolicy();
+  
+  if (TraceH2DirtyPages)
+    trace_dirty_pages = new TeraTraceDirtyPages(r_get_mmaped_start(),
+                                                (unsigned long)_stop_addr);
 }
 
 TeraHeap::~TeraHeap() {

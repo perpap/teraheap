@@ -5,9 +5,13 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
-#define DEV "/mnt/fmap/H2.txt"   //< Device name
-#define DEV_SIZE (800*1024LU*1024*1024)  //< Device size (in bytes)
+
+//#define DEV "/mnt/fmap/H2.txt"	     //< Device name
+//#define DEV_SIZE (800*1024LU*1024*1024)  //< Device size (in bytes)
+extern char dev[150];
+extern uint64_t dev_size;
 
 //#define ASSERT
 
@@ -42,15 +46,18 @@
 #define MAX_RDD_ID ((REGION_ARRAY_SIZE)/(MAX_PARTITIONS)) //< Total different rdds
 
 #else
-#define REGION_ARRAY_SIZE ((DEV_SIZE)/(REGION_SIZE))
+//#define REGION_ARRAY_SIZE ((DEV_SIZE)/(REGION_SIZE))
+extern uint64_t region_array_size;
 
 #define MAX_PARTITIONS 256			  // Maximum partitions per RDD, affects 
 									  // id array size
-#define MAX_RDD_ID ((REGION_ARRAY_SIZE)/(MAX_PARTITIONS)) //< Total different rdds
+//#define MAX_RDD_ID ((REGION_ARRAY_SIZE)/(MAX_PARTITIONS)) //< Total different rdds
+extern uint64_t max_rdd_id;
 
 #endif
 
-#define GROUP_ARRAY_SIZE ((REGION_ARRAY_SIZE)/2)
+//#define GROUP_ARRAY_SIZE ((REGION_ARRAY_SIZE)/2)
+extern uint64_t group_array_size;
 
 #define MMAP_SIZE (4*1024*1024)       //< Size of small mmaps in Anonymous mode
 

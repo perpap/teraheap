@@ -11,6 +11,12 @@
 const uint64_t TeraDynamicResizingPolicy::CYCLES_PER_SECOND{get_cycles_per_second()};
 
 #define REGULAR_INTERVAL ((10LL * 1000)) 
+  
+// Intitilize the cpu usage statistics
+TeraCPUUsage* TeraDynamicResizingPolicy::init_cpu_usage_stats() {
+  return TeraCPUStatsPolicy ? static_cast<TeraCPUUsage*>(new TeraMultiExecutorCPUUsage()) :
+                              static_cast<TeraCPUUsage*>(new TeraSimpleCPUUsage());
+}
 
 // Initialize the policy of the state machine
 TeraStateMachine* TeraDynamicResizingPolicy::init_state_machine_policy() {
@@ -123,13 +129,11 @@ void TeraDynamicResizingPolicy::init_state_actions_names() {
 // Calculate the average of gc and io costs and return their values.
 // We use these values to determine the next actions.
 void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
-		double *avg_io_time_ms,
-		uint64_t *device_active_time_ms) {
-	double iowait_time_ms = 0;
-	uint64_t dev_time_end = 0;
-	unsigned long long iowait_end = 0, cpu_end = 0;
-	*device_active_time_ms = 0;
-
+                                                      double *avg_io_time_ms,
+                                                      uint64_t *device_active_time_ms) {
+  double iowait_time_ms = 0;
+  uint64_t dev_time_end = 0;
+  *device_active_time_ms = 0; 
 	// Check if we are inside the window
 	if (!is_window_limit_exeed()) {
 		*avg_gc_time_ms = 0;
@@ -137,13 +141,12 @@ void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
 		return;
 	}
 
-	// Calculate the user and iowait time during the window interval
-	read_cpu_stats(&iowait_end, &cpu_end);
-	calc_iowait_time(iowait_start, iowait_end, cpu_start, cpu_end,
-			interval, &iowait_time_ms);
+  // Calculate the user and iowait time during the window interval
+  cpu_usage->read_cpu_usage(STAT_END, MUTATOR_STAT);
+  cpu_usage->calculate_iowait_time(interval, &iowait_time_ms, MUTATOR_STAT);
 
 	iowait_time_ms -= gc_iowait_time_ms;
-	dev_time_end = get_device_active_time("nvme1n1");
+	dev_time_end = get_device_active_time("nvme3n1");
 	*device_active_time_ms = (dev_time_end - dev_time_start) - gc_dev_time;
 
 	assert(gc_time <= interval, "GC time should be less than the window interval");
@@ -155,22 +158,24 @@ void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
 
 	history(gc_time - gc_compaction_phase_ms, iowait_time_ms);
 
-	*avg_io_time_ms = calc_avg_time(hist_iowait_time, HIST_SIZE);
-	*avg_gc_time_ms = calc_avg_time(hist_gc_time, GC_HIST_SIZE);
+  *avg_io_time_ms = calc_avg_time(hist_iowait_time, HIST_SIZE);
+  *avg_gc_time_ms = calc_avg_time(hist_gc_time, GC_HIST_SIZE);
 
-	if (TeraHeapStatistics)
-		debug_print(*avg_io_time_ms, *avg_gc_time_ms, interval, iowait_time_ms, gc_time);
+  if (TeraHeapStatistics)
+    debug_print(*avg_io_time_ms, *avg_gc_time_ms, interval, iowait_time_ms, gc_time);
 }
 
 TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
-	window_start_time = rdtsc();
-	read_cpu_stats(&iowait_start, &cpu_start);
-	gc_iowait_time_ms = 0;
-	gc_time = 0;
-	dev_time_start = get_device_active_time("nvme1n1");
-	gc_dev_time = 0;
-	cur_action = NO_ACTION;
-	cur_state = S_NO_ACTION;
+  cpu_usage = init_cpu_usage_stats();
+
+  window_start_time = rdtsc();
+  cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
+  gc_iowait_time_ms = 0;
+  gc_time = 0;
+  dev_time_start = get_device_active_time("nvme3n1");
+  gc_dev_time = 0;
+  cur_action = NO_ACTION;
+  cur_state = S_NO_ACTION;
 
 	memset(hist_gc_time, 0, GC_HIST_SIZE * sizeof(double));
 	memset(hist_iowait_time, 0, HIST_SIZE * sizeof(double));
@@ -195,15 +200,15 @@ double TeraDynamicResizingPolicy::ellapsed_time(uint64_t start_time,
 
 // Set current time since last window
 void TeraDynamicResizingPolicy::reset_counters() {
-	window_start_time = rdtsc();
-	read_cpu_stats(&iowait_start, &cpu_start);
-	gc_time = 0;
-	gc_dev_time = 0;
-	gc_iowait_time_ms = 0;
-	dev_time_start = get_device_active_time("nvme1n1");
-	transfer_hint_enabled = false;
-	gc_compaction_phase_ms = 0;
-	window_interval = REGULAR_INTERVAL;
+  window_start_time = rdtsc();
+  cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
+  gc_time = 0;
+  gc_dev_time = 0;
+  gc_iowait_time_ms = 0;
+  dev_time_start = get_device_active_time("nvme3n1");
+  transfer_hint_enabled = false;
+  gc_compaction_phase_ms = 0;
+  window_interval = REGULAR_INTERVAL;
 }
 
 // Check if the window limit exceed time
@@ -222,9 +227,9 @@ bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
 
 // Init the iowait timer at the begining of the major GC.
 void TeraDynamicResizingPolicy::gc_start(double start_time) {
-	read_cpu_stats(&gc_iowait_start, &gc_cpu_start);
-	gc_dev_start = get_device_active_time("nvme1n1");
-	last_full_gc_start = start_time;
+  cpu_usage->read_cpu_usage(STAT_START, GC_STAT);
+  gc_dev_start = get_device_active_time("nvme3n1");
+  last_full_gc_start = start_time;
 }
 
 // Count the iowait time during gc and update the gc_iowait_time_ms
@@ -235,10 +240,9 @@ void TeraDynamicResizingPolicy::gc_end(double gc_duration, double last_full_gc) 
 	double iowait_time = 0;
 	static double last_gc_end = 0;
 
-	read_cpu_stats(&gc_iowait_end, &gc_cpu_end);
-	calc_iowait_time(gc_iowait_start, gc_iowait_end, gc_cpu_start, gc_cpu_end,
-			gc_duration, &iowait_time);
-	gc_iowait_time_ms += iowait_time;
+  cpu_usage->read_cpu_usage(STAT_END, GC_STAT);
+  cpu_usage->calculate_iowait_time(gc_duration, &iowait_time, GC_STAT);
+  gc_iowait_time_ms += iowait_time;
 
 	gc_dev_end = get_device_active_time("nvme1n1");
 	gc_dev_time += (gc_dev_end - gc_dev_start);
@@ -250,56 +254,59 @@ void TeraDynamicResizingPolicy::gc_end(double gc_duration, double last_full_gc) 
 }
 
 // This function opens iostat and read the io wait time in percentage
-void TeraDynamicResizingPolicy::read_cpu_stats(unsigned long long* cpu_iowait,
-		unsigned long long* total_cpu) {
-	FILE* stat_file = fopen("/proc/stat", "r");
-	if (!stat_file) {
-		fprintf(stderr, "Failed to open /proc/stat\n");
-		return;
-	}
 
-	char buffer[BUFFER_SIZE];
-	unsigned long long user, nice, system, idle, iowait, irq, softirq;
-
-	while (fgets(buffer, BUFFER_SIZE, stat_file)) {
-		if (strncmp(buffer, "cpu", 3) == 0) {
-			sscanf(buffer, "%*s %llu %llu %llu %llu %llu %llu %llu", &user, &nice, &system, &idle, &iowait, &irq, &softirq);
-
-			*total_cpu = user + nice + system + iowait + irq + softirq + idle;
-			*cpu_iowait = iowait + idle;
-
-			break;
-		}
-	}
-
-	int res = fclose(stat_file);
-	if (res != 0) {
-		fprintf(stderr, "Error closing file");
-	}
-}
-
-// Calculate iowait time based on the following formula
+//void TeraDynamicResizingPolicy::read_cpu_stats(unsigned long long* cpu_iowait,
+//                                               unsigned long long* total_cpu) {
+//  FILE* stat_file = fopen("/proc/stat", "r");
+//  if (!stat_file) {
+//    fprintf(stderr, "Failed to open /proc/stat\n");
+//    return;
+//  }
 //
-//                (cpu_iowait_after - cpu_iowait_before) 
-//  iowait_time = -------------------------------------- * duration 
-//                 (total_cpu_after - total_cpu_before)
+//  char buffer[BUFFER_SIZE];
+//  unsigned long long user, nice, system, idle, iowait, irq, softirq;
 //
-void TeraDynamicResizingPolicy::calc_iowait_time(unsigned long long cpu_iowait_before,
-		unsigned long long cpu_iowait_after,
-		unsigned long long total_cpu_before,
-		unsigned long long total_cpu_after,
-		double duration, double* iowait_time) {
 
-	unsigned long long iowait_diff = cpu_iowait_after - cpu_iowait_before;
-	unsigned long long cpu_diff = total_cpu_after - total_cpu_before;
+//  while (fgets(buffer, BUFFER_SIZE, stat_file)) {
+//    if (strncmp(buffer, "cpu", 3) == 0) {
+//      sscanf(buffer, "%*s %llu %llu %llu %llu %llu %llu %llu", &user, &nice, &system, &idle, &iowait, &irq, &softirq);
+//
+//      *total_cpu = user + nice + system + iowait + irq + softirq + idle;
+//      *cpu_iowait = iowait + idle;
+//
+//      break;
+//    }
+//  }
+//
+//  int res = fclose(stat_file);
+//  if (res != 0) {
+//    fprintf(stderr, "Error closing file");
+//  }
+//}
 
-	if (cpu_diff == 0) {
-		*iowait_time = 0;
-		fprintf(stderr, "iowait_time = 0\n");
-	}
-	else
-		*iowait_time = ((double) iowait_diff / cpu_diff) * duration;
-}
+
+//// Calculate iowait time based on the following formula
+////
+////                (cpu_iowait_after - cpu_iowait_before) 
+////  iowait_time = -------------------------------------- * duration 
+////                 (total_cpu_after - total_cpu_before)
+////
+//void TeraDynamicResizingPolicy::calc_iowait_time(unsigned long long cpu_iowait_before,
+//                                                 unsigned long long cpu_iowait_after,
+//                                                 unsigned long long total_cpu_before,
+//                                                 unsigned long long total_cpu_after,
+//                                                 double duration, double* iowait_time) {
+//
+//  unsigned long long iowait_diff = cpu_iowait_after - cpu_iowait_before;
+//  unsigned long long cpu_diff = total_cpu_after - total_cpu_before;
+//
+//  if (cpu_diff == 0) {
+//    *iowait_time = 0;
+//    fprintf(stderr, "iowait_time = 0\n");
+//  }
+//  else
+//    *iowait_time = ((double) iowait_diff / cpu_diff) * duration;
+//}
 
 uint64_t TeraDynamicResizingPolicy::get_device_active_time(const char* device) {
 	char file_path[256];
