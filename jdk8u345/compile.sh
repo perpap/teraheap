@@ -107,7 +107,7 @@ function fastdebug()
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
-    --with-extra-cxxflags="-std=c++11 -O3 -march=armv8.2-a" \
+    --with-extra-cxxflags="-O3 -march=armv8.2-a" \
     --with-target-bits=64 \
     --with-jobs=$NUM_CORES \
     --with-extra-ldflags=-lregions \

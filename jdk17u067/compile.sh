@@ -20,11 +20,8 @@ declare -A ERRORS
 # Define the "error" values
 ERRORS[INVALID_OPTION]=1
 ERRORS[INVALID_ARG]=2
-ERRORS[MUTUALLY_EXCLUSIVE_OPTIONS]=3
-ERRORS[OUT_OF_RANGE]=4
-ERRORS[NOT_AN_INTEGER]=5
-ERRORS[UNSUPPORTED_CIPHER]=6
-ERRORS[PROGRAMMING_ERROR]=7
+ERRORS[PROGRAMMING_ERROR]=3
+ERROS[UNKNOWN_PLATFORM]=4
 
 # Default values
 BOOT_JDK_HOME_DEFAULT="$HOME"
@@ -42,8 +39,8 @@ openjdk_dir=$(pwd)
 PLATFORM=""
 TARGET_PLATFORM="aarch64"
 # Default CC
-CC=gcc
-CXX=g++
+#CC=gcc
+#CXX=g++
 
 function detect_platform()
 {
@@ -93,100 +90,136 @@ function usage() {
   echo "Options:"
   echo "  -t, --target-platform <cpu arch>	Set TARGET_PLATFORM to the cpu arch specified eg: x86_64, aarch64, ..." 
   echo "  -b, --boot-jdk <path>     		Set BOOT_JDK_HOME to the specified path."
-  echo "  -j, --openjdk <path>      		Set OPENJDK_HOME to the specified path."
-  echo "  -e, --export-to <path>   	 	Export environment variables to the specified file. If no path is provided, export to the current session."
+  echo "  -o, --openjdk <path>      		Set OPENJDK_HOME to the specified path."
+  echo "  -g, --gcc                             Select an installed gcc version eg. 7.4.0"
+  echo "  -r, --release                         Configure and build a release version."
   echo "  -f, --fastdebug           		Configure and build a fastdebug version."
-  echo "  -r, --release             		Configure and build a release version."
+  echo "  -c, --clean                           Run clean and make"
+  echo "  -m, --make                            Run make"
   echo "  -a, --all                 		Configure and build both a fastdebug and a release version"
   echo "  -h, --help                		Display this help message and exit."
+  echo
+  echo "   Examples:"
+  echo
+  echo "  ./compile.sh -r                       Configure and build a release version using default gcc"
+  echo "  ./compile.sh --release                Configure and build a release version using default gcc"
+  echo "  ./compile.sh -g 7.4.0 -r              Configure and build a release version using gcc-7.4.0"
+  echo "  ./compile.sh -g 13.2.0 -r             Configure and build a release version using gcc-13.2.0"
+
   return 0 2>/dev/null || exit 0
 }
   
 # Compile without debug symbols
 function release() 
 {
-  make dist-clean
-  CC=$CC CXX=$CXX \
+  #make dist-clean
+  make CONF=linux-$TARGET_PLATFORM-server-release clean
+  make CONF=linux-$TARGET_PLATFORM-server-release dist-clean
+
+  #CC=$CC CXX=$CXX \
   bash ./configure \
     --with-debug-level=release \
     --disable-warnings-as-errors \
     --enable-ccache \
     --with-jobs="$(nproc)" \
-    --with-extra-cflags="-O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-extra-cxxflags="-O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-target-bits=64 \
+    --with-extra-cflags="-march=armv8.2-a -O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cxxflags="-march=armv8.2-a -O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
     --with-boot-jdk=$BOOT_JDK
   
   intercept-build make CONF=linux-$TARGET_PLATFORM-server-release
   cd ../ 
-  compdb -p jdk17u067 list > compile_commands.json
-  mv compile_commands.json jdk17u067
+  compdb -p jdk17u067 list > compile_commands_release.json
+  mv compile_commands_release.json jdk17u067
   cd - || exit
 }
 
 # Compile with debug symbols and assertions
-function debug_symbols_on() 
+function fastdebug() 
 {
-  make dist-clean
-  CC=$CC CXX=$CXX \
+  #make dist-clean
+  make CONF=linux-$TARGET_PLATFORM-server-fastdebug clean
+  make CONF=linux-$TARGET_PLATFORM-server-fastdebug dist-clean
+  
+  #CC=$CC CXX=$CXX \
   bash ./configure \
     --with-debug-level=fastdebug \
     --disable-warnings-as-errors \
     --with-native-debug-symbols=internal \
     --enable-ccache \
-    --with-target-bits=64 \
     --with-jobs="$(nproc)" \
-    --with-extra-cflags="-I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-extra-cxxflags="-I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
     --with-boot-jdk=$BOOT_JDK
 
   intercept-build make CONF=linux-$TARGET_PLATFORM-server-fastdebug
-  cd ../ 
-  compdb -p jdk17u067 list > compile_commands.json
-  mv compile_commands.json jdk17u067
+  cd ../
+  compdb -p jdk17u067 list > compile_commands_fastdebug.json
+  mv compile_commands_fastdebug.json jdk17u067
   cd - || exit
 }
 
-function clean_make()
+
+# Compile both with and without debug symbols
+function release_and_fastdebug()
+{
+  release
+  fastdebug
+}
+
+function run_clean_make()
 {
   if [[ "$jvm_build" == "release" || "$jvm_build" == "r" ]]; then
-    make CONF=linux-$TARGET_PLATFORM-server-release clean && make CONF=linux-$TARGET_PLATFORM-server-release distclean && make CONF=linux-$TARGET_PLATFORM-server-release images
+    make CONF=linux-$TARGET_PLATFORM-server-release clean && make CONF=linux-$TARGET_PLATFORM-server-release dist-clean && make CONF=linux-$TARGET_PLATFORM-server-release images
   elif [ "$jvm_build" == "fastdebug" || "$jvm_build" == "f" ]; then  
-    make CONF=linux-$TARGET_PLATFORM-server-fastdebug clean && make CONF=linux-$TARGET_PLATFORM-server-fastdebug distclean && make CONF=linux-$TARGET_PLATFORM-server-fastdebug images
+    make CONF=linux-$TARGET_PLATFORM-server-fastdebug clean && make CONF=linux-$TARGET_PLATFORM-server-fastdebug dist-clean && make CONF=linux-$TARGET_PLATFORM-server-fastdebug images
   else
     echo "Mutliple configurations exist. Please provide a configuarion eg. release or fastdebug"
   fi
 }
 
-export_env_vars()
+function run_make()
+{ 
+  intercept-build make CONF=linux-$TARGET_PLATFORM-server-release
+  cd ../
+  compdb -p jdk17u067 list > compile_commands_release.json
+  mv compile_commands_release.json jdk17u067
+  cd - || exit
+}
+
+function export_env_vars()
 {
+        #local PROJECT_DIR="$(pwd)/../"
 	detect_platform
-	if [[ $PLATFORM == x86_64 && $TARGET_PLATFORM == aarch64 ]]; then
+
+        if [[ $PLATFORM == x86_64 && $TARGET_PLATFORM == aarch64 ]]; then
 	  export BOOT_JDK=$DEPLOYMENT_AARCH64_BOOT_JDK
 	fi
-	#export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
-	export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
-	### TeraHeap Allocator
+
+	export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
+	#export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
+        echo "JAVA_HOME = $JAVA_HOME"
+
+        ### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
-	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LD_LIBRARY_PATH                                                                                           
+	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LD_LIBRARY_PATH
 	export PATH=${PROJECT_DIR}/allocator/include:$PATH
-	export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$C_INCLUDE_PATH                                                                                         
+	export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$C_INCLUDE_PATH
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$CPLUS_INCLUDE_PATH
 	export ALLOCATOR_HOME=${PROJECT_DIR}/allocator
-	
+
     	export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
-	export LD_LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LD_LIBRARY_PATH                                                                                           
+	export LD_LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LD_LIBRARY_PATH
 	export PATH=${PROJECT_DIR}/tera_malloc/include:$PATH
-	export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH                                                                                         
+	export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$CPLUS_INCLUDE_PATH
 	export TERA_MALLOC_HOME=${PROJECT_DIR}/tera_malloc
-	
+
 	#export LD_LIBRARY_PATH=/spare/miniconda3/envs/teraheap-aarch64-env/aarch64-conda-linux-gnu/sysroot/usr/lib64:$LD_LIBRARY_PATH
 	echo "set LD_LIBRARY_PATH to '$LD_LIBRARY_PATH'"
 }
 
-OPTIONS=t:b:j:e:frah
-LONGOPTIONS=target:,boot-jdk:,openjdk:,export-to:,fastdebug,release,all,help
+OPTIONS=t:b:o:g:rfcmah
+LONGOPTIONS=target:,boot-jdk:,openjdk:,gcc:,release,fastdebug,clean,make,all,help
 
 # Use getopt to parse the options
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
@@ -209,31 +242,46 @@ while true; do
             BOOT_JDK_HOME="$2"
             shift 2
             ;;
-        -j|--openjdk)
+        -o|--openjdk)
             OPENJDK_HOME="$2"
             shift 2
             ;;
-        -e|--export-to)
-            EXPORT_TO_FILE="$2"
+        -g|--gcc)
+            CC="$CC-$2"
+            CXX="$CXX-$2"
+            echo "CC = $CC"
+            echo "CXX = $CXX"
             shift 2
             ;;
-        -f|--fastdebug)
-            FASTDEBUG_SET=1
-            build="fastdebug"
-            export_env_vars
-            debug_symbols_on
-            shift
-            ;;
         -r|--release)
-            RELEASE_SET=1	
+            RELEASE_SET=1
             build="release"
             export_env_vars
       	    release
             shift
             ;;
+        -f|--fastdebug)
+            FASTDEBUG_SET=1
+            build="fastdebug"
+            export_env_vars
+            fastdebug
+            shift
+            ;;
+        -c|--clean)
+            export_env_vars
+            run_clean_make
+            shift
+            ;;
+        -m|--make)
+            export_env_vars
+            run_make
+            shift
+            ;;
         -a|--all)
-            ALL_SET=1	
+            ALL_SET=1
             build="all"
+            export_env_vars
+            release_and_fastdebug
             shift
             ;;
         -h|--help)
