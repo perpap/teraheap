@@ -514,6 +514,7 @@ class CommandLineFlags {
 
 #define RUNTIME_FLAGS(develop, develop_pd, product, product_pd, diagnostic, experimental, notproduct, manageable, product_rw, lp64_product) \
                                                                             \
+  product(ccstr, DEVICE_H2, "nvme1n1", "The device used for H2")            \
   lp64_product(bool, UseCompressedOops, false,                              \
           "Use 32-bit object references in 64-bit VM. "                     \
           "lp64_product means flag is always constant in 32 bit VM")        \

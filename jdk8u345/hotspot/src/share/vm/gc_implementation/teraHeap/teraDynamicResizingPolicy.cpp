@@ -148,7 +148,7 @@ bool TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
                    interval, &iowait_time_ms);
 
   iowait_time_ms -= gc_iowait_time_ms;
-  dev_time_end = get_device_active_time("nvme1n1");
+  dev_time_end = get_device_active_time(/*"nvme1n1"*/DEVICE_H2);
   *device_active_time_ms = (dev_time_end - dev_time_start) - gc_dev_time;
 
   assert(gc_time <= interval, "GC time should be less than the window interval");
@@ -175,7 +175,7 @@ TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
   read_cpu_stats(&iowait_start, &cpu_start);
   gc_iowait_time_ms = 0;
   gc_time = 0;
-  dev_time_start = get_device_active_time("nvme1n1");
+  dev_time_start = get_device_active_time(/*"nvme1n1"*/DEVICE_H2);
   gc_dev_time = 0;
   cur_action = NO_ACTION;
   cur_state = S_NO_ACTION;
@@ -208,7 +208,7 @@ void TeraDynamicResizingPolicy::reset_counters() {
   gc_time = 0;
   gc_dev_time = 0;
   gc_iowait_time_ms = 0;
-  dev_time_start = get_device_active_time("nvme1n1");
+  dev_time_start = get_device_active_time(/*"nvme1n1"*/DEVICE_H2);
   transfer_hint_enabled = false;
   gc_compaction_phase_ms = 0;
   window_interval = REGULAR_INTERVAL;
@@ -231,7 +231,7 @@ bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
 // Init the iowait timer at the begining of the major GC.
 void TeraDynamicResizingPolicy::gc_start(double start_time) {
   read_cpu_stats(&gc_iowait_start, &gc_cpu_start);
-  gc_dev_start = get_device_active_time("nvme1n1");
+  gc_dev_start = get_device_active_time(/*"nvme1n1"*/DEVICE_H2);
   last_full_gc_start = start_time;
 }
 
@@ -248,7 +248,7 @@ void TeraDynamicResizingPolicy::gc_end(double gc_duration, double last_full_gc) 
                    gc_duration, &iowait_time);
   gc_iowait_time_ms += iowait_time;
 
-  gc_dev_end = get_device_active_time("nvme1n1");
+  gc_dev_end = get_device_active_time(/*"nvme1n1"*/DEVICE_H2);
   gc_dev_time += (gc_dev_end - gc_dev_start);
 
   gc_time += gc_duration;

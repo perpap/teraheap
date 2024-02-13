@@ -158,6 +158,8 @@ const intx ObjectAlignmentInBytes = 8;
                       range,                                                \
                       constraint)                                           \
                                                                             \
+  product(ccstr, DEVICE_H2, "nvme1n1", "The device used for H2")            \
+                                                                            \
   notproduct(bool, CheckCompressedOops, true,                               \
           "Generate checks in encoding/decoding code in debug VM")          \
                                                                             \
