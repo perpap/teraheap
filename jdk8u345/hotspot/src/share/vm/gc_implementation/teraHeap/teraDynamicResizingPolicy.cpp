@@ -11,7 +11,8 @@
 const uint64_t TeraDynamicResizingPolicy::CYCLES_PER_SECOND = get_cycles_per_second();
 
 #define REGULAR_INTERVAL ((10LL * 1000)) 
-
+//valid only for sith4 and jdk8. JDK 17 is not dependent on a hard-coded value for the H2 device, because a jvm flag -XX:DEVICE_H2 is used.
+#define DEVICE_H2 "nvme1n1"
 // Initialize the policy of the state machine
 TeraStateMachine* TeraDynamicResizingPolicy::init_state_machine_policy() {
   switch (TeraResizingPolicy) {
@@ -171,7 +172,7 @@ bool TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
 }
 
 TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
-  window_start_time = rdtsc();
+  window_start_time = get_cycles();//rdtsc();
   read_cpu_stats(&iowait_start, &cpu_start);
   gc_iowait_time_ms = 0;
   gc_time = 0;
@@ -203,7 +204,7 @@ double TeraDynamicResizingPolicy::ellapsed_time(uint64_t start_time,
 
 // Set current time since last window
 void TeraDynamicResizingPolicy::reset_counters() {
-  window_start_time = rdtsc();
+  window_start_time = get_cycles();//rdtsc();
   read_cpu_stats(&iowait_start, &cpu_start);
   gc_time = 0;
   gc_dev_time = 0;
@@ -218,7 +219,7 @@ void TeraDynamicResizingPolicy::reset_counters() {
 bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
   uint64_t window_end_time;
   static int i = 0;
-  window_end_time = rdtsc();
+  window_end_time = get_cycles();//rdtsc();
   interval = ellapsed_time(window_start_time, window_end_time);
 
 #ifdef PER_MINOR_GC

@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define rdtsc get_cycles //FIXME
+//#define rdtsc get_cycles //FIXME
 
 #define HIST_SIZE 5
 #define GC_HIST_SIZE 1
@@ -102,7 +102,8 @@ private:
   // Count timer. We avoid to use os::elapsed_time() because internally
   // uses the clock_get_time which adds extra overhead. This function
   // is executed in the common path.
-  //uint64_t rdtsc(); //FIXME
+  //uint64_t get_cycles();
+  uint64_t rdtsc(); //FIXME
   // Find the average of the array elements
   double calc_avg_time(double *arr, int size);
 
