@@ -531,10 +531,10 @@ AC_DEFUN([TOOLCHAIN_FIND_COMPILER],
     # We can't handle ccache by gcc wrappers, since we need to know if we're
     # using ccache. Instead ccache usage must be controlled by a configure option.
     COMPILER_BASENAME=`$BASENAME "$SYMLINK_ORIGINAL"`
-    if test "x$COMPILER_BASENAME" = "xccache"; then
-      AC_MSG_NOTICE([Please use --enable-ccache instead of providing a wrapped compiler.])
-      AC_MSG_ERROR([$TEST_COMPILER is a symbolic link to ccache. This is not supported.])
-    fi
+    #if test "x$COMPILER_BASENAME" = "xccache"; then
+      #AC_MSG_NOTICE([Please use --enable-ccache instead of providing a wrapped compiler.])
+      #AC_MSG_ERROR([$TEST_COMPILER is a symbolic link to ccache. This is not supported.])
+    #fi
   fi
 
   TOOLCHAIN_EXTRACT_COMPILER_VERSION([$1], [$COMPILER_NAME])
