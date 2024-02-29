@@ -41,15 +41,15 @@ PLATFORM := $(shell uname -p)
 CC := gcc
 
 # Conditional setting of CC based on platform
-ifeq ($(PLATFORM),x86_64)
-    CC := aarch64-linux-gnu-gcc
-    $(info Detected x86_64 platform, using cross compiler: $(CC))
-else ifeq ($(PLATFORM),aarch64)
-    CC := gcc
-    $(info Detected aarch64 platform, using default compiler: $(CC))
-else
-    $(info Unknown platform: $(PLATFORM), using default compiler: $(CC))
-endif
+#ifeq ($(PLATFORM),x86_64)
+#    CC := aarch64-linux-gnu-gcc
+#    $(info Detected x86_64 platform, using cross compiler: $(CC))
+#else ifeq ($(PLATFORM),aarch64)
+#    CC := gcc
+#    $(info Detected aarch64 platform, using default compiler: $(CC))
+#else
+#    $(info Unknown platform: $(PLATFORM), using default compiler: $(CC))
+#endif
 
 ## Flags
 BINFLAG = -c
