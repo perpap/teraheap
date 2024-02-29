@@ -23,7 +23,7 @@ ERROS[UNKNOWN_PLATFORM]=4
 
 # Detect the build and target platforms
 PLATFORM=""
-TARGET_PLATFORM="aarch64"
+TARGET_PLATFORM="x86_64"
 # Get the number of available CPU cores
 NUM_CORES=$(nproc)
 # Default compilers
@@ -74,8 +74,8 @@ function artifact_evaluation()
   bash ./configure \
     --with-jobs=32 \
     --disable-debug-symbols \
-    --with-extra-cflags='-O3' \
-    --with-extra-cxxflags='-O3' \
+    --with-extra-cflags='-O3 -march=native' \
+    --with-extra-cxxflags='-O3 -march=native' \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions
   make
@@ -89,7 +89,7 @@ function release()
   bash ./configure \
     --with-jobs=$NUM_CORES \
     --disable-debug-symbols \
-    --with-extra-cxxflags="-O3 -march=armv8.2-a" \
+    --with-extra-cxxflags="-O3 -march=native" \
     --with-target-bits=64 \
     --with-extra-ldflags=-lregions
   intercept-build make
@@ -107,7 +107,7 @@ function fastdebug()
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
-    --with-extra-cxxflags="-O3 -march=armv8.2-a" \
+    --with-extra-cxxflags="-O3 -march=native" \
     --with-target-bits=64 \
     --with-jobs=$NUM_CORES \
     --with-extra-ldflags=-lregions \
