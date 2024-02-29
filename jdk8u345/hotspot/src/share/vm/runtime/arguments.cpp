@@ -2967,12 +2967,13 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args,
       }
 #endif // !INCLUDE_JVMTI
     // Set H2 backing device via DEVICE_H2 jvm runtime flag
-    }else if(match_option(option, "-XX:DEVICE_H2=", &tail)){
+    /*}else if(match_option(option, "-XX:DEVICE_H2=", &tail)){
         //tty->print("[FILE:%s|FUNCTION:%s|LINE:%d] DEVICE_H2:%s\n", __FILE__, __func__, __LINE__, tail);
         if (FLAG_SET_CMDLINE(DEVICE_H2, tail) != JVMFlag::SUCCESS) {
                 return JNI_EINVAL;
         }
 	NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] DEVICE_H2:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, DEVICE_H2);)
+    */
     // -Xnoclassgc
     } else if (match_option(option, "-Xnoclassgc", &tail)) {
       FLAG_SET_CMDLINE(bool, ClassUnloading, false);
