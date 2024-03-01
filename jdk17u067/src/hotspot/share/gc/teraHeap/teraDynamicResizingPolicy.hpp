@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define rdtsc get_cycles
+//#define rdtsc get_cycles
 
 #define HIST_SIZE 5
 #define GC_HIST_SIZE 1
@@ -84,7 +84,7 @@ private:
   // uses the clock_get_time which adds extra overhead. This function
   // is executed in the common path.
   //uint64_t rdtsc(); //FIXME
-
+  //uint64_t get_cycles();
   // Find the average of the array elements
   double calc_avg_time(double *arr, int size);
 

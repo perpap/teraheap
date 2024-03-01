@@ -168,7 +168,7 @@ void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
 TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
   cpu_usage = init_cpu_usage_stats();
 
-  window_start_time = rdtsc();
+  window_start_time = get_cycles();//rdtsc();
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_iowait_time_ms = 0;
   gc_time = 0;
@@ -200,7 +200,7 @@ double TeraDynamicResizingPolicy::ellapsed_time(uint64_t start_time,
 
 // Set current time since last window
 void TeraDynamicResizingPolicy::reset_counters() {
-  window_start_time = rdtsc();
+  window_start_time = get_cycles();//rdtsc();
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_time = 0;
   gc_dev_time = 0;
@@ -215,7 +215,7 @@ void TeraDynamicResizingPolicy::reset_counters() {
 bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
 	uint64_t window_end_time;
 	static int i = 0;
-	window_end_time = rdtsc();
+	window_end_time = get_cycles();//rdtsc();
 	interval = ellapsed_time(window_start_time, window_end_time);
 
 #ifdef PER_MINOR_GC
