@@ -122,9 +122,11 @@ function release()
     --disable-warnings-as-errors \
     --enable-ccache \
     --with-jobs="$(nproc)" \
-    --with-extra-cflags="-march=armv8.2-a -O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-extra-cxxflags="-march=armv8.2-a -O3 -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-boot-jdk=$BOOT_JDK
+    --with-boot-jdk=$BOOT_JDK \
+    --with-extra-cflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cxxflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+    #--with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    #--with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
   
   intercept-build make CONF=linux-$TARGET_PLATFORM-server-release
   cd ../ 
@@ -147,9 +149,11 @@ function fastdebug()
     --with-native-debug-symbols=internal \
     --enable-ccache \
     --with-jobs="$(nproc)" \
-    --with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-boot-jdk=$BOOT_JDK
+    --with-boot-jdk=$BOOT_JDK \
+    --with-extra-cflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cxxflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+    #--with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    #--with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
 
   intercept-build make CONF=linux-$TARGET_PLATFORM-server-fastdebug
   cd ../
