@@ -70,50 +70,58 @@ function usage()
 function artifact_evaluation() 
 {
   make dist-clean
-  CC=$CC CXX=$CXX \
-  bash ./configure \
-    --with-jobs=32 \
-    --disable-debug-symbols \
-    --with-extra-cflags='-O3 -march=native' \
-    --with-extra-cxxflags='-O3 -march=native' \
-    --with-target-bits=64 \
-    --with-extra-ldflags=-lregions
-  make
-}
-  
-# Compile without debug symbols
-function release() 
-{
-  make dist-clean
-  CC=$CC CXX=$CXX \
+  #CC=$CC CXX=$CXX \
   bash ./configure \
     --with-jobs=$NUM_CORES \
     --disable-debug-symbols \
+    --with-extra-cflags='-O3 -march=native' \
+    --with-extra-cxxflags='-O3 -march=native' \
+    --with-extra-ldflags=-lregions \
+    --with-boot-jdk=$BOOT_JDK8
+  make
+}
+
+# Compile without debug symbols
+function release()
+{
+  #make dist-clean
+  make CONF=linux-$TARGET_PLATFORM-normal-server-release clean
+  make CONF=linux-$TARGET_PLATFORM-normal-server-release dist-clean
+  #CC=$CC CXX=$CXX \
+  bash ./configure \
+    --with-debug-level=release \
+    --disable-warnings-as-errors \
+    --enable-ccache \
+    --with-jobs=$NUM_CORES \
+    --with-boot-jdk=$BOOT_JDK8 \
     --with-extra-cxxflags="-O3 -march=native" \
-    --with-target-bits=64 \
     --with-extra-ldflags=-lregions
+
   intercept-build make
-  cd ../ 
+  cd ../
   compdb -p jdk8u345 list > compile_commands.json
   mv compile_commands.json jdk8u345
   cd - || exit
 }
 
 # Compile with debug symbols and assertions
-function fastdebug() 
+function fastdebug()
 {
-  make dist-clean
-  CC=$CC CXX=$CXX \
+  #make dist-clean
+  make CONF=linux-$TARGET_PLATFORM-normal-server-fastdebug clean
+  make CONF=linux-$TARGET_PLATFORM-normal-server-fastdebug dist-clean
+  #CC=$CC CXX=$CXX \
   bash ./configure \
     --with-debug-level=fastdebug \
     --with-native-debug-symbols=internal \
-    --with-extra-cxxflags="-O3 -march=native" \
-    --with-target-bits=64 \
+    --enable-ccache \
     --with-jobs=$NUM_CORES \
-    --with-extra-ldflags=-lregions \
-    --with-boot-jdk=$BOOT_JDK8
-  intercept-build make
-  cd ../ 
+    --with-boot-jdk=$BOOT_JDK8 \
+    --with-extra-cxxflags="-O3 -march=native" \
+    --with-extra-ldflags=-lregions
+
+  intercept-build make CONF=linux-$TARGET_PLATFORM-normal-server-fastdebug
+  cd ../
   compdb -p jdk8u345 list > compile_commands.json
   mv compile_commands.json jdk8u345
   cd - || exit
@@ -127,7 +135,11 @@ function run_clean_make()
 
 function run_make()
 {
-	make
+    intercept-build make CONF=linux-$TARGET_PLATFORM-normal-server-release
+    cd ../
+    compdb -p jdk8u345 list > compile_commands_release.json
+    mv compile_commands_release.json jdk8u345
+    cd - || exit
 }
 
 export_env_vars()
@@ -144,16 +156,16 @@ export_env_vars()
         return ${ERRORS[UNKNOWN_PLATFORM]} 2>/dev/null || exit ${ERRORS[UNKNOWN_PLATFORM]}  # This will return if sourced, and exit if run as a standalone script
     fi
 	echo "JAVA_HOME = $JAVA_HOME"
-	
-	### TeraHeap Allocator
+
+    ### TeraHeap Allocator
     export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LIBRARY_PATH
-    export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LD_LIBRARY_PATH                                                                                           
+    export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LD_LIBRARY_PATH
     export PATH=${PROJECT_DIR}/allocator/include/:$PATH
-    export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$C_INCLUDE_PATH                                                                                         
+    export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$C_INCLUDE_PATH
     export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$CPLUS_INCLUDE_PATH
 }
 
-#Default GCC 
+#Default GCC
 OPTIONS=t:g:arfcmh
 LONGOPTIONS=target:,gcc:,asplos,release,fastdebug,clean,make,help
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")

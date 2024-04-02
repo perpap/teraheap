@@ -39,8 +39,8 @@ openjdk_dir=$(pwd)
 PLATFORM=""
 TARGET_PLATFORM="aarch64"
 # Default CC
-#CC=gcc
-#CXX=g++
+CC=gcc
+CXX=g++
 
 function detect_platform()
 {
@@ -194,10 +194,6 @@ function export_env_vars()
 {
         #local PROJECT_DIR="$(pwd)/../"
 	detect_platform
-
-        if [[ $PLATFORM == x86_64 && $TARGET_PLATFORM == aarch64 ]]; then
-	  export BOOT_JDK=$DEPLOYMENT_AARCH64_BOOT_JDK
-	fi
 
 	export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
 	#export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
