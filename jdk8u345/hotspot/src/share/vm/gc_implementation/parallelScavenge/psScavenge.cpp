@@ -294,13 +294,10 @@ bool PSScavenge::invoke() {
 // performing minor gc. So using this function we identify backward
 // references (from H2 to H1) to use them during major gc.
 void PSScavenge::h2_scavenge_back_references() {
-  struct timeval start_time;
-  struct timeval end_time;
-
   assert(Universe::teraHeap()->h2_is_empty_back_ref_stacks(), "Backward stack should be empty");
 
   if (TeraHeapStatistics) 
-    gettimeofday(&start_time, NULL);
+    Universe::teraHeap()->get_tera_timers()->h2_scavenge_start();
 
   // Release all previously held resources
   gc_task_manager()->release_all_resources();
@@ -340,14 +337,8 @@ void PSScavenge::h2_scavenge_back_references() {
 
   gc_task_manager()->release_idle_workers();
 
-  if (TeraHeapStatistics) {
-    gettimeofday(&end_time, NULL);
-
-    thlog_or_tty->print_cr("[STATISTICS] | PHASE0 = %llu\n",
-                           (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
-                           (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
-    thlog_or_tty->flush();
-  }
+  if (TeraHeapStatistics)
+    Universe::teraHeap()->get_tera_timers()->h2_scavenge_end();
 }
 #endif //TERA_MINOR_GC
 
@@ -845,7 +836,7 @@ bool PSScavenge::invoke_no_policy() {
 
     // Print statistics for TeraCache
     if (TeraHeapStatistics)
-      Universe::teraHeap()->print_minor_gc_statistics();
+      Universe::teraHeap()->get_tera_timers()->print_card_table_scanning_time();
 
     if (TeraHeapCardStatistics) {
       modBS->th_num_dirty_cards(

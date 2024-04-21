@@ -180,12 +180,8 @@ void OldToYoungRootsTask::do_it(GCTaskManager* manager, uint which) {
   assert(_stripe_number < ParallelGCThreads, "Sanity");
 
   {
-	  struct timeval start_time;
-	  struct timeval end_time;
-	  uint64_t ellapsed_time;
-
 	  if (TeraHeapStatistics)
-		  gettimeofday(&start_time, NULL);
+		  Universe::teraHeap()->get_tera_timers()->h1_card_table_start(which);
 
     PSPromotionManager* pm = PSPromotionManager::gc_thread_promotion_manager(which);
 
@@ -200,14 +196,8 @@ void OldToYoungRootsTask::do_it(GCTaskManager* manager, uint which) {
                                            _stripe_number,
                                            _stripe_total);
 
-	  if (TeraHeapStatistics) {
-		  gettimeofday(&end_time, NULL);
-
-		  ellapsed_time = ((end_time.tv_sec - start_time.tv_sec) * 1000) +
-			  ((end_time.tv_usec - start_time.tv_usec) / 1000);
-
-		  Universe::teraHeap()->h1_old_to_young_traversal_time(which, ellapsed_time);
-	  }
+    if (TeraHeapStatistics)
+      Universe::teraHeap()->get_tera_timers()->h1_card_table_end(which);
 
     // Do the real work
     pm->drain_stacks(false);
@@ -226,12 +216,8 @@ void H2ToYoungRootsTask::do_it(GCTaskManager* manager, uint which){
 	assert(_stripe_number < ParallelGCThreads, "Sanity");
 
 	{
-		struct timeval start_time;
-		struct timeval end_time;
-		uint64_t ellapsed_time;
-
 		if (TeraHeapStatistics)
-			gettimeofday(&start_time, NULL);
+			Universe::teraHeap()->get_tera_timers()->h2_card_table_start(which);
 
 		PSPromotionManager* pm = PSPromotionManager::gc_thread_promotion_manager(which);
 
@@ -244,14 +230,8 @@ void H2ToYoungRootsTask::do_it(GCTaskManager* manager, uint which){
 												  pm, _stripe_number,
 												  _stripe_total, true);
 		
-		if (TeraHeapStatistics) {
-			gettimeofday(&end_time, NULL);
-
-			ellapsed_time = ((end_time.tv_sec - start_time.tv_sec) * 1000) +
-				((end_time.tv_usec - start_time.tv_usec) / 1000);
-
-			Universe::teraHeap()->h2_back_ref_traversal_time(which, ellapsed_time);
-		}
+    if (TeraHeapStatistics)
+      Universe::teraHeap()->get_tera_timers()->h2_card_table_end(which);
 
 		// Do the real work
 		pm->drain_stacks(false);

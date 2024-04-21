@@ -669,6 +669,10 @@ UNSAFE_END
 UNSAFE_ENTRY(void, Unsafe_h2TagRoot(JNIEnv *env, jobject unsafe,
 			jobject obj, jlong label, jlong partId))
   UnsafeWrapper("Unsafe_h2TagRoot");
+
+#ifdef NO_HINTS
+  return;
+#endif
   
   if (!EnableTeraHeap)
     return;
@@ -686,6 +690,10 @@ UNSAFE_END
 UNSAFE_ENTRY(void, Unsafe_h2Move(JNIEnv *env, jobject unsafe,
 			jlong label))
   UnsafeWrapper("Unsafe_h2Move");
+
+#ifdef NO_HINTS
+  return;
+#endif
   
   if (!EnableTeraHeap)
       return;

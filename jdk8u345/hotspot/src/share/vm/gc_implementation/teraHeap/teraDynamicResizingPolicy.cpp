@@ -3,6 +3,7 @@
 #include "gc_implementation/teraHeap/teraDynamicResizingPolicy.hpp"
 #include "memory/universe.hpp"
 #include "gc_implementation/teraHeap/teraHeap.hpp"
+#include "gc_implementation/teraHeap/teraHeap.inline.hpp"
 
 #define BUFFER_SIZE 1024
 #define CYCLES_PER_SECOND 2.4e9; // CPU frequency of 2.4 GHz
@@ -157,6 +158,9 @@ bool TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
   history(gc_time - gc_compaction_phase_ms, iowait_time_ms);
 
   *avg_io_time_ms = need_action ? iowait_time_ms : calc_avg_time(hist_iowait_time, HIST_SIZE);
+  PSOldGen *old_gen = ParallelScavengeHeap::old_gen();
+  bool is_old_gen_full = (double) old_gen->used_in_bytes() / old_gen->capacity_in_bytes() >= 0.85;
+  *avg_io_time_ms = is_old_gen_full ? 0 : *avg_io_time_ms;
   *avg_gc_time_ms = calc_avg_time(hist_gc_time, GC_HIST_SIZE);
   
   if (TeraHeapStatistics) {
@@ -521,4 +525,8 @@ double TeraDynamicResizingPolicy::calculate_gc_cost(double gc_time_ms) {
   }
 
   return gc_percentage_ratio;
+}
+  
+bool TeraDynamicResizingPolicy::is_action_move_h2() {
+  return cur_action == MOVE_H2;
 }

@@ -31,7 +31,8 @@ void TeraStateMachine::state_no_action(states *cur_state, actions *cur_action,
     return;
   }
 
-  if (io_time_ms > gc_time_ms && device_active_time_ms > 0) {
+  bool is_old_gen_full = ((double) old_gen->used_in_bytes() / old_gen->capacity_in_bytes()) >= 0.75;
+  if (io_time_ms > gc_time_ms && device_active_time_ms > 0 && !is_old_gen_full) {
     *cur_state = S_WAIT_SHRINK;
     *cur_action = SHRINK_H1;
     return;
@@ -404,8 +405,8 @@ void TeraFullOptimizedStateMachine::state_wait_after_shrink(states *cur_state, a
                                                             double gc_time_ms, double io_time_ms,
                                                             size_t h2_cand_size_in_bytes) {
   if (abs(io_time_ms - gc_time_ms) <= EPSILON) {
-    *cur_state = S_WAIT_SHRINK;
-    *cur_action = IOSLACK;
+    *cur_state = S_NO_ACTION;
+    *cur_action = NO_ACTION;
     return;
   }
   
@@ -428,7 +429,8 @@ void TeraFullOptimizedStateMachine::state_wait_after_shrink(states *cur_state, a
   size_t cur_rss = read_cgroup_mem_stats(false);
   size_t cur_cache = read_cgroup_mem_stats(true);
   bool ioslack = ((cur_rss + cur_cache) < (TeraDRAMLimit * 0.97));
-  if (io_time_ms > gc_time_ms && !ioslack) {
+  bool is_old_gen_full = ((double) old_gen->used_in_bytes() / old_gen->capacity_in_bytes()) >= 0.75;
+  if (io_time_ms > gc_time_ms && !ioslack && !is_old_gen_full) {
     *cur_state = S_WAIT_SHRINK;
     *cur_action = SHRINK_H1;
     return;
@@ -450,12 +452,14 @@ void TeraFullOptimizedStateMachine::state_wait_after_grow(states *cur_state, act
                                                           size_t h2_cand_size_in_bytes) {
   
   if (abs(io_time_ms - gc_time_ms) <= EPSILON) {
-    *cur_state = S_WAIT_GROW;
-    *cur_action =  WAIT_AFTER_GROW;
+    *cur_state = S_NO_ACTION;
+    *cur_action =  NO_ACTION;
     return;
   }
 
-  if (io_time_ms > gc_time_ms) {
+  PSOldGen *old_gen = ParallelScavengeHeap::old_gen();
+  bool is_old_gen_full = ((double) old_gen->used_in_bytes() / old_gen->capacity_in_bytes()) >= 0.75;
+  if (io_time_ms > gc_time_ms && !is_old_gen_full) {
     *cur_state = S_WAIT_SHRINK;
     *cur_action = SHRINK_H1;
     return;
@@ -469,7 +473,6 @@ void TeraFullOptimizedStateMachine::state_wait_after_grow(states *cur_state, act
     return;
   }
 
-  PSOldGen *old_gen = ParallelScavengeHeap::old_gen();
   size_t cur_size = old_gen->capacity_in_bytes();
   size_t used_size = old_gen->used_in_bytes();
   // Occupancy of the old generation is higher than 70%

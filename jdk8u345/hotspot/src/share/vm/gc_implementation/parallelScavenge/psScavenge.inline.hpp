@@ -56,13 +56,13 @@ template <class T> inline bool PSScavenge::h2_should_scavenge(T* p) {
     // Check if we have references between two different individual regions
     Universe::teraHeap()->group_regions((HeapWord *)p, (HeapWord*)obj);
 #ifdef BACK_REF_STAT
-		Universe::teraHeap()->h2_update_back_ref_stats(false, true);
+		Universe::teraHeap()->get_tera_stats()->update_back_ref_stats(false, true);
 #endif
 		return false;
 	}
 	else if (PSScavenge::is_obj_in_young(heap_oop)) {
 #ifdef BACK_REF_STAT
-		Universe::teraHeap()->h2_update_back_ref_stats(false, false);
+		Universe::teraHeap()->get_tera_stats()->update_back_ref_stats(false, false);
 #endif
 		return true;
 	}
@@ -70,7 +70,7 @@ template <class T> inline bool PSScavenge::h2_should_scavenge(T* p) {
 		assert(Universe::teraHeap()->is_field_in_h2((void *)p), "Sanity check");
 		PSScavenge::card_table()->inline_write_ref_field_gc(p, obj, true);
 #ifdef BACK_REF_STAT
-		Universe::teraHeap()->h2_update_back_ref_stats(true, false);
+		Universe::teraHeap()->get_tera_stats()->update_back_ref_stats(true, false);
 #endif
 		return false;
 	}

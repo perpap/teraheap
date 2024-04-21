@@ -262,6 +262,8 @@ public:
   void epilog_move_h2(bool full_gc_done, bool need_resizing);
 
   void dram_repartition(bool *need_full_gc, bool *eager_move);
+
+  bool is_action_move_h2();
 };
 
 #endif // SHARE_VM_GC_IMPLEMENTATION_TERAHEAP_TERADYNAMICRESIZINGPOLICY_HPP

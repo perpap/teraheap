@@ -243,14 +243,12 @@ bool PSMarkSweep::invoke_no_policy(bool clear_all_softrefs) {
     // Initialize TeraCache statistics counters to 0
 #ifdef TERA_MAJOR_GC
 	if (EnableTeraHeap) {
+      Universe::teraHeap()->disable_traverse_class_object_field();
     // We scavenge only the dirty objects in TeraCache and prepare the
       // backward stacks. 
 		if (!Universe::teraHeap()->h2_is_empty())
 			PSScavenge::h2_scavenge_back_references();
 
-		if (TeraHeapStatistics)
-			Universe::teraHeap()->h2_init_stats_counters();
-	
 		// Give advise to kernel to prefetch pages for TeraCache random
 		Universe::teraHeap()->h2_enable_rand_faults();
 
@@ -294,7 +292,7 @@ bool PSMarkSweep::invoke_no_policy(bool clear_all_softrefs) {
 
 #ifdef TERA_MINOR_GC
     if (TeraHeapStatistics)
-      Universe::teraHeap()->h2_print_stats();
+      Universe::teraHeap()->get_tera_stats()->print_major_gc_stats();
 
     // Deallocate stacks for TeraCache
     if (EnableTeraHeap) {
@@ -618,11 +616,8 @@ void PSMarkSweep::deallocate_stacks() {
 void PSMarkSweep::mark_sweep_phase1(bool clear_all_softrefs) {
 
 #ifdef TERA_MAJOR_GC
-	struct timeval start_time;
-	struct timeval end_time;
-
-	if (EnableTeraHeap && TeraHeapStatistics) 
-		gettimeofday(&start_time, NULL);
+	if (EnableTeraHeap && TeraHeapStatistics)
+  Universe::teraHeap()->get_tera_timers()->h1_marking_phase_start();
 #endif
 
   // Recursively traverse all live objects and mark them
@@ -653,7 +648,7 @@ void PSMarkSweep::mark_sweep_phase1(bool clear_all_softrefs) {
     //CodeCache::scavenge_root_nmethods_do(CodeBlobToOopClosure(mark_and_push_closure()));
 
 #ifdef TERA_MAJOR_GC
-    // Traverse TeraCache
+    // Traverse TeraHeap
     if (EnableTeraHeap && !Universe::teraHeap()->h2_is_empty())
       Universe::teraHeap()->h2_mark_back_references();
 #endif // TERA_MAJOR_GC
@@ -689,12 +684,7 @@ void PSMarkSweep::mark_sweep_phase1(bool clear_all_softrefs) {
 	  SymbolTable::unlink();
 
     if (TeraHeapStatistics) {
-      gettimeofday(&end_time, NULL);
-
-      thlog_or_tty->print_cr("[STATISTICS] | PHASE1 = %llu\n",
-                             (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
-                             (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
-      thlog_or_tty->flush();
+      Universe::teraHeap()->get_tera_timers()->h1_marking_phase_end();
 
       if (TeraHeapAllocatorStatistics)
         Universe::teraHeap()->print_h2_active_regions();
@@ -741,11 +731,8 @@ void PSMarkSweep::mark_sweep_phase1(bool clear_all_softrefs) {
 void PSMarkSweep::mark_sweep_phase2() {
 
 #ifdef TERA_MAJOR_GC
-	struct timeval start_time;
-	struct timeval end_time;
-
 	if (EnableTeraHeap && TeraHeapStatistics) 
-		gettimeofday(&start_time, NULL);
+		Universe::teraHeap()->get_tera_timers()->h1_precompact_phase_start();
 #endif
 
   GCTraceTime tm("phase 2", PrintGCDetails && Verbose, true, _gc_timer, _gc_tracer->gc_id());
@@ -774,25 +761,16 @@ void PSMarkSweep::mark_sweep_phase2() {
   old_gen->precompact();
 
 #ifdef TERA_MAJOR_GC
-	if (EnableTeraHeap && TeraHeapStatistics) {
-		gettimeofday(&end_time, NULL);
-
-    thlog_or_tty->print_cr("[STATISTICS] | PHASE2 = %llu\n",
-                           (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
-                           (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
-	  thlog_or_tty->flush();
-  }
+  if (EnableTeraHeap && TeraHeapStatistics)
+    Universe::teraHeap()->get_tera_timers()->h1_precompact_phase_end();
 #endif // TERA_MAJOR_GC
 }
 
 void PSMarkSweep::mark_sweep_phase3() {
 
 #ifdef TERA_MAJOR_GC
-	struct timeval start_time;
-	struct timeval end_time;
-
   if (EnableTeraHeap && TeraHeapStatistics) 
-    gettimeofday(&start_time, NULL);
+    Universe::teraHeap()->get_tera_timers()->h1_adjust_phase_start();
 #endif // TERA_MAJOR_GC
 
   // Adjust the pointers to reflect the new locations
@@ -844,25 +822,16 @@ void PSMarkSweep::mark_sweep_phase3() {
   old_gen->adjust_pointers();
 
 #ifdef TERA_MAJOR_GC
-  if (EnableTeraHeap && TeraHeapStatistics) {
-    gettimeofday(&end_time, NULL);
-
-    thlog_or_tty->print_cr("[STATISTICS] | PHASE3 = %llu\n",
-                           (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
-                           (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
-    thlog_or_tty->flush();
-  }
+  if (EnableTeraHeap && TeraHeapStatistics)
+    Universe::teraHeap()->get_tera_timers()->h1_adjust_phase_end();
 #endif // TERA_MAJOR_GC
 }
 
 void PSMarkSweep::mark_sweep_phase4() {
 
 #ifdef TERA_MAJOR_GC
-	struct timeval start_time;
-	struct timeval end_time;
-
   if (EnableTeraHeap && TeraHeapStatistics)
-    gettimeofday(&start_time, NULL);
+    Universe::teraHeap()->get_tera_timers()->h1_compact_start();
 
   if (EnableTeraHeap && DynamicHeapResizing)
     _gc_compact_phase_timer->register_gc_start();
@@ -895,14 +864,8 @@ void PSMarkSweep::mark_sweep_phase4() {
     Universe::teraHeap()->tc_fsync();
 #endif
 
-    if (TeraHeapStatistics) {
-      gettimeofday(&end_time, NULL);
-
-      thlog_or_tty->print_cr("[STATISTICS] | PHASE4 = %llu\n",
-                             (unsigned long long)((end_time.tv_sec - start_time.tv_sec) * 1000) + // convert to ms
-                             (unsigned long long)((end_time.tv_usec - start_time.tv_usec) / 1000)); // convert to ms
-      thlog_or_tty->flush();
-    }
+    if (TeraHeapStatistics) 
+      Universe::teraHeap()->get_tera_timers()->h1_compact_end();
 
     if (DynamicHeapResizing) {
       _gc_compact_phase_timer->register_gc_end();

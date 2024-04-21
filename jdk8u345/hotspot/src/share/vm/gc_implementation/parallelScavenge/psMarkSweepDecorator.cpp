@@ -129,13 +129,6 @@ void PSMarkSweepDecorator::precompact() {
     // Check if the object needs to be moved in TeraCache based on the
     // current policy
     if (EnableTeraHeap && Universe::teraHeap()->h2_transfer_policy(oop(q))) {
-#ifdef OBJ_STATS
-      if (TeraHeapStatistics) {
-        if (oop(q)->is_typeArray())
-          Universe::teraHeap()->update_stats_h2_primitive_arrays(size);
-      }
-#endif
-
       if (DynamicHeapResizing) {
         Universe::teraHeap()->get_resizing_policy()->decrease_h2_candidate_size(oop(q)->size());
       }

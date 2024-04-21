@@ -73,14 +73,21 @@ class oopDesc {
   //+-------+----------------------------------------------------------------+
   //| Bits  | Description                                                    |
   //+-------+----------------------------------------------------------------+
-  //| 63-48 | Represent the RDD partition Id                                 |
+  //| 63-48 | Represent the sublabel Id                                      |
   //+-------+----------------------------------------------------------------+
-  //| 32-47 | Represent the RDD Id											                     |
+  //| 47-32 | Represent the label Id										                     |
   //+-------+----------------------------------------------------------------+
-  //| 16-47 | Represent if object is leaf/primitive_array                    |
+  //| 31-20 | Counters for writes   										                     |
   //+-------+----------------------------------------------------------------+
-  //| 15-0  | Represent the state of the object                              |
+  //|    18 | Class object                                                   |
   //+-------+----------------------------------------------------------------+
+  //|    17 | Primitive array                                                |
+  //+-------+----------------------------------------------------------------+
+  //|    16 | Leaf object                                                    |
+  //+-------+----------------------------------------------------------------+
+  //|  15-0 | Represent the state of the object                              |
+  //+-------+----------------------------------------------------------------+
+  //
 
   volatile int64_t _tera_flag;      //< MarkTeracache objects
 #endif // TERA_FLAG
@@ -96,10 +103,24 @@ class oopDesc {
   // Mark an object with 'id' to be moved in H2. H2 allocator uses the
   // 'id' to locate objects with the same 'id' by to the same region.
   // 'id' is defined by the application.
-  void mark_move_h2(uint64_t rdd_id, uint64_t part_id) { 
-	  _tera_flag = (part_id << 48);
-	  _tera_flag |= (rdd_id << 32);
-	  _tera_flag |= MOVE_TO_TERA;
+  void mark_move_h2(uint64_t label, uint64_t sublabel) { 
+    // Clear bits 48-63 and set them with the new value
+    _tera_flag &= ~(0xFFFFULL << 48);
+    _tera_flag |= (sublabel & 0xFFFFULL) << 48;
+
+    // Clear bits 32-47 and set them with the new value
+    _tera_flag &= ~(0xFFFFULL << 32);
+    _tera_flag |= (label & 0xFFFFULL) << 32;
+
+    // Clear bits 0-15th and the set with the new value
+    _tera_flag &= ~((1ULL << 16) - 1);
+    _tera_flag |= MOVE_TO_TERA;
+  }
+
+  void mark_move_h2() {
+    // Clear bits 0-15th
+    _tera_flag &= ~((1ULL << 16) - 1);
+    _tera_flag |= MOVE_TO_TERA;
   }
 
   // Check if an object is marked to be moved in H2
@@ -109,14 +130,9 @@ class oopDesc {
 
   // Mark this object that is located in TeraCache
   void set_in_h2() { 
-	  uint64_t part_id = (_tera_flag >> 48);
-	  uint64_t rdd_id  = (_tera_flag >> 32) & 0xffff;
-	  uint64_t primitive = (_tera_flag >> 16) & 0xffff;
-
-	  _tera_flag = (part_id << 48);
-	  _tera_flag |= (rdd_id << 32);
-	  _tera_flag |= (primitive << 16);
-	  _tera_flag |= IN_TERA_HEAP;
+    // Clear bits 0-15th
+    _tera_flag &= ~((1ULL << 16) - 1);
+    _tera_flag |= IN_TERA_HEAP;
   }
 
   // Get the state of the object
@@ -141,9 +157,8 @@ class oopDesc {
   }
 
   bool is_live(){
-    return (get_obj_state() == LIVE_TERA_OBJ || 
-            get_obj_state() == VISITED_TERA_OBJ || 
-            get_obj_state() == MOVE_TO_TERA);
+    uint64_t state = _tera_flag & 0xffff;
+    return (state == LIVE_TERA_OBJ || state == VISITED_TERA_OBJ || state == MOVE_TO_TERA);
   }
 
   void reset_live(){
@@ -151,25 +166,15 @@ class oopDesc {
   }
 
   void set_live(){
-	  uint64_t part_id = (_tera_flag >> 48);
-	  uint64_t rdd_id = (_tera_flag >> 32) & 0xffff;
-	  uint64_t primitive = (_tera_flag >> 16) & 0xffff;
-
-	  _tera_flag = (part_id << 48);
-	  _tera_flag |= (rdd_id << 32);
-	  _tera_flag |= (primitive << 16);
-	  _tera_flag |= LIVE_TERA_OBJ;
+    // Clear bits 0-15th
+    _tera_flag &= ~((1ULL << 16) - 1);
+    _tera_flag |= LIVE_TERA_OBJ;
   }
 
   void set_visited(){
-	  uint64_t part_id = (_tera_flag >> 48);
-	  uint64_t rdd_id = (_tera_flag >> 32) & 0xffff;
-	  uint64_t primitive = (_tera_flag >> 16) & 0xffff;
-
-	  _tera_flag = (part_id << 48);
-	  _tera_flag |= (rdd_id << 32);
-	  _tera_flag |= (primitive << 16);
-	  _tera_flag |= VISITED_TERA_OBJ;
+    // Clear bits 0-15th
+    _tera_flag &= ~((1ULL << 16) - 1);
+    _tera_flag |= VISITED_TERA_OBJ;
   }
 
   bool is_visited(){
@@ -180,34 +185,100 @@ class oopDesc {
   // objects are the objects that contain only primitive fields and no
   // references to other objects
   void set_primitive(bool is_primitive_array) { 
-	  uint64_t part_id = (_tera_flag >> 48);
-	  uint64_t rdd_id  = (_tera_flag >> 32) & 0xffff;
-	  uint64_t state = _tera_flag & 0xffff;
-
-	  _tera_flag = (part_id << 48);
-	  _tera_flag |= (rdd_id << 32);
-	  _tera_flag |= is_primitive_array ? (PRIMITIVE_ARRAY << 16) : (LEAF_OBJECT << 16);
-	  _tera_flag |= state;
+    // Clear the 16th and 17th bits
+    _tera_flag &= ~(0x3ULL << 16);
+    _tera_flag |= (is_primitive_array) ? (1ULL << 17) : (1ULL << 16);
   }
 
   // Set object flag if is a non primitive object
   void set_non_primitive() {
-	  uint64_t part_id = (_tera_flag >> 48);
-	  uint64_t rdd_id  = (_tera_flag >> 32) & 0xffff;
-	  uint64_t state = _tera_flag & 0xffff;
-
-	  _tera_flag = (part_id << 48);
-	  _tera_flag |= (rdd_id << 32);
-	  _tera_flag |= (NON_PRIMITIVE << 16);
-	  _tera_flag |= state;
+    // Clear the 16th and 17th bits
+    _tera_flag &= ~(0x3ULL << 16);
   }
   
   // Check if the object is primitive array or leaf object
   bool is_primitive() {
-    uint64_t state = ((_tera_flag >> 16) & 0xffff);
-	  return (state == PRIMITIVE_ARRAY) || (state == LEAF_OBJECT);
+    // Check if either the 16th or 17th bit is set
+    return (_tera_flag & ((1ULL << 16) | (1ULL << 17))) != 0;
+  }
+
+  // Check if the object is non-primitive. 
+  bool is_non_primitive() {
+    // Check if both the 16th or 17th bit are set
+    return (_tera_flag & ((1ULL << 16) | (1ULL << 17))) == 0;
+  }
+
+  // Increase object writeness frequency
+  void incr_writness() {
+    // Increase the writeness of an object
+    uint64_t counter = (_tera_flag >> 20) & 0xFFF;
+    counter++;
+
+    // Clear bits 20-31 in _tera_flag
+    _tera_flag &= ~(0xFFFULL << 20);
+
+    // Set the updated counter in bits 20-31
+    _tera_flag |= (counter & 0xFFFULL) << 20;
   }
   
+  // Increase object writeness frequency
+  void set_writness(uint64_t counter) {
+    // Clear bits 20-31 in _tera_flag
+    _tera_flag &= ~(0xFFFULL << 20);
+
+    // Set the updated counter in bits 20-31
+    _tera_flag |= (counter & 0xFFFULL) << 20;
+  }
+  
+  // Increase object writeness frequency
+  uint64_t get_writness() {
+    return (_tera_flag >> 20) & 0xFFFULL;
+  }
+  
+  // Reset writeness to zero
+  void reset_writness() {
+    // Clear bits 20-31 in _tera_flag
+    _tera_flag &= ~(0xFFFULL << 20);
+  }
+
+  // Increase object age. This is used only for objects in the old
+  // generation
+  void incr_oldgen_obj_age() {
+    uint64_t age = (_tera_flag >> 32) & 0xFFFF;
+    age++;
+
+    // Clear bits 32-47 in _tera_flag
+    _tera_flag &= ~(0xFFFFULL << 32);
+
+    // Set the updated counter in bits 20-31
+    _tera_flag |= (age & 0xFFFFULL) << 32;
+  }
+  
+  // Get object age
+  uint64_t get_oldgen_obj_age() {
+    return (_tera_flag >> 32) & 0xFFFFULL;
+  }
+
+  // Enable the class bit to indicate that this objects is in the
+  // closure of an instance mirror class (class objects)
+  void set_instance_mirror_klass_ref() {
+    // Set the 18th bit
+    _tera_flag |= (1ULL << 18);
+  }
+
+  // Check if this object belongs to the transitive closure of an instance
+  // mirror class object (class objects)
+  bool is_instance_mirror_klass_ref() {
+    // Check if the 18th bit is set
+    return (_tera_flag & (1ULL << 18)) != 0;
+  }
+
+  // Reset object state
+  void reset_obj_state() {
+    // Clear bits 0-15th
+    _tera_flag &= ~((1ULL << 16) - 1);
+    _tera_flag |= INIT_TF;
+  }
 #endif // TERA_FLAG
 
   void set_mark(volatile markOop m)      { _mark = m;   }
