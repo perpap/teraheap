@@ -192,14 +192,14 @@ function run_make()
 
 function export_env_vars()
 {
-        #local PROJECT_DIR="$(pwd)/../"
-	detect_platform
+    #local PROJECT_DIR="$(pwd)/../"
+	#detect_platform
 
 	export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
 	#export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
-        echo "JAVA_HOME = $JAVA_HOME"
+    echo "JAVA_HOME = $JAVA_HOME"
 
-        ### TeraHeap Allocator
+    ### TeraHeap Allocator
 	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
 	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LD_LIBRARY_PATH
 	export PATH=${PROJECT_DIR}/allocator/include:$PATH
@@ -207,7 +207,7 @@ function export_env_vars()
 	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$CPLUS_INCLUDE_PATH
 	export ALLOCATOR_HOME=${PROJECT_DIR}/allocator
 
-    	export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
+    export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
 	export LD_LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LD_LIBRARY_PATH
 	export PATH=${PROJECT_DIR}/tera_malloc/include:$PATH
 	export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH
