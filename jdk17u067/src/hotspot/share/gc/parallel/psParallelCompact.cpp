@@ -1674,6 +1674,8 @@ PSParallelCompact::compute_dense_prefix(const SpaceId id,
   return sd.region_to_addr(best_cp);
 }
 
+#ifdef TERA_MAJOR_GC
+
 void PSParallelCompact::precompact_h2_candidate_objects() {
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_start();
