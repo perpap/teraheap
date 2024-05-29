@@ -1693,7 +1693,7 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
     const MutableSpace* space = _space_info[i].space();
     _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
 #if 1//perpap
-    //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), _mark_bitmap, _summary_data);
+    //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);
     ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
     ParallelScavengeHeap::heap()->workers().run_task(&task);
 #endif
@@ -1981,7 +1981,7 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
   /// ParallelH2Task
   ///////////////////
 #ifdef TERA_MAJOR_GC
-  class ParallelPreCompactH2Task final: public AbstractGangTask {
+  class ParallelPreCompactH2Task: public AbstractGangTask {
   private:
 	  uint _total_workers;
 	  HeapWord* _source_beg;
