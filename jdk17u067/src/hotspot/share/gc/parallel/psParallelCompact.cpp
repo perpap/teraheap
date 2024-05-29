@@ -119,7 +119,7 @@
 		  size_t regions_per_worker = total_regions / _total_workers;
 		  size_t my_start_region = start_region + worker_id * regions_per_worker;
 		  size_t my_end_region = (worker_id == _total_workers - 1) ? end_region : my_start_region + regions_per_worker;
-
+		  tty->print("[precompact_h2_candidates] worker_id:%u regions:[%zu-%zu]\n",worker_id, my_start_region, my_end_region);
 		  // Process each assigned region
 		  for (size_t cur_region = my_start_region; cur_region < my_end_region; ++cur_region) {
 			  process_region(worker_id, cur_region);
@@ -1782,6 +1782,7 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #endif //TERA_TIMERS
 #if 1//perpap
   uint total_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();//.active_workers();
+  tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
   static const char *_task_names[] = {
 		  "Parallel H2 Candidate PreCompaction Old Generation Task",
 		  "Parallel H2 Candidate PreCompaction Young Generation(Eden) Task",
@@ -1791,10 +1792,11 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #endif
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
-    _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
-#if 0//perpap
+    //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+#if 1//perpap
     //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);
     ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
+    tty->print("[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
     ParallelScavengeHeap::heap()->workers().run_task(&task);
 #endif
   }
