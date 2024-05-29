@@ -1689,9 +1689,10 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #endif
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
-    //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+    _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
 #if 1//perpap
-    ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, &_summary_data);
+    //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), _mark_bitmap, _summary_data);
+    ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
     ParallelScavengeHeap::heap()->workers().run_task(&task);
 #endif
   }
@@ -1978,24 +1979,23 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
   /// ParallelH2Task
   ///////////////////
 #ifdef TERA_MAJOR_GC
-#if 1
-  class ParallelPreCompactH2Task : public AbstractGangTask {
+  class ParallelPreCompactH2Task final: public AbstractGangTask {
   private:
 	  uint _total_workers;
 	  HeapWord* _source_beg;
 	  HeapWord* _source_end;
 	  ParMarkBitMap* _mark_bitmap;
-	  ParallelCompactData* _summary_data;
+	  ParallelCompactData _summary_data;
   public:
 
-	  ParallelPreCompactH2Task(const char* name, uint total_workers, HeapWord* source_beg, HeapWord* source_end, ParMarkBitMap* mb, ParallelCompactData* sd)
-	  : AbstractGangTask(name), _total_workers(total_workers), _source_beg(source_beg), _source_end(source_end), _mark_bitmap(mb), _summary_data(sd) {}
+	  ParallelPreCompactH2Task(const char* name, uint total_workers, HeapWord* source_beg, HeapWord* source_end/*, ParMarkBitMap* mb, ParallelCompactData* sd*/)
+	  : AbstractGangTask(name), _total_workers(total_workers), _source_beg(source_beg), _source_end(source_end), _mark_bitmap(PSParallelCompact::mark_bitmap()), _summary_data(PSParallelCompact::summary_data()) {}
 	  virtual void work(uint worker_id){
 		  internal_work(worker_id);
 	  }
 	  void internal_work(uint worker_id/*, uint total_workers*/) {
-		  size_t start_region = _summary_data->addr_to_region_idx(_source_beg);
-		  size_t end_region = _summary_data->addr_to_region_idx(_summary_data->region_align_up(_source_end));
+		  size_t start_region = _summary_data.addr_to_region_idx(_source_beg);
+		  size_t end_region = _summary_data.addr_to_region_idx(_summary_data.region_align_up(_source_end));
 		  size_t total_regions = end_region - start_region;
 
 		  // Divide regions among workers
@@ -2013,15 +2013,15 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
 	  void process_region(uint worker_id, size_t region_idx) {
 		  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
 		  // Implement the logic specific to each region as shown in `precompact_h2_candidate_objects`
-		  HeapWord *beg_addr = _summary_data->region_to_addr(region_idx);
+		  HeapWord *beg_addr = _summary_data.region_to_addr(region_idx);
 		  size_t end_bit = _mark_bitmap->addr_to_bit(beg_addr + ParallelCompactData::RegionSize);
 		  // The bitmap routines require the right boundary to be word-aligned.
 		  size_t range_end = _mark_bitmap->align_range_end(end_bit);
 		  size_t beg_bit = _mark_bitmap->find_h2_candidate(_mark_bitmap->addr_to_bit(beg_addr), range_end);
-		  DEBUG_ONLY(size_t region_size = _region_data[region_idx].data_size();)
+		  DEBUG_ONLY(size_t region_size = _summary_data._region_data[region_idx].data_size();)
 
 		  // Get the forwarding table of the region
-		  TeraForwardingTable *fd_table = _summary_data->_region_data[region_idx].get_forwarding_table();
+		  TeraForwardingTable *fd_table = _summary_data._region_data[region_idx].get_forwarding_table();
 
 		  // Create a forwarding table only for the regions that have H2
 		  // candidate objects. Reduce the number of metadata.
@@ -2052,7 +2052,7 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
 				  // H2 candidate objects as dead to exclude them from the summary
 				  // phase calculations of H1.
 				  _mark_bitmap->unmark_obj(obj, size);
-				  _summary_data->remove_obj(obj, size);
+				  _summary_data.remove_obj(obj, size);
 			  } else {
 				  // If the candidate objects is a non-primitive type then we
 				  // change its state. In that way, we avoid to handle this
@@ -2069,12 +2069,12 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
 			  beg_bit = _mark_bitmap->find_h2_candidate(tmp_end + 1, range_end);
 		  }
 
-		  _summary_data->_region_data[region_idx].set_forwarding_table(fd_table);
-		  assert(_region_data[region_idx].data_size() <= region_size,
-				  "Region size differ, size before = %lu and size after = %lu", region_size, _region_data[region_idx].data_size());
+		  _summary_data._region_data[region_idx].set_forwarding_table(fd_table);
+		  assert(_summary_data._region_data[region_idx].data_size() <= region_size,
+				  "Region size differ, size before = %lu and size after = %lu", region_size, _summary_data._region_data[region_idx].data_size());
 	  }
   };
-#endif
+#endif //TERA_MAJOR_GC
   ///////////////////
 
 // This method should contain all heap-specific policy for invoking a full
