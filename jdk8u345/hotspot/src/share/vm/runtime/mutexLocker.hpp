@@ -164,6 +164,11 @@ extern Mutex*   UnsafeJlong_lock;                // provides Unsafe atomic updat
 extern Mutex*   tera_heap_lock;                 // Protects backward reference stacks
 extern Mutex*   tera_heap_group_lock;           // Protects region grouping in H2
 #endif // TERA_MINOR_GC
+#if 1//perpap
+#ifdef TERA_MAJOR_GC
+extern Mutex*   h2_allocator_lock;              // Protects H2 allocator
+#endif // TERA_MAJOR_GC
+#endif
 
 // A MutexLocker provides mutual exclusion with respect to a given mutex
 // for the scope which contains the locker.  The lock is an OS lock, not

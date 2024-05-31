@@ -166,7 +166,11 @@ Monitor* JVMCI_lock                   = NULL;
 Mutex*   tera_heap_lock              = NULL;
 Mutex*   tera_heap_group_lock        = NULL;
 #endif // TERA_MINOR_GC
-
+#if 1//perpap
+#ifdef TERA_MAJOR_GC
+Mutex*   h2_allocator_lock           = NULL;
+#endif // TERA_MAJOR_GC
+#endif
 #define MAX_NUM_MUTEX 128
 static Mutex* _mutex_array[MAX_NUM_MUTEX];
 static int _num_mutex;
@@ -240,7 +244,13 @@ void mutex_init() {
     def(tera_heap_group_lock        , Mutex  , leaf    ,    true, _safepoint_check_always); // Used for TeraHeap region groupping
   }
 #endif // TERA_MINOR_GC
-
+#if 1//perpap
+  #ifdef TERA_MAJOR_GC
+  if (EnableTeraHeap) {
+    def(h2_allocator_lock           , Mutex  , leaf    ,    true, _safepoint_check_always); // Used for H2 allocator
+  }
+  #endif // TERA_MAJOR_GC
+#endif
   def(StringDedup_lock             , PaddedMonitor, leaf,        true,  _safepoint_check_never);
   def(StringDedupIntern_lock       , PaddedMutex  , leaf,        true,  _safepoint_check_never);
   def(ParGCRareEvent_lock          , PaddedMutex  , leaf,        true,  _safepoint_check_always);
