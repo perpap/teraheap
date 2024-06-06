@@ -92,7 +92,7 @@
 
 #include <math.h>
 
-#if 0//perpap
+#if 1//perpap
 #ifdef TERA_MAJOR_GC
   class ParallelPreCompactH2Task: public AbstractGangTask {
   private:
@@ -100,7 +100,7 @@
 	  HeapWord* _source_beg;
 	  HeapWord* _source_end;
 	  ParMarkBitMap* _mark_bitmap;
-	  ParallelCompactData _summary_data;
+	  ParallelCompactData& _summary_data;
   public:
 
 	  ParallelPreCompactH2Task(const char* name, uint total_workers, HeapWord* source_beg, HeapWord* source_end/*, ParMarkBitMap* mb, ParallelCompactData* sd*/)
@@ -1778,7 +1778,7 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_start();
 #endif //TERA_TIMERS
-#if 0//perpap
+#if 1//perpap
   uint total_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();//.active_workers();
   tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
   static const char *_task_names[] = {
@@ -1790,8 +1790,8 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #endif
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
-    _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
-#if 0//perpap
+    //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+#if 1//perpap
     //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);
     ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
     tty->print("[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
