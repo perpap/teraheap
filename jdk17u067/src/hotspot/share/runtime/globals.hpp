@@ -158,7 +158,10 @@ const intx ObjectAlignmentInBytes = 8;
                       range,                                                \
                       constraint)                                           \
                                                                             \
-  product(ccstr, DEVICE_H2, "nvme1n1", "The device used for H2")            \
+  product(ccstr, DEVICE_H2, "nvme3n1", "The device used for H2")            \
+                                                                            \
+  product(bool, UseParallelH2Allocator, false,                              \
+          "Use multiple threads for allocating addresses into H2 heap")     \
                                                                             \
   notproduct(bool, CheckCompressedOops, true,                               \
           "Generate checks in encoding/decoding code in debug VM")          \

@@ -1780,22 +1780,26 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #endif //TERA_TIMERS
 #if 1//perpap
   uint total_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();//.active_workers();
-  tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
   static const char *_task_names[] = {
-		  "Parallel H2 Candidate PreCompaction Old Generation Task",
-		  "Parallel H2 Candidate PreCompaction Young Generation(Eden) Task",
-		  "Parallel H2 Candidate PreCompaction Young Generation(From) Task",
-		  "Parallel H2 Candidate PreCompaction Young Generation(To) Task"
+          "Parallel H2 Candidate PreCompaction Old Generation Task",
+          "Parallel H2 Candidate PreCompaction Young Generation(Eden) Task",
+          "Parallel H2 Candidate PreCompaction Young Generation(From) Task",
+          "Parallel H2 Candidate PreCompaction Young Generation(To) Task"
   };
 #endif
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
     //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
 #if 1//perpap
-    //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);
-    ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
-    tty->print("[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
-    ParallelScavengeHeap::heap()->workers().run_task(&task);
+    if(UseParallelH2Allocator){
+      tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
+      //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);
+      ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
+      tty->print("[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
+      ParallelScavengeHeap::heap()->workers().run_task(&task);
+    }else{
+      _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+    }
 #endif
   }
 #ifdef TERA_TIMERS

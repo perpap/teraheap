@@ -2478,11 +2478,24 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
 #endif // !INCLUDE_JVMTI
     // Set H2 backing device via DEVICE_H2 jvm runtime flag
     }else if(match_option(option, "-XX:DEVICE_H2=", &tail)){
-    	//tty->print("[FILE:%s|FUNCTION:%s|LINE:%d] DEVICE_H2:%s\n", __FILE__, __func__, __LINE__, tail);
-    	if (FLAG_SET_CMDLINE(DEVICE_H2, tail) != JVMFlag::SUCCESS) {
-    		return JNI_EINVAL;
-    	}
-    	NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] DEVICE_H2:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, DEVICE_H2);)
+       //tty->print("[FILE:%s|FUNCTION:%s|LINE:%d] DEVICE_H2:%s\n", __FILE__, __func__, __LINE__, tail);
+      if (FLAG_SET_CMDLINE(DEVICE_H2, tail) != JVMFlag::SUCCESS) {
+         return JNI_EINVAL;
+      }
+      NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] DEVICE_H2:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, DEVICE_H2);)
+    }else if(match_option(option, "-XX:+UseParallelH2Allocator", &tail)){
+        FLAG_SET_DEFAULT(UseParallelH2Allocator, true);
+        NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] UseParallelH2Allocator:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, "true");)
+        if (FLAG_SET_CMDLINE(UseParallelH2Allocator, true) != JVMFlag::SUCCESS) {
+          return JNI_EINVAL;
+        }
+        //if(FLAG_IS_DEFAULT(UseParallelH2Allocator))
+        //tty->print("[%s|%s|LINE:%d] UseParallelH2Allocator:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, "true");
+    }else if(match_option(option, "-XX:-UseParallelH2Allocator", &tail)){
+        NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] UseParallelH2Allocator:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, "false");)
+        if (FLAG_SET_CMDLINE(UseParallelH2Allocator, false) != JVMFlag::SUCCESS) {
+          return JNI_EINVAL;
+        }
     // --enable_preview
     } else if (match_option(option, "--enable-preview")) {
       set_enable_preview();
