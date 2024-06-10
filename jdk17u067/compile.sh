@@ -193,7 +193,7 @@ function run_make()
 function export_env_vars()
 {
     #local PROJECT_DIR="$(pwd)/../"
-	#detect_platform
+	detect_platform
 
 	export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
 	#export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
