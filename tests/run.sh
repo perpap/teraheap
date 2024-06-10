@@ -49,7 +49,7 @@ function interpreter_mode() {
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
     -XX:AllocateH2At="/mnt/fmap/" \
     -XX:DEVICE_H2="nvme3n1" \
-    -XX:+UseParallelH2Allocator \
+    -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
 }
@@ -75,6 +75,8 @@ function c1_mode() {
 		-XX:-UseCompressedOops \
 		-XX:+TeraHeapStatistics \
     -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:DEVICE_H2="nvme3n1" \
+    -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
 }
@@ -100,6 +102,8 @@ function c2_mode() {
 		-XX:-UseCompressedOops \
 		-XX:+TeraCacheStatistics \
     -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:DEVICE_H2="nvme3n1" \
+    -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
 		-Xlogtc:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
 } 
@@ -145,8 +149,8 @@ function run_tests() {
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     -XX:AllocateH2At="/mnt/fmap/" \
-    -XX:DEVICE_H2="nvme3m1"\
-    -XX:+UseParallelH2Allocator \
+    -XX:DEVICE_H2="nvme3n1"\
+    -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
   }

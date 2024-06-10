@@ -1778,7 +1778,7 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_start();
 #endif //TERA_TIMERS
-#if 1//perpap
+#if 0//perpap
   uint total_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();//.active_workers();
   static const char *_task_names[] = {
           "Parallel H2 Candidate PreCompaction Old Generation Task",
@@ -1789,8 +1789,8 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #endif
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
-    //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
-#if 1//perpap
+    _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+#if 0//perpap
     if(UseParallelH2Allocator){
       tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
       //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);

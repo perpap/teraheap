@@ -33,14 +33,14 @@ extern uint64_t dev_size;
 
 #define MALLOC_ON	1				  //< Allocate buffers dynamically
 
-#define REGION_SIZE	(32*1024LU*1024) //< Region size (in bytes) for allignment
+#define REGION_SIZE	(256*1024LU*1024) //< Region size (in bytes) for allignment
 									                    // version
 
 #if ANONYMOUS
 #define V_SPACE (100*1024LU*1024*1024*1024) //< Virtual address space size for 
 											// small mmaps
 #define REGION_ARRAY_SIZE ((V_SPACE)/(REGION_SIZE)) 
-#define MAX_PARTITIONS 480			  // Maximum partitions per RDD, affects 
+#define MAX_PARTITIONS 256			  // Maximum partitions per RDD, affects 
 									  // id array size
 
 #define MAX_RDD_ID ((REGION_ARRAY_SIZE)/(MAX_PARTITIONS)) //< Total different rdds
@@ -49,7 +49,7 @@ extern uint64_t dev_size;
 //#define REGION_ARRAY_SIZE ((DEV_SIZE)/(REGION_SIZE))
 extern uint64_t region_array_size;
 
-#define MAX_PARTITIONS 480			  // Maximum partitions per RDD, affects 
+#define MAX_PARTITIONS 256			  // Maximum partitions per RDD, affects 
 									  // id array size
 //#define MAX_RDD_ID ((REGION_ARRAY_SIZE)/(MAX_PARTITIONS)) //< Total different rdds
 extern uint64_t max_rdd_id;
