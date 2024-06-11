@@ -48,8 +48,8 @@ function interpreter_mode() {
 		-XX:-UseCompressedClassPointers \
 		-XX:+TeraHeapStatistics \
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
-    -XX:AllocateH2At="/spare2/perpap/fmap/" \
-    -XX:DEVICE_H2="nvme0n1p1"\
+    -XX:AllocateH2At="/mnt/perpap/fmap/" \
+    -XX:DEVICE_H2="nvme0n1"\
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
@@ -150,9 +150,9 @@ function run_tests() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
-    -XX:AllocateH2At="/spare2/perpap/fmap/" \
-    -XX:DEVICE_H2="nvme0n1p1" \
-    -XX:-UseParallelH2Allocator \
+    -XX:AllocateH2At="/mnt/perpap/fmap/" \
+    -XX:DEVICE_H2="nvme0n1" \
+    -XX:+UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
   }
@@ -175,8 +175,8 @@ function run_tests_debug() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
-    -XX:AllocateH2At="/spare2/perpap/fmap/" \
-    -XX:DEVICE_H2="nvme0n1p1" \
+    -XX:AllocateH2At="/mnt/perpap/fmap/" \
+    -XX:DEVICE_H2="nvme0n1" \
     -XX:H2FileSize=751619276800 \
     -Xlogth:llarge_teraCache.txt "${class_file}"
 }
