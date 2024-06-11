@@ -33,7 +33,7 @@ extern uint64_t dev_size;
 
 #define MALLOC_ON	1				  //< Allocate buffers dynamically
 
-#define REGION_SIZE	(32*1024LU*1024) //< Region size (in bytes) for allignment
+#define REGION_SIZE	(256*1024LU*1024) //< Region size (in bytes) for allignment
 									                    // version
 
 #if ANONYMOUS
