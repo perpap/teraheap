@@ -51,7 +51,7 @@ function interpreter_mode() {
     -XX:DEVICE_H2="nvme0n1" \
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
-		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
+		-Xlogth:llarge_teraCache.txt "${class_file}" > run_tests.err 2>&1 > run_tests.out
 }
 
 # Run tests using only C1 compiler
@@ -78,7 +78,7 @@ function c1_mode() {
     -XX:DEVICE_H2="nvme3n1" \
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
-		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
+		-Xlogth:llarge_teraCache.txt "${class_file}" > run_tests.err 2>&1 > run_tests.out
 }
 	 
 # Run tests using C2 compiler
@@ -105,7 +105,7 @@ function c2_mode() {
     -XX:DEVICE_H2="nvme3n1" \
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
-		-Xlogtc:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
+		-Xlogtc:llarge_teraCache.txt "${class_file}" > run_tests.err 2>&1 > run_tests.run_tests.out
 } 
 
 # Run tests using all compilers
@@ -128,7 +128,7 @@ function run_tests_msg_box() {
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
     -XX:AllocateH2At="/mnt/fmap/" \
     -XX:H2FileSize=751619276800 \
-		-Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
+		-Xlogth:llarge_teraCache.txt "${class_file}" > run_tests.err 2>&1 > run_tests.out
 }
 
 # Run tests using all compilers
@@ -149,10 +149,10 @@ function run_tests() {
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     -XX:AllocateH2At="/mnt/fmap/" \
+    -XX:-UseParallelH2Allocator \
     -XX:DEVICE_H2="nvme0n1"\
-    -XX:+UseParallelH2Allocator \
     -XX:H2FileSize=751619276800 \
-    -Xlogth:llarge_teraCache.txt "${class_file}" > err 2>&1 > out
+    -Xlogth:llarge_teraCache.txt "${class_file}" > run_tests.err 2>&1 > run_tests.out
   }
 
 # Run tests using gdb
