@@ -100,7 +100,7 @@ distclean: clean
 
 test:
 	@for t in $$(ls *.bin); do \
-		@echo -e 'Running test for $t'
+		@echo -e 'Running test for $t' \
 		./$$t 2> out; \
 	done 
 	@rm out
