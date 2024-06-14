@@ -131,7 +131,7 @@ public:
   // Constructor
   //TeraHeap();
 #if 1//perpap
-  TeraHeap(HeapWord* heap_end = nullptr);
+  TeraHeap(HeapWord* heap_end/* = nullptr*/);
 #endif
   // Destructor
   ~TeraHeap();
