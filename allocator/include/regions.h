@@ -42,7 +42,7 @@ struct region_list{
   // heap. The path indicates the path to create the file for H2 and
   // its size.
 	//void       init(uint64_t alignment, const char* path, uint64_t size);
-	void       init(uint64_t alignment, const char* path, uint64_t size, char* heap_end = nullptr);
+	void       init(uint64_t alignment, const char* path, uint64_t size, char* heap_end);
 	
 	// Return the start address of the memory allocation pool
 	char*      start_addr_mem_pool(void);
