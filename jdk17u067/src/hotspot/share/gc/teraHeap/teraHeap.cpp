@@ -28,7 +28,7 @@ TeraHeap::TeraHeap(HeapWord* heap_end) {
 
   //init(align, AllocateH2At, H2FileSize);
 #if 1//perpap
-  init(align, AllocateH2At, H2FileSize, static_cast<char *>(heap_end));
+  init(align, AllocateH2At, H2FileSize, (char *)heap_end);
 #endif
   _start_addr = start_addr_mem_pool();
   _stop_addr = stop_addr_mem_pool();
