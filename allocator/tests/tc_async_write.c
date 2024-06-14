@@ -36,8 +36,10 @@ int main() {
 	char *tmp, *tmp2, *tmp3, *tmp4;
 	
 	// Init allocator
-  init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
-
+  //init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
+#if 1//perpap
+	init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600, 0);
+#endif
 	tmp = malloc(SIZE_80B * sizeof(char));
 	memset(tmp, '1', SIZE_80B);
 	tmp[SIZE_80B - 1] = '\0';

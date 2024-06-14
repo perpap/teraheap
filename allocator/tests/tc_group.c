@@ -28,8 +28,10 @@ int main() {
     char *obj8;
     char *obj9;
     // Init allocator
-    init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
-
+    //init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
+#if 1//perpap
+    init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600, 0);
+#endif
     //obj1 should be in region 0
     obj1 = allocate(1, 0, 0);
     fprintf(stderr, "Allocate: %p\n", obj1);
