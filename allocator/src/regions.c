@@ -66,7 +66,7 @@ void create_file(const char* path, uint64_t size) {
 
 // Initialize allocator
 //void init(uint64_t align, const char* path, uint64_t size) {
-void init(char* heap_end, uint64_t align, const char* path, uint64_t size) {
+void init(uint64_t align, const char* path, uint64_t size, char* heap_end) {
     fd = -1;
 
 #if ANONYMOUS
