@@ -172,7 +172,9 @@ class Universe: AllStatic {
   static OopStorage* _vm_global;
 
 #if 1//perpap
+ public:
   static void initialize_teraheap(HeapWord* heap_end);
+ private:
 #endif
   static jint initialize_heap();
   static void initialize_tlab();
