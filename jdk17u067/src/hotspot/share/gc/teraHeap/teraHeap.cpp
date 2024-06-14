@@ -18,16 +18,18 @@ long int TeraHeap::cur_obj_group_id;
 long int TeraHeap::cur_obj_part_id;
 
 // Constructor of TeraHeap
-TeraHeap::TeraHeap() {
-
+//TeraHeap::TeraHeap() {
+TeraHeap::TeraHeap(HeapWord* heap_end) {
   uint64_t align = CardTable::th_ct_max_alignment_constraint();
 
   if (AllocateH2At == NULL || H2FileSize == 0) {
     ShouldNotReachHere();
   }
 
-  init(align, AllocateH2At, H2FileSize);
-
+  //init(align, AllocateH2At, H2FileSize);
+#if 1//perpap
+  init(static_cast<char *>(heap_end), align, AllocateH2At, H2FileSize);
+#endif
   _start_addr = start_addr_mem_pool();
   _stop_addr = stop_addr_mem_pool();
 

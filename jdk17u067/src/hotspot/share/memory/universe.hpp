@@ -171,6 +171,9 @@ class Universe: AllStatic {
   static OopStorage* _vm_weak;
   static OopStorage* _vm_global;
 
+#if 1//perpap
+  static void initialize_teraheap(HeapWord* heap_end);
+#endif
   static jint initialize_heap();
   static void initialize_tlab();
   static void initialize_basic_type_mirrors(TRAPS);

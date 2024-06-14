@@ -65,17 +65,18 @@ void create_file(const char* path, uint64_t size) {
 }
 
 // Initialize allocator
-void init(uint64_t align, const char* path, uint64_t size) {
+//void init(uint64_t align, const char* path, uint64_t size) {
+void init(char* heap_end, uint64_t align, const char* path, uint64_t size) {
     fd = -1;
 
 #if ANONYMOUS
 	// Anonymous mmap
     fd = open(DEV, O_RDWR);
-	tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+	tc_mem_pool.mmap_start = mmap(/*0*/heap_end, V_SPACE, PROT_READ|PROT_WRITE, /*MAP_SHARED*/MAP_FIXED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
 #else
   create_file(path, size);
   // Memory-mapped a file over a storage device
-  tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  tc_mem_pool.mmap_start = mmap(/*0*/heap_end, dev_size, PROT_READ | PROT_WRITE, /*MAP_SHARED*/MAP_FIXED, fd, 0);
 #endif
 
 	assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
