@@ -794,7 +794,7 @@ jint universe_init() {
 }
 
 void Universe::initialize_teraheap(HeapWord* heap_end){
-	assert(heap_end == NULL, "H1 heap is not initialized");
+	NOT_PRODUCT(assert(heap_end == NULL, "H1 heap is not initialized");)
 	_teraHeap = new TeraHeap(heap_end);
 	log_info(gc)("Initialize Teraheap");
 }
