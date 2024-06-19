@@ -74,7 +74,7 @@ jint ParallelScavengeHeap::initialize() {
 #ifdef TERA_CARDS
   PSCardTable* card_table;
   if (EnableTeraHeap) {
-	#if 0//perpap
+	#if 1//perpap
 	Universe::initialize_teraheap(_reserved.end()/*_young_gen->to_space()->_end()*/);
 	#endif
     _tera_heap_reserved = MemRegion((HeapWord*)Universe::teraHeap()->h2_start_addr(),
