@@ -14,6 +14,22 @@
 #include "../include/segments.h"
 #include "../include/sharedDefines.h"
 
+// Function to get the OS page size
+static size_t get_page_size() {
+    long page_size = sysconf(_SC_PAGESIZE);
+    if (page_size == -1) {
+        perror("sysconf");
+        exit(EXIT_FAILURE);
+    }
+    return (size_t)page_size;
+}
+
+#if defined(__ia64__) || defined(__x86_64__) || defined(__aarch64__)
+#define PAGE_SIZE get_page_size()
+#else
+#error "Unsupported architecture"
+#endif
+
 #define HEAPWORD (8)                       // In the JVM the heap is aligned to 8 words
 #define HEADER_SIZE (32)                   // Header size of the Dummy object	
 #define align_size_up_(size, alignment) (((size) + ((alignment) - 1)) & ~((alignment) - 1))
@@ -54,7 +70,9 @@ void create_file(const char* path, uint64_t size) {
           "calculated to be smaller than MAX_PARTITIONS!");
   max_rdd_id = region_array_size / MAX_PARTITIONS;
   group_array_size = region_array_size / 2; // deprecated
-  
+  //fd = open("/mnt/fmap/H2.txt", O_RDWR);
+  //assertf(fd >= 1, "tempfile error.");
+
   fd = mkstemp(dev);
   unlink(dev);
   assertf(fd >= 1, "tempfile error.");
@@ -71,15 +89,27 @@ void init(uint64_t align, const char* path, uint64_t size, char* heap_end) {
 
 #if ANONYMOUS
 	// Anonymous mmap
-    fd = open(DEV, O_RDWR);
-	tc_mem_pool.mmap_start = mmap(0/*heap_end*/, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED /*MAP_FIXED*/|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+  fd = open(dev, O_RDWR);
+	tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
 #else
   create_file(path, size);
   // Memory-mapped a file over a storage device
-  tc_mem_pool.mmap_start = mmap(0/*heap_end*/, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED/*MAP_FIXED*/, fd, 0);
+  //tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  off_t start_addr = (off_t)heap_end; 
+  size_t page_size = PAGE_SIZE;
+  while (start_addr < (off_t)heap_end + dev_size) {
+        tc_mem_pool.mmap_start = mmap((void *)start_addr, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+        if (tc_mem_pool.mmap_start != MAP_FAILED) {
+            printf("Memory mapping successful at address %p\n", tc_mem_pool.mmap_start);
+            break;
+        } else {
+            perror("Memory mapping failed");
+            start_addr += page_size;
+        }
+  }
 #endif
-
-	assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
+ 
+	//assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
 
 	// Card table in JVM needs the start address of TeraCache to be align up
 	tc_mem_pool.start_address = (char *) align_ptr_up(tc_mem_pool.mmap_start, align);
