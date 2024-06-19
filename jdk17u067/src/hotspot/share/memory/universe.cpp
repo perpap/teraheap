@@ -804,7 +804,7 @@ jint Universe::initialize_heap() {
   _collectedHeap = GCConfig::arguments()->create_heap();
 
   log_info(gc)("Using %s", _collectedHeap->name());
-#if 1//perpap
+#if 0//perpap
   if (EnableTeraHeap) {
     _teraHeap = new TeraHeap(nullptr);//new TeraHeap();
     log_info(gc)("Initialize Teraheap");
