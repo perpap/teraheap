@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -x
+#set -x
 
 # Declare an associative array used for error handling
 declare -A ERRORS
@@ -19,10 +19,12 @@ cpu_arch=$(uname -p)
 FLEXHEAP=false
 FLEXHEAP_DEVICE="nvme0n1"
 FLEXHEAP_MOUNT_POINT="/mnt/perpap/fmap/"
-EXEC0=("Array" "Array_List")
+EXEC0=("Extend_Lambda" "Test_Reflection" "Test_Reference"
+	"HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap")
 EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList"
 	"Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference"
-	"HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap"
+	#"HashMap"
+	"Rehashing" "Clone" "Groupping" "MultiHashMap"
 	"Test_WeakHashMap" "ClassInstance")
 
 # Export Enviroment Variables
@@ -61,8 +63,8 @@ function interpreter_mode() {
 		-XX:-UseCompressedClassPointers \
 		-XX:+TeraHeapStatistics \
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
-		-XX:AllocateH2At="/mnt/perpap/fmap/" \
-		-XX:DEVICE_H2="nvme0n1" \
+		$(get_flexheap_mount_point) \
+		$(get_flexheap_device) \
 		-XX:-UseParallelH2Allocator \
 		-XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
@@ -87,8 +89,8 @@ function c1_mode() {
 		-Xms${XMS}g \
 		-XX:-UseCompressedOops \
 		-XX:+TeraHeapStatistics \
-		-XX:AllocateH2At="/mnt/perpap/fmap/" \
-		-XX:DEVICE_H2="nvme0n1" \
+		$(get_flexheap_mount_point) \
+		$(get_flexheap_device) \
 		-XX:-UseParallelH2Allocator \
 		-XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
@@ -114,8 +116,8 @@ function c2_mode() {
 		-XX:TeraCacheThreshold=0 \
 		-XX:-UseCompressedOops \
 		-XX:+TeraCacheStatistics \
-		-XX:AllocateH2At="/mnt/perpap/fmap/" \
-		-XX:DEVICE_H2="nvme0n1" \
+		$(get_flexheap_mount_point) \
+		$(get_flexheap_device) \
 		-XX:-UseParallelH2Allocator \
 		-XX:H2FileSize=751619276800 \
 		-Xlogtc:llarge_teraCache.txt "${class_file}" >err 2>&1 >run_tests.out
@@ -131,15 +133,16 @@ function run_tests_msg_box() {
 		-XX:+ShowMessageBoxOnError \
 		-XX:+UseParallelGC \
 		-XX:ParallelGCThreads=${num_gc_thread} \
-		$(get_flexheap_flag) \  -XX:TeraHeapSize=${TERACACHE_SIZE} \
+		$(get_flexheap_flag) \ 
+	-XX:TeraHeapSize=${TERACACHE_SIZE} \
 		-Xmx${MAX}g \
 		-Xms${XMS}g \
 		-XX:-UseCompressedOops \
 		-XX:-UseCompressedClassPointers \
 		-XX:+TeraHeapStatistics \
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
-		-XX:AllocateH2At="/mnt/perpap/fmap/" \
-		-XX:DEVICE_H2="nvme0n1" \
+		$(get_flexheap_mount_point) \
+		$(get_flexheap_device) \
 		-XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -168,7 +171,6 @@ function run_tests() {
 		$(get_flexheap_device) \
 		-XX:-UseParallelH2Allocator \
 		-XX:H2FileSize=751619276800 \
-		-Xshare:off \
 		-Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
 
@@ -182,15 +184,16 @@ function run_tests_debug() {
 		-XX:+ShowMessageBoxOnError \
 		-XX:+UseParallelGC \
 		-XX:ParallelGCThreads=${num_gc_thread} \
-		$(get_flexheap_flag) \  -XX:TeraHeapSize=${TERACACHE_SIZE} \
+		$(get_flexheap_flag) \
+		-XX:TeraHeapSize=${TERACACHE_SIZE} \
 		-Xmx${MAX}g \
 		-Xms${XMS}g \
 		-XX:-UseCompressedOops \
 		-XX:-UseCompressedClassPointers \
 		-XX:+TeraHeapStatistics \
 		-XX:TeraStripeSize=${STRIPE_SIZE} \
-		-XX:AllocateH2At="/mnt/perpap/fmap/" \
-		-XX:DEVICE_H2="nvme0n1" \
+		$(get_flexheap_mount_point) \
+		$(get_flexheap_device) \
 		-XX:H2FileSize=751619276800 \
 		-Xlogth:llarge_teraCache.txt "${class_file}"
 }
