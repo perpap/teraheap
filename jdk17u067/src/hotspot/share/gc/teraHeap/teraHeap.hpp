@@ -128,10 +128,11 @@ private:
 #endif
 
 public:
-  // Constructor
-  //TeraHeap();
+  // Default Constructor
+  TeraHeap():TeraHeap(nullptr){};
 #if 1//perpap
-  TeraHeap(HeapWord* heap_end/* = nullptr*/);
+  // Custom Constructor with hint for H2 placement after H1 address range
+  TeraHeap(HeapWord* heap_end = nullptr);
 #endif
   // Destructor
   ~TeraHeap();

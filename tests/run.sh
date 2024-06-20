@@ -19,12 +19,10 @@ cpu_arch=$(uname -p)
 FLEXHEAP=false
 FLEXHEAP_DEVICE="nvme0n1"
 FLEXHEAP_MOUNT_POINT="/mnt/perpap/fmap/"
-EXEC0=("Extend_Lambda" "Test_Reflection" "Test_Reference"
-	"HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap")
+#EXEC=("HashMap")
 EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList"
 	"Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference"
-	#"HashMap"
-	"Rehashing" "Clone" "Groupping" "MultiHashMap"
+	"HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap"
 	"Test_WeakHashMap" "ClassInstance")
 
 # Export Enviroment Variables

@@ -70,7 +70,6 @@ jint ParallelScavengeHeap::initialize() {
    
   initialize_reserved_region(heap_rs);
 	
-#if 1//FIXME
 #ifdef TERA_CARDS
   PSCardTable* card_table;
   if (EnableTeraHeap) {
@@ -102,7 +101,7 @@ jint ParallelScavengeHeap::initialize() {
   CardTableBarrierSet* const barrier_set = new CardTableBarrierSet(card_table);
   barrier_set->initialize();
   BarrierSet::set_barrier_set(barrier_set);
-#endif //FIXME
+
   // Make up the generations
   assert(MinOldSize <= OldSize && OldSize <= MaxOldSize, "Parameter check");
   assert(MinNewSize <= NewSize && NewSize <= MaxNewSize, "Parameter check");

@@ -794,7 +794,7 @@ jint universe_init() {
 }
 
 void Universe::initialize_teraheap(HeapWord* heap_end){
-	//NOT_PRODUCT(assert(heap_end == NULL, "H1 heap is not initialized");)
+	NOT_PRODUCT(assert(heap_end != NULL, "H1 heap is not initialized");)
 	_teraHeap = new TeraHeap(heap_end);
 	log_info(gc)("Initialize Teraheap");
 }
@@ -804,12 +804,7 @@ jint Universe::initialize_heap() {
   _collectedHeap = GCConfig::arguments()->create_heap();
 
   log_info(gc)("Using %s", _collectedHeap->name());
-#if 0//perpap
-  if (EnableTeraHeap) {
-    _teraHeap = new TeraHeap(nullptr);//new TeraHeap();
-    log_info(gc)("Initialize Teraheap");
-  }
-#endif
+
   return _collectedHeap->initialize();
 }
 

@@ -70,8 +70,6 @@ void create_file(const char* path, uint64_t size) {
           "calculated to be smaller than MAX_PARTITIONS!");
   max_rdd_id = region_array_size / MAX_PARTITIONS;
   group_array_size = region_array_size / 2; // deprecated
-  //fd = open("/mnt/fmap/H2.txt", O_RDWR);
-  //assertf(fd >= 1, "tempfile error.");
 
   fd = mkstemp(dev);
   unlink(dev);
@@ -83,7 +81,6 @@ void create_file(const char* path, uint64_t size) {
 }
 
 // Initialize allocator
-//void init(uint64_t align, const char* path, uint64_t size) {
 void init(uint64_t align, const char* path, uint64_t size, char* heap_end) {
     fd = -1;
 
@@ -94,7 +91,6 @@ void init(uint64_t align, const char* path, uint64_t size, char* heap_end) {
 #else
   create_file(path, size);
   // Memory-mapped a file over a storage device
-  //tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   off_t start_addr = (off_t)heap_end; 
   size_t page_size = PAGE_SIZE;
   while (start_addr < (off_t)heap_end + dev_size) {

@@ -4232,7 +4232,14 @@ void MacroAssembler::movoop(Register dst, jobject obj, bool immediate) {
 #ifdef ASSERT
     {
       ThreadInVMfromUnknown tiv;
+#ifdef TERA_INTERPRETER
+      if (EnableTeraHeap)
+        assert(Universe::heap()->is_in(JNIHandles::resolve(obj)) || Universe::is_in_h2(JNIHandles::resolve(obj)), "should be real oop");
+      else
+        assert(Universe::heap()->is_in(JNIHandles::resolve(obj)), "should be real oop");
+#else
       assert(Universe::heap()->is_in(JNIHandles::resolve(obj)), "should be real oop");
+#endif
     }
 #endif
     oop_index = oop_recorder()->find_index(obj);
