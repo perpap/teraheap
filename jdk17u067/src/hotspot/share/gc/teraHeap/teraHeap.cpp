@@ -18,7 +18,6 @@ long int TeraHeap::cur_obj_group_id;
 long int TeraHeap::cur_obj_part_id;
 
 // Constructor of TeraHeap
-//TeraHeap::TeraHeap() {
 TeraHeap::TeraHeap(HeapWord* heap_end) {
   uint64_t align = CardTable::th_ct_max_alignment_constraint();
 
@@ -26,7 +25,6 @@ TeraHeap::TeraHeap(HeapWord* heap_end) {
     ShouldNotReachHere();
   }
 
-  //init(align, AllocateH2At, H2FileSize);
 #if 1//perpap
   init(align, AllocateH2At, H2FileSize, (char *)heap_end);
 #endif
