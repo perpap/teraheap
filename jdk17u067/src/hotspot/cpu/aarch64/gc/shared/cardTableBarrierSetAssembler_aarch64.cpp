@@ -41,10 +41,16 @@ void CardTableBarrierSetAssembler::store_check(MacroAssembler* masm, Register ob
 #ifdef TERA_INTERPRETER
 	if (EnableTeraHeap) {
 		Label L_h1, L_done;
-		// Load the TeraHeap's H2 address in r11
+		// Load the TeraHeap's H2 start address in r11
 		__ lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
 		__ cmp(obj, r11);
 		__ br(Assembler::LT, L_h1);
+    #if 0//FIXME
+    // Load the TeraHeap's H2 end address in r12
+    __ lea(r12, Address((address)Universe::teraHeap()->h2_end_addr(), relocInfo::none));
+		__ cmp(obj, r12);
+		__ br(Assembler::GT, L_h1);
+    #endif//FIXME
 		//Obj in H2
 		__ lsr(obj, obj, CardTable::th_card_shift);
 		assert(CardTable::dirty_card_val() == 0, "must be");
@@ -96,14 +102,18 @@ void CardTableBarrierSetAssembler::gen_write_ref_array_post_barrier(MacroAssembl
 	__ sub(end, end, BytesPerHeapOop); // last element address to make inclusive
 #ifdef TERA_INTERPRETER
 	if (EnableTeraHeap) {
-		//__ movi(r11, EnableTeraHeap);
-		//__ cbz(r11, L_h1);
 		Label L_h2_loop;
-		// Load the TeraHeap's H2 address in scratch
+		// Load the TeraHeap's H2 start address in scratch
 		__ lea(scratch, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
 		// Check if array is in H1 or H2
 		__ cmp(start, scratch);
 		__ br(Assembler::LT, L_h1);
+    #if 0//FIXME
+    // Load the TeraHeap's H2 end address in r12
+    __ lea(r12, Address((address)Universe::teraHeap()->h2_end_addr(), relocInfo::none));
+		__ cmp(start, r12);
+		__ br(Assembler::GT, L_h1);
+    #endif//FIXME
 		//Obj in H2
 		__ lsr(start, start, CardTable::th_card_shift);
 		__ lsr(end, end, CardTable::th_card_shift);

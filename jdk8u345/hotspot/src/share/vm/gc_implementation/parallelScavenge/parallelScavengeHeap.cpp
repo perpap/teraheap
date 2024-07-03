@@ -88,7 +88,9 @@ jint ParallelScavengeHeap::initialize() {
 #ifdef TERA_CARDS
   CardTableExtension* barrier_set;
   if (EnableTeraHeap) {
-
+    #if 1//perpap
+	  Universe::initialize_teraheap(_reserved.end());
+	  #endif
 	  _tera_heap_reserved = MemRegion(
 			  (HeapWord*)Universe::teraHeap()->h2_start_addr(),
 			  (HeapWord*)Universe::teraHeap()->h2_end_addr());

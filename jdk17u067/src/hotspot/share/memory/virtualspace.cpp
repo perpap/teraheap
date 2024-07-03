@@ -219,7 +219,7 @@ void ReservedSpace::reserve(size_t size,
   // - Mapping backed by normal pages or transparent huge pages
   // The first two have restrictions that requires the whole mapping to be
   // committed up front. To record this the ReservedSpace is marked 'special'.
-
+  tty->print("[LINE:%d] _fd_for_heap = %d\n", __LINE__,_fd_for_heap);
   if (_fd_for_heap != -1) {
     // When there is a backing file directory for this space then whether
     // large pages are allocated is up to the filesystem of the backing file.

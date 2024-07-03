@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#set -x
+set -x
 
 # Declare an associative array used for error handling
 declare -A ERRORS
@@ -24,6 +24,7 @@ EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList"
 	"Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference"
 	"HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap"
 	"Test_WeakHashMap" "ClassInstance")
+EXEC=("Array_List")
 
 # Export Enviroment Variables
 export_env_vars() {
@@ -395,12 +396,12 @@ for gcThread in "${PARALLEL_GC_THREADS[@]}"; do
 		if [ "${exec_file}" == "ClassInstance" ]; then
 			XMS=2
 		elif [ "${exec_file}" == "Array_List" ]; then
-			XMS=3
+			XMS=64
 		else
 			XMS=1
 		fi
 
-		MAX=100
+		MAX=1200
 		TERACACHE_SIZE=$(echo $(((MAX - XMS) * 1024 * 1024 * 1024)))
 		case ${MODE} in
 		0)

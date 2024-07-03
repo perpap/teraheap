@@ -14,26 +14,12 @@
 #include "../include/segments.h"
 #include "../include/sharedDefines.h"
 
-// Function to get the OS page size
-static size_t get_page_size() {
-    long page_size = sysconf(_SC_PAGESIZE);
-    if (page_size == -1) {
-        perror("sysconf");
-        exit(EXIT_FAILURE);
-    }
-    return (size_t)page_size;
-}
-
-#if defined(__ia64__) || defined(__x86_64__) || defined(__aarch64__)
-#define PAGE_SIZE get_page_size()
-#else
-#error "Unsupported architecture"
-#endif
-
 #define HEAPWORD (8)                       // In the JVM the heap is aligned to 8 words
 #define HEADER_SIZE (32)                   // Header size of the Dummy object	
 #define align_size_up_(size, alignment) (((size) + ((alignment) - 1)) & ~((alignment) - 1))
-
+#define H1_ALIGNMENT (sysconf(_SC_PAGESIZE))   // 64K on ampere
+#define H2_ALIGNMENT (8192 * H1_ALIGNMENT)               // 512 on ampere
+//
 char dev[150] = {'\0'};
 uint64_t dev_size = 0;
 uint64_t region_array_size = 0;
@@ -41,7 +27,41 @@ uint64_t max_rdd_id = 0;
 uint64_t group_array_size = 0;
 struct _mem_pool tc_mem_pool;
 int fd;
+/*
+static inline void check_errno(){
+    if(errno){
+      exit(EXIT_FAILURE);
+    }
+}
+*/
 
+  // Convert the address to an integer for bitwise operations
+char *align_to_64kb_page(char *addr) {
+  uintptr_t address = (uintptr_t)addr;
+
+  // Define the page size (64 KB)
+  uintptr_t page_size = 64 * 1024;
+
+  // Calculate the aligned address
+  uintptr_t aligned_address = (address + page_size - 1) & ~(page_size - 1);
+
+  // Convert the aligned address back to a pointer
+  return (char *)aligned_address;
+
+}
+
+bool is_aligned(void *p, size_t N)
+{
+    return ((uintptr_t)p & (uintptr_t)(N - 1)) == 0;
+}
+
+void* align_ptr_up(void* ptr, size_t alignment) {
+  return (void *) ( ((uintptr_t)ptr + alignment - 1) & ~(alignment - 1) );
+}
+
+/*static void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int flags, int fd, off_t offset);*/
+
+/*
 intptr_t align_size_up(intptr_t size, intptr_t alignment) {
 	return align_size_up_(size, alignment);
 }
@@ -49,7 +69,7 @@ intptr_t align_size_up(intptr_t size, intptr_t alignment) {
 void* align_ptr_up(void* ptr, size_t alignment) {
 	return (void*)align_size_up((intptr_t)ptr, (intptr_t)alignment);
 }
-
+*/
 void create_file(const char* path, uint64_t size) {
   assertf(size >= 1024*1024*1024LU, "Size should be grater than 1GB");
   size_t max_len = strnlen(path, 150);
@@ -76,12 +96,12 @@ void create_file(const char* path, uint64_t size) {
   assertf(fd >= 1, "tempfile error.");
   int status = posix_fallocate(fd, 0, dev_size);
   if (status != 0) {
-    fprintf(stderr, "Fallocate error\n");
+    fprintf(stderr, "[%s|%s|%d]Fallocate error\n",__FILE__,__func__,__LINE__);
   }
 }
 
 // Initialize allocator
-void init(uint64_t align, const char* path, uint64_t size, char* heap_end) {
+void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fd = -1;
 
 #if ANONYMOUS
@@ -90,25 +110,31 @@ void init(uint64_t align, const char* path, uint64_t size, char* heap_end) {
 	tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
 #else
   create_file(path, size);
-  // Memory-mapped a file over a storage device
-  off_t start_addr = (off_t)heap_end; 
-  size_t page_size = PAGE_SIZE;
-  while (start_addr < (off_t)heap_end + dev_size) {
-        tc_mem_pool.mmap_start = mmap((void *)start_addr, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
-        if (tc_mem_pool.mmap_start != MAP_FAILED) {
-            printf("Memory mapping successful at address %p\n", tc_mem_pool.mmap_start);
-            break;
-        } else {
-            perror("Memory mapping failed");
-            start_addr += page_size;
-        }
-  }
+  // Memory-mapped a file over a storage device 
+  //tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  //Memory-map heap 2 (h2) using the file, at the end address of h1
+  //tc_mem_pool.start_address = aligned_mmap(size, align, /*align_ptr_up((void *)h1_end, align)*/h1_end, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+  //tc_mem_pool.mmap_start = mmap(align_ptr_up((void *)h1_end, /*H2_ALIGNMENT*/align), size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+  #if 1//FIXME
+    char *h2_start = h1_end;
+  h2_start = align_to_64kb_page(h2_start);
+  fprintf(stderr, "Allocator H1end= %p\n", h1_end);
+  fprintf(stderr, "Allocator H2Start= %p\n", h2_start);
+    //if ((uintptr_t)h2_start % align != 0) {
+    //    h2_start = (void *)(((uintptr_t)h2_start + align - 1) & ~(align - 1));
+    //}
+  tc_mem_pool.mmap_start = mmap(h2_start, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0); 
+    //tc_mem_pool.mmap_start = mmap(align_ptr_up((void *)h2_start, align), size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+  #endif
 #endif
- 
-	//assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
-
+  assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
+  /*
+  if(!is_aligned(tc_mem_pool.start_address, align)){
+    printf("tc_mem_pool.start_address is not aligned\n");
+  }*/
 	// Card table in JVM needs the start address of TeraCache to be align up
 	tc_mem_pool.start_address = (char *) align_ptr_up(tc_mem_pool.mmap_start, align);
+  //fprintf(stderr,"tc_mem_pool.start_address=%zd tc_mem_pool.start_address=%p\n",(intptr_t)tc_mem_pool.start_address, tc_mem_pool.start_address);
 
 	tc_mem_pool.cur_alloc_ptr = tc_mem_pool.start_address;
 	tc_mem_pool.size = 0;
@@ -118,12 +144,41 @@ void init(uint64_t align, const char* path, uint64_t size, char* heap_end) {
     printf("Stop address:%p\n",tc_mem_pool.stop_address);
 #else
 	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + dev_size;
+  //tc_mem_pool.stop_address = tc_mem_pool.start_address + dev_size;
 #endif
   init_regions();
   req_init();
 }
 
+void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int flags, int fd, off_t offset){
+    // Request extra memory to ensure we can align the allocation
+    size_t map_size = size + alignment;
+    errno = 0;
+    void* map = tc_mem_pool.mmap_start = mmap(address, map_size, prot, flags, fd, offset);
+    //void* map = mmap(address, map_size, prot, flags, fd, offset);
+    if (map == MAP_FAILED) {
+        fprintf(stderr, "[%s|%s|%d]mmap failed with errno:%d\n", __FILE__,__func__,__LINE__,errno);
+        return NULL;
+    }
 
+    // Align the base address
+    uintptr_t base = (uintptr_t)map;
+    uintptr_t aligned_base = (base + alignment - 1) & ~(alignment - 1);
+
+    // Calculate the required unmapping sizes
+    size_t pre_size = aligned_base - base;
+    size_t post_size = (base + map_size) - (aligned_base + size);
+
+    // Unmap any unused regions
+    if (pre_size > 0) {
+        munmap(map, pre_size);
+    }
+    if (post_size > 0) {
+        munmap((void*)(aligned_base + size), post_size);
+    }
+
+    return (void*)aligned_base;
+}
 // Return the start address of the memory allocation pool
 char* start_addr_mem_pool() {
 	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");

@@ -102,7 +102,12 @@ struct region_list{
   // This function is to get the start address of the mmaped space
   // for H2
 	unsigned long	 r_get_mmaped_start(void);
-	
+  #if 1//perpap
+  void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int flags, int fd, off_t offset);
+  bool is_aligned(void *p, size_t N);
+  void* align_ptr_up(void* ptr, size_t alignment);
+  #endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -230,7 +230,11 @@ private:
   // Historic gc information
   static size_t _heap_capacity_at_last_gc;
   static size_t _heap_used_at_last_gc;
-
+#if 1//perpap
+ public:
+  static void initialize_teraheap(HeapWord* heap_end);
+ private:
+#endif
   static jint initialize_heap();
   static void initialize_basic_type_mirrors(TRAPS);
   static void fixup_mirrors(TRAPS);

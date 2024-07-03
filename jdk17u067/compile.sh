@@ -120,8 +120,8 @@ function release() {
 		--with-jobs="$(nproc)" \
 		--with-boot-jdk=$BOOT_JDK \
 		--disable-cds \
-		--with-extra-cflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-		--with-extra-cxxflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+		--with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+		--with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
 	#--with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
 	#--with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
 
@@ -147,8 +147,8 @@ function fastdebug() {
 		--with-jobs="$(nproc)" \
 		--with-boot-jdk=$BOOT_JDK \
 		--disable-cds \
-		--with-extra-cflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-		--with-extra-cxxflags="-march=native -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+		--with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+		--with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
 	#--with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
 	#--with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
 

@@ -74,11 +74,11 @@ jint ParallelScavengeHeap::initialize() {
   PSCardTable* card_table;
   if (EnableTeraHeap) {
 	#if 1//perpap
-	Universe::initialize_teraheap(_reserved.end()/*_young_gen->to_space()->_end()*/);
+	Universe::initialize_teraheap((HeapWord*)heap_rs.end()/*reserved.end()*//*_young_gen->to_space()->_end()*/);
 	#endif
     _tera_heap_reserved = MemRegion((HeapWord*)Universe::teraHeap()->h2_start_addr(),
                                     (HeapWord*)Universe::teraHeap()->h2_end_addr());
-
+    
     if (!(_tera_heap_reserved.start() >= _reserved.end())){
       vm_shutdown_during_initialization("H2 should be in greater addresses than H1");
     }

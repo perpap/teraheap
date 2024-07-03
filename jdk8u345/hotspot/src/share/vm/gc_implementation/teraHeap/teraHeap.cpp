@@ -29,10 +29,10 @@ long int TeraHeap::cur_obj_group_id;
 long int TeraHeap::cur_obj_part_id;
 
 // Constructor of TeraHeap
-TeraHeap::TeraHeap() {
+TeraHeap::TeraHeap(HeapWord* heap_end) {
 
   uint64_t align = CardTableModRefBS::th_ct_max_alignment_constraint();
-  init(align, AllocateH2At, H2FileSize);
+  init(align, AllocateH2At, H2FileSize, (char*)heap_end);
 
   _start_addr = start_addr_mem_pool();
   _stop_addr = stop_addr_mem_pool();

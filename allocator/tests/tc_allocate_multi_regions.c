@@ -12,15 +12,7 @@
 *       - allocator initialization
 *       - object allocation in the correct positions
 ***************************************************/
-
-#include <stdint.h>
-#include <stdio.h>
-#include "../include/sharedDefines.h"
-#include "../include/regions.h"
-#include "../include/segments.h"
-
-#define CARD_SIZE ((uint64_t) (1 << 9))
-#define PAGE_SIZE ((uint64_t) (1 << 12))
+#include "tc_heap.h"
 
 #define SIZE_30MB (3932160)
 #define SIZE_5MB (655360)
@@ -28,14 +20,22 @@
 #define SIZE_2MB (262144)
 
 //this test needs 256MB region size
-int main() {
+int main(int argc, char **argv) {
+    if(argc != 4){
+      fprintf(stderr,"Usage: ./tc_allocate_multi_regions.bin <mount_point> <h1_size> <h2_size>\n");
+      exit(EXIT_FAILURE);
+    }
+    unsigned long long h1_size = convert_string_to_number(argv[2]);
+    ERRNO_CHECK
+    unsigned long long h2_size = convert_string_to_number(argv[3]);
+    ERRNO_CHECK
+
   char *obj1, *obj2, *obj3, *obj4, *obj5, *obj6;
 
-  // Init allocator
-  //init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
-#if 1//perpap
-  init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600, 0);
-#endif
+  initialize_h1(H1_ALIGNMENT, NULL, h1_size * GB, 0);
+  initialize_h2(H2_ALIGNMENT, argv[1], h2_size * GB, (void *)(h1.start_address + h1_size * GB));
+  print_heap_statistics();
+
   //obj1 should be in region 0
   obj1 = allocate(1, 0, 0);
   fprintf(stderr, "Allocate: %p\n", obj1);
@@ -78,6 +78,8 @@ int main() {
   fprintf(stderr, "Allocate: %p\n", obj3);
 
   //free_regions();
-
+  printf("--------------------------------------\n");
+	printf("TC_Allocate_Multi_Regions:\t\t\t\033[1;32m[PASS]\033[0m\n");
+	printf("--------------------------------------\n");
   return 0;
 }

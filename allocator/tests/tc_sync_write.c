@@ -13,15 +13,7 @@
 *       - object allocation in the correct positions
 *       - synchronous write with explicit IO
 ***************************************************/
-
-#include <stdint.h>
-#include <stdio.h>
-#include "../include/sharedDefines.h"
-#include "../include/regions.h"
-#include "../include/segments.h"
-
-#define CARD_SIZE ((uint64_t) (1 << 9))
-#define PAGE_SIZE ((uint64_t) (1 << 12))
+#include "tc_heap.h"
 
 #define SIZE_80B (80)
 #define SIZE_160B (160)
@@ -31,16 +23,24 @@
 #define HEAPWORD (8)
 
 #define SIZE_TO_WORD(SIZE) ((size_t) (SIZE / HEAPWORD))
-int main() {
+int main(int argc, char **argv) {
+  if(argc != 4){
+      fprintf(stderr,"Usage: ./tc_sync_write.bin <mount_point> <h1_size> <h2_size>\n");
+      exit(EXIT_FAILURE);
+  }
+  unsigned long long h1_size = convert_string_to_number(argv[2]);
+  ERRNO_CHECK
+  unsigned long long h2_size = convert_string_to_number(argv[3]);
+  ERRNO_CHECK
+
 	char *obj1, *obj2, *obj3, *obj4;
 	char *tmp, *tmp2, *tmp3, *tmp4;
 	
-	// Init allocator
-  //init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
-#if 1//perpap
-	init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600, 0);
-#endif
-	tmp = malloc(SIZE_80B * sizeof(char));
+	initialize_h1(H1_ALIGNMENT, NULL, h1_size * GB, 0);
+  initialize_h2(H2_ALIGNMENT, argv[1], h2_size * GB, (void *)(h1.start_address + h1_size * GB));
+  print_heap_statistics();
+	
+  tmp = malloc(SIZE_80B * sizeof(char));
 	memset(tmp, '1', SIZE_80B);
 	tmp[SIZE_80B - 1] = '\0';
 
