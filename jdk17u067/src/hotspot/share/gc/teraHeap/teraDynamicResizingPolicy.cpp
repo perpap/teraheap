@@ -7,7 +7,7 @@
 #include "memory/universe.hpp"
 
 #define BUFFER_SIZE 1024
-//#define CYCLES_PER_SECOND 2.4e9; // CPU frequency of 2.4 GHz
+
 const uint64_t TeraDynamicResizingPolicy::CYCLES_PER_SECOND{get_cycles_per_second()};
 
 #define REGULAR_INTERVAL ((10LL * 1000)) 
@@ -146,7 +146,7 @@ void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
   cpu_usage->calculate_iowait_time(interval, &iowait_time_ms, MUTATOR_STAT);
 
 	iowait_time_ms -= gc_iowait_time_ms;
-	dev_time_end = get_device_active_time(/*"nvme3n1"*/DEVICE_H2);
+	dev_time_end = get_device_active_time(DEVICE_H2);
 	*device_active_time_ms = (dev_time_end - dev_time_start) - gc_dev_time;
 
 	assert(gc_time <= interval, "GC time should be less than the window interval");
@@ -168,11 +168,11 @@ void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
 TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
   cpu_usage = init_cpu_usage_stats();
 
-  window_start_time = get_cycles();//rdtsc();
+  window_start_time = get_cycles();
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_iowait_time_ms = 0;
   gc_time = 0;
-  dev_time_start = get_device_active_time(/*"nvme3n1"*/DEVICE_H2);
+  dev_time_start = get_device_active_time(DEVICE_H2);
   gc_dev_time = 0;
   cur_action = NO_ACTION;
   cur_state = S_NO_ACTION;
@@ -200,12 +200,12 @@ double TeraDynamicResizingPolicy::ellapsed_time(uint64_t start_time,
 
 // Set current time since last window
 void TeraDynamicResizingPolicy::reset_counters() {
-  window_start_time = get_cycles();//rdtsc();
+  window_start_time = get_cycles();
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_time = 0;
   gc_dev_time = 0;
   gc_iowait_time_ms = 0;
-  dev_time_start = get_device_active_time(/*"nvme3n1"*/DEVICE_H2);
+  dev_time_start = get_device_active_time(DEVICE_H2);
   transfer_hint_enabled = false;
   gc_compaction_phase_ms = 0;
   window_interval = REGULAR_INTERVAL;
@@ -215,7 +215,7 @@ void TeraDynamicResizingPolicy::reset_counters() {
 bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
 	uint64_t window_end_time;
 	static int i = 0;
-	window_end_time = get_cycles();//rdtsc();
+	window_end_time = get_cycles();
 	interval = ellapsed_time(window_start_time, window_end_time);
 
 #ifdef PER_MINOR_GC
@@ -228,7 +228,7 @@ bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
 // Init the iowait timer at the begining of the major GC.
 void TeraDynamicResizingPolicy::gc_start(double start_time) {
   cpu_usage->read_cpu_usage(STAT_START, GC_STAT);
-  gc_dev_start = get_device_active_time(/*"nvme3n1"*/DEVICE_H2);
+  gc_dev_start = get_device_active_time(DEVICE_H2);
   last_full_gc_start = start_time;
 }
 
@@ -244,7 +244,7 @@ void TeraDynamicResizingPolicy::gc_end(double gc_duration, double last_full_gc) 
   cpu_usage->calculate_iowait_time(gc_duration, &iowait_time, GC_STAT);
   gc_iowait_time_ms += iowait_time;
 
-	gc_dev_end = get_device_active_time(/*"nvme3n1"*/DEVICE_H2);
+	gc_dev_end = get_device_active_time(DEVICE_H2);
 	gc_dev_time += (gc_dev_end - gc_dev_start);
 
 	gc_time += gc_duration;
@@ -381,15 +381,6 @@ void TeraDynamicResizingPolicy::debug_print(double avg_iowait_time, double avg_g
 	thlog_or_tty->print_cr("interval = %lf\n", interval);
 	thlog_or_tty->flush();
 }
-/*
-uint64_t TeraDynamicResizingPolicy::rdtsc(){
-#if 0
-	unsigned int lo, hi;
-	__asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-	return ((uint64_t)hi << 32) | lo;
-#endif
-	return get_cycles;
-}*/
 
 // Find the average of the array elements
 double TeraDynamicResizingPolicy::calc_avg_time(double *arr, int size) {

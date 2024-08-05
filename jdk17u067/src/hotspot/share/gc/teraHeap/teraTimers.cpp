@@ -3,18 +3,7 @@
 #include "gc/teraHeap/cycleCounting.hpp"
 #include "runtime/java.hpp"
 
-//#define CYCLES_PER_SECOND 2.4e9; // CPU frequency of 2.4 GHz
-
 const uint64_t TeraTimers::CYCLES_PER_SECOND{get_cycles_per_second()};
-/*
-uint64_t TeraTimers::rdtsc() {
-#if 0
-	unsigned int lo, hi;
-	__asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-	return ((uint64_t)hi << 32) | lo;
-#endif
-	return get_cycles();
-}*/
 
 void TeraTimers::print_ellapsed_time(uint64_t start_time,
 		uint64_t end_time, char* msg) {
@@ -46,112 +35,112 @@ TeraTimers::~TeraTimers() {
 }
 
 void TeraTimers::h2_scavenge_start() {
-	h2_scavenge_start_time = rdtsc();
+	h2_scavenge_start_time = get_cycles();
 }
 
 void TeraTimers::h2_scavenge_end() {
 	char msg[12] = "H2_SCAVENGE";
 
-	h2_scavenge_end_time = rdtsc();
+	h2_scavenge_end_time = get_cycles();
 	print_ellapsed_time(h2_scavenge_start_time, h2_scavenge_end_time, msg);
 }
 
 void TeraTimers::h1_marking_phase_start() {
-	h1_marking_phase_start_time = rdtsc();
+	h1_marking_phase_start_time = get_cycles();
 }
 
 void TeraTimers::h1_marking_phase_end() {
 	char msg[17] = "H1_MARKING_PHASE";
 
-	h1_marking_phase_end_time = rdtsc();
+	h1_marking_phase_end_time = get_cycles();
 	print_ellapsed_time(h1_marking_phase_start_time, h1_marking_phase_end_time, msg);
 }
 
 void TeraTimers::h2_mark_bwd_ref_start() {
-	h2_mark_bwd_ref_start_time = rdtsc();
+	h2_mark_bwd_ref_start_time = get_cycles();
 }
 
 void TeraTimers::h2_mark_bwd_ref_end() {
 	char msg[19] = "H2_MARKING_BWD_REF";
 
-	h2_mark_bwd_ref_end_time = rdtsc();
+	h2_mark_bwd_ref_end_time = get_cycles();
 	print_ellapsed_time(h2_mark_bwd_ref_start_time, h2_mark_bwd_ref_end_time, msg);
 }
 
 void TeraTimers::h2_precompact_start() {
-	h2_precompact_start_time = rdtsc();
+	h2_precompact_start_time = get_cycles();
 }
 
 void TeraTimers::h2_precompact_end() {
 	char msg[14] = "H2_PRECOMPACT";
 
-	h2_precompact_end_time = rdtsc();
+	h2_precompact_end_time = get_cycles();
 	print_ellapsed_time(h2_precompact_start_time, h2_precompact_end_time, msg);
 }
 
 void TeraTimers::h1_summary_phase_start() {
-	h1_summary_phase_start_time = rdtsc();
+	h1_summary_phase_start_time = get_cycles();
 }
 
 void TeraTimers::h1_summary_phase_end() {
 	char msg[17] = "H1_SUMMARY_PHASE";
 
-	h1_summary_phase_end_time = rdtsc();
+	h1_summary_phase_end_time = get_cycles();
 	print_ellapsed_time(h1_summary_phase_start_time, h1_summary_phase_end_time, msg);
 }
 
 void TeraTimers::h2_compact_start() {
-	h2_compact_start_time = rdtsc();
+	h2_compact_start_time = get_cycles();
 }
 
 void TeraTimers::h2_compact_end() {
 	char msg[17] = "H2_COMPACT_PHASE";
 
-	h2_compact_end_time = rdtsc();
+	h2_compact_end_time = get_cycles();
 	print_ellapsed_time(h2_compact_start_time, h2_compact_end_time, msg);
 }
 
 void TeraTimers::h2_adjust_bwd_ref_start() {
-	h2_adjust_bwd_ref_start_time = rdtsc();
+	h2_adjust_bwd_ref_start_time = get_cycles();
 }
 
 void TeraTimers::h2_adjust_bwd_ref_end() {
 	char msg[18] = "H2_ADJUST_BWD_REF";
 
-	h2_adjust_bwd_ref_end_time = rdtsc();
+	h2_adjust_bwd_ref_end_time = get_cycles();
 	print_ellapsed_time(h2_adjust_bwd_ref_start_time, h2_adjust_bwd_ref_end_time, msg);
 }
 
 void TeraTimers::h1_adjust_roots_start() {
-	h1_adjust_roots_start_time = rdtsc();
+	h1_adjust_roots_start_time = get_cycles();
 }
 
 void TeraTimers::h1_adjust_roots_end() {
 	char msg[16] = "H1_ADJUST_ROOTS";
-	h1_adjust_roots_end_time = rdtsc();
+	h1_adjust_roots_end_time = get_cycles();
 
 	print_ellapsed_time(h1_adjust_roots_start_time, h1_adjust_roots_end_time, msg);
 }
 
 void TeraTimers::h1_compact_start() {
-	h1_compact_start_time = rdtsc();
+	h1_compact_start_time = get_cycles();
 }
 
 void TeraTimers::h1_compact_end() {
 	char msg[11] = "H1_COMPACT";
 
-	h1_compact_end_time = rdtsc();
+	h1_compact_end_time = get_cycles();
 	print_ellapsed_time(h1_compact_start_time, h1_compact_end_time, msg);
 }
 
 void TeraTimers::h2_clear_fwd_table_start() {
-	h2_clear_fwd_table_start_time = rdtsc();
+	h2_clear_fwd_table_start_time = get_cycles();
 }
 
 void TeraTimers::h2_clear_fwd_table_end() {
 	char msg[19] = "H2_CLEAR_FWD_TABLE";
 
-	h2_clear_fwd_table_end_time = rdtsc();
+	h2_clear_fwd_table_end_time = get_cycles();
 	print_ellapsed_time(h2_clear_fwd_table_start_time, h2_clear_fwd_table_end_time, msg);
 }
 
@@ -161,12 +150,12 @@ void TeraTimers::h2_clear_fwd_table_end() {
 // take the maximum time from all the threads as the total time.
 void TeraTimers::h1_card_table_start(unsigned int worker_id) {
 	assert(worker_id < ParallelGCThreads, "Index out of bound");
-	h1_card_table_start_time[worker_id] = rdtsc();
+	h1_card_table_start_time[worker_id] = get_cycles();
 }
 
 void TeraTimers::h1_card_table_end(unsigned int worker_id) {
 	assert(worker_id < ParallelGCThreads, "Index out of bound");
-	h1_card_table_end_time[worker_id] = rdtsc();
+	h1_card_table_end_time[worker_id] = get_cycles();
 }
 
 // Keep for each GC thread the time that need to traverse the H2
@@ -175,12 +164,12 @@ void TeraTimers::h1_card_table_end(unsigned int worker_id) {
 // take the maximum time from all the threads as the total time.
 void TeraTimers::h2_card_table_start(unsigned int worker_id) {
 	assert(worker_id < ParallelGCThreads, "Index out of bound");
-	h2_card_table_start_time[worker_id] = rdtsc();
+	h2_card_table_start_time[worker_id] = get_cycles();
 }
 
 void TeraTimers::h2_card_table_end(unsigned int worker_id) {
 	assert(worker_id < ParallelGCThreads, "Index out of bound");
-	h2_card_table_end_time[worker_id] = rdtsc();
+	h2_card_table_end_time[worker_id] = get_cycles();
 }
 
 // Print the time to traverse the TeraHeap dirty card tables
@@ -214,11 +203,11 @@ void TeraTimers::print_card_table_scanning_time() {
 }
 
 void TeraTimers::malloc_start() {
-	malloc_start_time = rdtsc();
+	malloc_start_time = get_cycles();
 }
 
 void TeraTimers::malloc_end() {
-	malloc_end_time = rdtsc();
+	malloc_end_time = get_cycles();
 
 	double elapsed_time = (double)(malloc_end_time - malloc_start_time) / CYCLES_PER_SECOND;
 	malloc_time_per_gc += (elapsed_time * 1000.0);
