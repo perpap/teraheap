@@ -44,10 +44,12 @@ struct region_list{
 	//void       init(uint64_t alignment, const char* path, uint64_t size);
 	void       init(uint64_t alignment, const char* path, uint64_t size, char* heap_end);
 	
+  // Return the unaligned address of the mmaped region
+  char*      start_mmap_region(void);
 	// Return the start address of the memory allocation pool
 	char*      start_addr_mem_pool(void);
 	
-	// Return the start address of the memory allocation pool
+	// Return the size of the memory allocation pool
 	size_t     mem_pool_size(void);
 
 	// Allocate a new object with `size` and return the `start allocation
@@ -104,8 +106,10 @@ struct region_list{
 	unsigned long	 r_get_mmaped_start(void);
   #if 1//perpap
   void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int flags, int fd, off_t offset);
-  bool is_aligned(void *p, size_t N);
-  void* align_ptr_up(void* ptr, size_t alignment);
+  bool is_aligned(char *p, uintptr_t N);
+  uintptr_t available_virtual_space(void *address1, void *address2);
+  int is_address_mapped(pid_t pid, uintptr_t address); 
+//void* align_ptr_up(void* ptr, size_t alignment);
   #endif
 
 #ifdef __cplusplus

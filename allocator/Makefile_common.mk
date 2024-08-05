@@ -68,6 +68,13 @@ AIOFLAG = -lrt
 LDFLAGS = $(AIOFLAG)
 CFLAGS = $(BINFLAG) $(WALLFLAG) $(OPTIMIZEFLAG)
 
+# Check if the DEBUG environment variable is set to 1
+ifdef DEBUG
+ifneq ($(DEBUG), 0)
+CFLAGS +=-g
+endif
+endif
+
 ## Commands
 RM = rm -fr
 AR = ar -r

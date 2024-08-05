@@ -16,60 +16,93 @@
 
 #define HEAPWORD (8)                       // In the JVM the heap is aligned to 8 words
 #define HEADER_SIZE (32)                   // Header size of the Dummy object	
+
 #define align_size_up_(size, alignment) (((size) + ((alignment) - 1)) & ~((alignment) - 1))
-#define H1_ALIGNMENT (sysconf(_SC_PAGESIZE))   // 64K on ampere
-#define H2_ALIGNMENT (8192 * H1_ALIGNMENT)               // 512 on ampere
-//
+static inline char* align_ptr_up(char* ptr, uintptr_t alignment) {
+  return (char *) ( ((uintptr_t)ptr + alignment - 1) & ~(alignment - 1) );
+}
+static void check_address(pid_t pid, uintptr_t address);
+
 char dev[150] = {'\0'};
 uint64_t dev_size = 0;
+static uint64_t mmap_size = 0;
 uint64_t region_array_size = 0;
 uint64_t max_rdd_id = 0;
 uint64_t group_array_size = 0;
 struct _mem_pool tc_mem_pool;
 int fd;
-/*
-static inline void check_errno(){
-    if(errno){
-      exit(EXIT_FAILURE);
+
+FILE *allocator_log_fp = NULL;
+
+static void calculate_h2_region_array_size(){
+  mmap_size = (uintptr_t)tc_mem_pool.stop_address - (uintptr_t)tc_mem_pool.start_address;
+  region_array_size = /*dev_size*/mmap_size / REGION_SIZE;
+  max_rdd_id = region_array_size / MAX_PARTITIONS;
+  group_array_size = region_array_size / 2; // deprecated
+  fprintf(allocator_log_fp, "[%s|%s|%d]\n%-30s=%lu\n%-30s=%lu\n%-30s = %" PRIu64 "GB\n%-20s = %" PRIu64 "GB\n%-20s = %" PRIu64 "\n%-20s = %" PRIu64 "\n%-20s = %" PRIu64 "\n", __FILE__, __func__, __LINE__, "tc_mem_pool.stop_address", (uintptr_t)tc_mem_pool.stop_address, "tc_mem_pool.start_address", (uintptr_t)tc_mem_pool.start_address, "dev_size", CONVERT_TO_GB(dev_size), "mmap_size", CONVERT_TO_GB(mmap_size), "region_array_size", region_array_size, "max_rdd_id", max_rdd_id, "group_array_size", group_array_size);
+  assertf(region_array_size >= MAX_PARTITIONS,
+          "Device size should be larger, because region_array_size is "
+          "calculated to be smaller than MAX_PARTITIONS!");
+  //fprintf(stderr, "%"PRIu64"regions of size %"PRIu64"MB fit into the mmaped-file of size %"PRIu64"GB...\ndev_size = %"PRIu64"GB\nmmap_size = %"PRIu64"GB\nmax_rdd_id = %"PRIu64"\ngroup_array_size = %"PRIu64"\n", region_array_size, CONVERT_TO_MB(REGION_SIZE), CONVERT_TO_GB(dev_size), CONVERT_TO_GB(dev_size), CONVERT_TO_GB(mmap_size), max_rdd_id, group_array_size);
+}
+
+// Function to check if the address is already mapped
+int is_address_mapped(pid_t pid, uintptr_t target_addr) {
+    char maps_file[256];
+    snprintf(maps_file, sizeof(maps_file), "/proc/%d/maps", pid);
+
+    FILE *file = fopen(maps_file, "r");
+    if (!file) {
+        perror("fopen");
+        exit(EXIT_FAILURE);
     }
+
+    char line[256];
+    uintptr_t start, end;
+
+    while (fgets(line, sizeof(line), file)) {
+        if (sscanf(line, "%lx-%lx", &start, &end) == 2) {
+            if (target_addr >= start && target_addr < end) {
+                fclose(file);
+                return 1; // Address is already mapped
+            }
+        }
+    }
+
+    fclose(file);
+    return 0; // Address is not mapped
 }
-*/
 
-  // Convert the address to an integer for bitwise operations
-char *align_to_64kb_page(char *addr) {
-  uintptr_t address = (uintptr_t)addr;
-
-  // Define the page size (64 KB)
-  uintptr_t page_size = 64 * 1024;
-
-  // Calculate the aligned address
-  uintptr_t aligned_address = (address + page_size - 1) & ~(page_size - 1);
-
-  // Convert the aligned address back to a pointer
-  return (char *)aligned_address;
-
+void check_h2_addresses(){
+  pid_t pid = getpid();
+  char *h2_addresses_msg[] = {"unaligned H2 base address", "aligned H2 base address", "H2 end address", NULL};
+  char *h2_addresses[] = {tc_mem_pool.mmap_start, tc_mem_pool.start_address, tc_mem_pool.stop_address, NULL};
+  int i = 0;
+  for(char *address = *h2_addresses, *msg = *h2_addresses_msg; address != NULL; address = h2_addresses[i], msg = h2_addresses_msg[i]){
+    printf("Checking %-30s: ", msg);
+    check_address(pid, (uintptr_t)address);
+    ++i;
+  }
 }
 
-bool is_aligned(void *p, size_t N)
+void check_address(pid_t pid, uintptr_t address){ 
+  if (is_address_mapped(pid, address)) {
+      printf("Address %16p is already mapped.\n", (char *)address);
+  } else {
+      printf("Address %16p is not mapped.\n", (char *)address);
+  }
+}
+
+uintptr_t available_virtual_space(void *address1, void *address2){
+  assertf((uintptr_t)address2 >= (uintptr_t)address1, "There is no available virtual space");
+  return CONVERT_TO_GB(((uintptr_t)address2 - (uintptr_t)address1));
+}
+
+bool is_aligned(char *p, uintptr_t N)
 {
     return ((uintptr_t)p & (uintptr_t)(N - 1)) == 0;
 }
 
-void* align_ptr_up(void* ptr, size_t alignment) {
-  return (void *) ( ((uintptr_t)ptr + alignment - 1) & ~(alignment - 1) );
-}
-
-/*static void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int flags, int fd, off_t offset);*/
-
-/*
-intptr_t align_size_up(intptr_t size, intptr_t alignment) {
-	return align_size_up_(size, alignment);
-}
-
-void* align_ptr_up(void* ptr, size_t alignment) {
-	return (void*)align_size_up((intptr_t)ptr, (intptr_t)alignment);
-}
-*/
 void create_file(const char* path, uint64_t size) {
   assertf(size >= 1024*1024*1024LU, "Size should be grater than 1GB");
   size_t max_len = strnlen(path, 150);
@@ -82,19 +115,11 @@ void create_file(const char* path, uint64_t size) {
   }
 
 	strcat(dev,".XXXXXX");
-
   dev_size = size;
-  region_array_size = dev_size / REGION_SIZE;
-  assertf(region_array_size >= MAX_PARTITIONS,
-          "Device size should be larger, because region_array_size is "
-          "calculated to be smaller than MAX_PARTITIONS!");
-  max_rdd_id = region_array_size / MAX_PARTITIONS;
-  group_array_size = region_array_size / 2; // deprecated
-
   fd = mkstemp(dev);
   unlink(dev);
   assertf(fd >= 1, "tempfile error.");
-  int status = posix_fallocate(fd, 0, dev_size);
+  int status = posix_fallocate(fd, 0, /*dev_size*/size);
   if (status != 0) {
     fprintf(stderr, "[%s|%s|%d]Fallocate error\n",__FILE__,__func__,__LINE__);
   }
@@ -103,51 +128,66 @@ void create_file(const char* path, uint64_t size) {
 // Initialize allocator
 void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fd = -1;
+    assertf((allocator_log_fp = fopen("allocator_log", "w")) != NULL, "Allocator logger failed!");
 
 #if ANONYMOUS
-	// Anonymous mmap
-  fd = open(dev, O_RDWR);
-	tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+    // Anonymous mmap
+    fd = open(dev, O_RDWR);
+    tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
 #else
-  create_file(path, size);
-  // Memory-mapped a file over a storage device 
-  //tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  //Memory-map heap 2 (h2) using the file, at the end address of h1
-  //tc_mem_pool.start_address = aligned_mmap(size, align, /*align_ptr_up((void *)h1_end, align)*/h1_end, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
-  //tc_mem_pool.mmap_start = mmap(align_ptr_up((void *)h1_end, /*H2_ALIGNMENT*/align), size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
-  #if 1//FIXME
-    char *h2_start = h1_end;
-  h2_start = align_to_64kb_page(h2_start);
-  fprintf(stderr, "Allocator H1end= %p\n", h1_end);
-  fprintf(stderr, "Allocator H2Start= %p\n", h2_start);
-    //if ((uintptr_t)h2_start % align != 0) {
-    //    h2_start = (void *)(((uintptr_t)h2_start + align - 1) & ~(align - 1));
-    //}
-  tc_mem_pool.mmap_start = mmap(h2_start, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0); 
-    //tc_mem_pool.mmap_start = mmap(align_ptr_up((void *)h2_start, align), size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
-  #endif
+    create_file(path, size);
+    // Memory-mapped a file over a storage device
+    if(h1_end == NULL){
+      //Memory-map heap 2 (h2) using memory-mapped IO
+      tc_mem_pool.mmap_start = mmap(0, /*dev_size*/size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0); 
+    }else{
+      //FIXME-- Following code needs work
+      char *h2_start = h1_end;//align_ptr_up(h1_end, align);
+      #ifdef ASSERT
+      pid_t pid = getpid();
+      fprintf(stderr, "%-20s = %p\n%-20s = %p\n", "Allocator H1end", h1_end, "Allocator H2Start", h2_start); 
+      check_address(pid, (uintptr_t)h1_end);
+      check_address(pid, (uintptr_t)h2_start);
+      check_address(pid, (uintptr_t)h1_end + size);
+      #endif
+      fprintf(stderr, "Allocate virtual address space for H2 through memory-mapping a file of %zd GB...\n", CONVERT_TO_GB(size));
+      tc_mem_pool.mmap_start = mmap(h2_start, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+    }
 #endif
-  assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
-  /*
-  if(!is_aligned(tc_mem_pool.start_address, align)){
-    printf("tc_mem_pool.start_address is not aligned\n");
-  }*/
-	// Card table in JVM needs the start address of TeraCache to be align up
-	tc_mem_pool.start_address = (char *) align_ptr_up(tc_mem_pool.mmap_start, align);
-  //fprintf(stderr,"tc_mem_pool.start_address=%zd tc_mem_pool.start_address=%p\n",(intptr_t)tc_mem_pool.start_address, tc_mem_pool.start_address);
-
-	tc_mem_pool.cur_alloc_ptr = tc_mem_pool.start_address;
-	tc_mem_pool.size = 0;
+    assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
+    // Card table in JVM needs the start address of TeraCache to be align up
+    tc_mem_pool.start_address = align_ptr_up(tc_mem_pool.mmap_start, align); 
+    tc_mem_pool.cur_alloc_ptr = tc_mem_pool.start_address;
+    tc_mem_pool.size = 0;
 #if ANONYMOUS
-	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + V_SPACE;
+    tc_mem_pool.stop_address = tc_mem_pool.mmap_start + V_SPACE;
     printf("Start address:%p\n",tc_mem_pool.start_address);
     printf("Stop address:%p\n",tc_mem_pool.stop_address);
 #else
-	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + dev_size;
-  //tc_mem_pool.stop_address = tc_mem_pool.start_address + dev_size;
+    tc_mem_pool.stop_address = tc_mem_pool.mmap_start + /*dev_size*/size;
+    #ifdef ASSERT
+    static const char *border = "-----------------------------------------------------------";
+    fprintf(allocator_log_fp, "%s\n[%s|%s|%d]Use memory-mapped IO for H2 using a file of %zd GB...\n%-30s = %p\n%-30s = %p\n%-30s = %p\n%s\n", border, __FILE__, __func__, __LINE__, CONVERT_TO_GB(size), "tc_mem_pool.mmap_start", tc_mem_pool.mmap_start, "tc_mem_pool.start_address", tc_mem_pool.start_address, "tc_mem_pool.stop_address", tc_mem_pool.stop_address, border);
+    /*
+    fprintf(stderr, "Allocate virtual address space for H2 through memory-mapping a file of %zd GB...\n", CONVERT_TO_GB(size));
+    fprintf(stderr, "[Allocator] tc_mem_pool.mmap_start    = %p\n", tc_mem_pool.mmap_start);
+    fprintf(stderr, "[Allocator] tc_mem_pool.start_address = %p\n", tc_mem_pool.start_address);
+    fprintf(stderr, "[Allocator] tc_mem_pool.stop_address  = %p\n", tc_mem_pool.stop_address);
+    */
+    #endif
 #endif
-  init_regions();
-  req_init();
+    /*#ifdef ASSERT
+    pid_t pid = getpid();
+    fprintf(stderr, "%-30s = %p\n%-30s = %p\n%-30s = %p\n", "H1End", h1_end, "H2Start(mmap_start)", tc_mem_pool.mmap_start, "H2Start(aligned mmap_start)", tc_mem_pool.start_address); 
+    check_address(pid, (uintptr_t)h1_end);
+    check_address(pid, (uintptr_t)tc_mem_pool.mmap_start);
+    check_address(pid, (uintptr_t)h1_end + size);
+    #endif*/
+    calculate_h2_region_array_size();
+    check_h2_addresses();
+    init_regions();
+    req_init();
+    fclose(allocator_log_fp);
 }
 
 void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int flags, int fd, off_t offset){
@@ -179,6 +219,11 @@ void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int f
 
     return (void*)aligned_base;
 }
+
+char* start_mmap_region(void){
+  return tc_mem_pool.mmap_start;
+}
+
 // Return the start address of the memory allocation pool
 char* start_addr_mem_pool() {
 	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");
@@ -205,7 +250,7 @@ char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 	char* alloc_ptr = tc_mem_pool.cur_alloc_ptr;
 	char* prev_alloc_ptr = tc_mem_pool.cur_alloc_ptr;
 
-	assertf(size > 0, "Object should be > 0");
+	assertf(size > 0, "Object size should be > 0");
 
   alloc_ptr = allocate_to_region(size * HEAPWORD, rdd_id, partition_id);
 
