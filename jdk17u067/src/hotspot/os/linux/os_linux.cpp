@@ -3460,14 +3460,21 @@ bool os::remove_stack_guard_pages(char* addr, size_t size) {
 // may not start from the requested address. Unlike Linux mmap(), this
 // function returns NULL to indicate failure.
 static char* anon_mmap(char* requested_addr, size_t bytes) {
+  #ifdef TERA_INTERPRETER
+  int flags = MAP_PRIVATE | MAP_NORESERVE | MAP_ANONYMOUS;
+  // When H2 virtual memory is reserved before H1
+  if(EnableTeraHeap && AllocateH2H1 && requested_addr != NULL){
+    flags |= MAP_FIXED_NOREPLACE;
+  }
+  #else
   // MAP_FIXED is intentionally left out, to leave existing mappings intact.
   const int flags = MAP_PRIVATE | MAP_NORESERVE | MAP_ANONYMOUS;
-
+  #endif
   // Map reserved/uncommitted pages PROT_NONE so we fail early if we
   // touch an uncommitted page. Otherwise, the read/write might
   // succeed if we have enough swap space to back the physical page.
   char* addr = (char*)::mmap(requested_addr, bytes, PROT_NONE, flags, -1, 0);
-
+ 
   return addr == MAP_FAILED ? NULL : addr;
 }
 
