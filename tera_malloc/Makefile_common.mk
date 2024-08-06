@@ -57,7 +57,6 @@ DEBUGFLAG = -g
 OFLAG = -o
 WALLFLAG = -Wall -Werror -pedantic
 OPTIMZEFLAG = -O3
-
 LDFLAGS = 
 CFLAGS = $(BINFLAG) $(WALLFLAG) $(OPTIMIZEFLAG) 
 
