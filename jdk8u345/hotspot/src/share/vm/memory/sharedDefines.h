@@ -88,11 +88,6 @@
                                   //types
 
 /**********************************
- * Statistics
- **********************************/
-//#define FWD_REF_STAT               //< Collect statistics for class object
-
-/**********************************
  * States of TeraFlag  
  **********************************/
 #define MOVE_TO_TERA			255	    //< Move this object to tera cache
@@ -155,5 +150,8 @@
 #define LAZY_MOVE_H2               //< Wait the next GC for moving
                                    //objects to H2. Until next GC wait
                                    //and do not take new decissions.
+
+//#define NO_HINTS                   //< new implementation that avoids
+                                   //hints
 
 #endif  // _SHARE_DEFINES_H_

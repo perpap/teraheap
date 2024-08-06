@@ -33,6 +33,7 @@
 #include "gc_implementation/g1/g1StringDedup.hpp"
 #include "gc_implementation/parallelScavenge/psParallelCompact.hpp"
 #include "gc_implementation/teraHeap/teraHeap.hpp"
+#include "gc_implementation/teraHeap/teraHeap.inline.hpp"
 #endif // INCLUDE_ALL_GCS
 
 inline void MarkSweep::mark_object(oop obj) {
@@ -81,14 +82,15 @@ template <class T> inline void MarkSweep::tera_back_ref_mark_and_push(T* p) {
 
     if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj))
     {
-      // Mark active region
-      Universe::teraHeap()->mark_used_region((HeapWord*)obj);
+      TeraHeap *th = Universe::teraHeap();
+      // Mark H2 region as active
+      th->mark_used_region((HeapWord*)obj);
 
       if (H2LivenessAnalysis)
         obj->set_live();
 
       if (TeraHeapStatistics)
-        Universe::teraHeap()->h2_increase_fwd_ref();
+        th->get_tera_stats()->add_forward_ref();
       return;
     }
 
@@ -100,7 +102,7 @@ template <class T> inline void MarkSweep::tera_back_ref_mark_and_push(T* p) {
 
 			mark_object(obj);
 
-			if (!(obj->is_marked_move_h2() || obj->is_instanceMirror() || obj->is_instanceRef() || obj->is_instanceClassLoader())) {
+			if (!(obj->is_marked_move_h2() || Universe::teraHeap()->is_metadata(obj))) {
 				uint64_t groupId = Universe::teraHeap()->h2_get_region_groupId((void *) p);
 				uint64_t partId = Universe::teraHeap()->h2_get_region_partId((void *) p);
 				obj->mark_move_h2(groupId, partId);
@@ -117,10 +119,11 @@ template <class T> inline void MarkSweep::tera_back_ref_mark_and_push(T* p) {
 
 template <class T> inline void MarkSweep::tera_mark_and_push(T* p) {
   T heap_oop = oopDesc::load_heap_oop(p);
+  TeraHeap *th = Universe::teraHeap();
 
 #ifdef P_PRIMITIVE
     if (EnableTeraHeap)
-      Universe::teraHeap()->set_obj_ref_field_flag();
+      th->set_obj_ref_field_flag();
 #endif
 
   if (!oopDesc::is_null(heap_oop)) {
@@ -128,17 +131,15 @@ template <class T> inline void MarkSweep::tera_mark_and_push(T* p) {
 
     if (EnableTeraHeap && (Universe::teraHeap()->is_obj_in_h2(obj)))
     {
-      Universe::teraHeap()->mark_used_region((HeapWord*)obj);
+      // Mark H2 region as active
+      th->mark_used_region((HeapWord*)obj);
 
       if (H2LivenessAnalysis)
         obj->set_live();
 
       if (TeraHeapStatistics)
-        Universe::teraHeap()->h2_increase_fwd_ref();
+        th->get_tera_stats()->add_forward_ref();
 
-#ifdef FWD_REF_STAT
-      Universe::teraHeap()->h2_add_fwd_ref_stat(obj);
-#endif
       return;
     }
 
@@ -158,9 +159,8 @@ template <class T> inline void MarkSweep::tera_mark_and_push(T* p) {
       _marking_stack.push(obj);
     }
 #else
-    if (!(obj->is_marked_move_h2() || obj->is_instanceMirror() || obj->is_instanceRef() || obj->is_instanceClassLoader())) {
-      obj->mark_move_h2(Universe::teraHeap()->get_cur_obj_group_id(),
-                          Universe::teraHeap()->get_cur_obj_part_id());
+    if (!(obj->is_marked_move_h2() || Universe::teraHeap()->is_metadata(obj))) {
+      obj->mark_move_h2(th->get_cur_obj_group_id(), th->get_cur_obj_part_id());
 //#if defined(HINT_HIGH_LOW_WATERMARK) || defined(NOHINT_HIGH_LOW_WATERMARK)
 //      //Universe::teraHeap()->h2_incr_total_marked_obj_size(obj->size());
 //      //Universe::teraHeap()->get_resizing_policy()->increase_h2_candidate_size(obj->size());
@@ -212,11 +212,8 @@ template <class T> inline void MarkSweep::mark_and_push(T* p) {
         obj->set_live();
 
       if (TeraHeapStatistics)
-        Universe::teraHeap()->h2_increase_fwd_ref();
+        Universe::teraHeap()->get_tera_stats()->add_forward_ref();
 
-#ifdef FWD_REF_STAT
-			Universe::teraHeap()->h2_add_fwd_ref_stat(obj);
-#endif
 			return;
 		}
 #endif // TERA_MAJOR_GC

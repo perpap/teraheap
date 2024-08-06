@@ -127,7 +127,7 @@ void InstanceClassLoaderKlass::oop_follow_contents(oop obj) {
 
 #ifdef P_SD_EXCLUDE_CLOSURE
   if (EnableTeraHeap && obj->is_marked_move_h2()) {
-    obj->init_obj_state();
+    obj->reset_obj_state();
   }
 #endif
 

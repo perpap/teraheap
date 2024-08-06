@@ -500,12 +500,12 @@ void CardTableExtension::h2_scavenge_contents_parallel(ObjectStartArray* start_a
 					assert(m->is_oop_or_null(), "check for header");
 					if (is_scavenge_done) {
 #ifdef BACK_REF_STAT
-            Universe::teraHeap()->h2_enable_back_ref_traversal(p);
+            Universe::teraHeap()->get_tera_stats()->enable_back_ref_traversal(p);
 #endif
 						m->h2_push_contents(pm);
 					}
 					else
-						m->h2_trace_contents(pm);
+            m->h2_trace_contents(pm);
 
           if (!Universe::teraHeap()->check_if_valid_object((HeapWord *)p + m->size()))
             break;

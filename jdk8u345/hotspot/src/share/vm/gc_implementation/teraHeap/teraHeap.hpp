@@ -4,27 +4,21 @@
 #include "gc_implementation/parallelScavenge/objectStartArray.hpp"
 #include "gc_implementation/teraHeap/teraDynamicResizingPolicy.hpp"
 #include "gc_implementation/teraHeap/teraTraceDirtyPages.hpp"
+#include "gc_implementation/teraHeap/teraStatistics.hpp"
+#include "gc_implementation/teraHeap/teraTimers.hpp"
 #include "gc_interface/collectedHeap.inline.hpp"
 #include "memory/sharedDefines.h"
 #include "oops/oop.hpp"
-
 #include <regions.h>
-#ifdef BACK_REF_STAT
-#include <map>
-#include <tr1/tuple>
-#endif
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
-  static char *_start_addr; // TeraHeap start address of mmap region
-  static char *_stop_addr;  // TeraHeap ends address of mmap region
+  static char *_start_addr;         //< TeraHeap start address of mmap region
+  static char *_stop_addr;          //< TeraHeap ends address of mmap region
 
-  ObjectStartArray _start_array; // Keeps track of where objects
-                                        // start in a 2^CARD_SEGMENT_SIZE block
+  ObjectStartArray _start_array;    //< Keeps track of where objects
+                                    // start in a 2^CARD_SEGMENT_SIZE block
 
-  /*-----------------------------------------------
-   * Stacks
-   *---------------------------------------------*/
   // Stack to keep back pointers (Objects that are pointed out of
   // TeraHeap objects) to mark them as alive durin mark_and_push phase of
   // the Full GC.
@@ -35,23 +29,8 @@ private:
   // during adjust phase of the Full GC.
   static Stack<oop *, mtGC> _tc_adjust_stack;
 
-  /*-----------------------------------------------
-   * Statistics of TeraHeap
-   *---------------------------------------------*/
-  static uint64_t total_objects; //< Total number of objects located in TeraHeap
-  static uint64_t total_objects_size; //< Total number of objects size
-
-  static uint64_t fwd_ptrs_per_fgc;    //< Total number of forward ptrs per FGC
-  static uint64_t back_ptrs_per_fgc;   //< Total number of back ptrs per FGC
-  static uint64_t trans_per_fgc;       //< Total number of objects transfered to
-                                       //< TeraHeap per FGC
-  static uint64_t tc_ct_trav_time[16]; //< Time to traverse TeraCards card table
-  static uint64_t heap_ct_trav_time[16]; //< Time to traverse heap card tables
-
-  static uint64_t back_ptrs_per_mgc; //< Total number of back ptrs per MGC
-
-  static uint64_t
-  obj_distr_size[3];                //< Object size distribution between B, KB, MB
+  TeraStatistics *tera_stats;       //< Statistics for objects and references
+  TeraTimers *tera_timers;          //< Timers for breakdowns
 
   static long int cur_obj_group_id; //<We save the current object
                                     // group id for tera-marked
@@ -62,12 +41,12 @@ private:
                                     // object to promote this id
                                     // to their reference objects
 
-  HeapWord *obj_h1_addr;            // We need to check this
+  HeapWord *obj_h1_addr;            //< We need to check this
                                     // object that will be moved
                                     // to H2 if it has back ptrs
                                     // to H1
 
-  HeapWord *obj_h2_addr;            // We need to check this
+  HeapWord *obj_h2_addr;            //< We need to check this
                                     // object that will be moved
                                     // to H2 if it has back ptrs
                                     // to H1
@@ -76,55 +55,31 @@ private:
   bool grow_h1;                     //< This flag indicate that H1
                                     // should be grown
   
-  TeraDynamicResizingPolicy* dynamic_resizing_policy; 
-  TeraTraceDirtyPages* trace_dirty_pages;
+  TeraDynamicResizingPolicy* dynamic_resizing_policy; //< Support for FlexHeap 
+  TeraTraceDirtyPages* trace_dirty_pages;             //< Tracing dirty pages for H2 in the page cache
+
+  bool traverse_class_object_field;   //< Indicate that we scan the
+                                      // fields of a class object
 
 #if defined(HINT_HIGH_LOW_WATERMARK) || defined(NOHINT_HIGH_LOW_WATERMARK)
-  size_t total_marked_obj_for_h2;   // Total marked objects to be moved in H2
+  size_t total_marked_obj_for_h2;    //< Total marked objects to be moved in H2
 
-  size_t h2_low_promotion_threshold;    // Promotion threshold
+  size_t h2_low_promotion_threshold; //< Promotion threshold
 #endif
   
-  long non_promote_tag;             // Object with this label cannot be promoted to H2
+  long non_promote_tag;             //< Object with this label cannot be promoted to H2
 
-  long promote_tag;                 // Objects with labels less than
+  long promote_tag;                 //< Objects with labels less than
                                     // the promote_tag can be moved to
                                     // H2 during major GC
 
-  bool direct_promotion;            // Indicate to move tagged objects
+  bool direct_promotion;            //< Indicate to move tagged objects
                                     // to H2 without waiting any hint
                                     // from the framework
 
-#ifdef OBJ_STATS
-  size_t primitive_arrays_size;     //< Total size of promitive arrays
-  size_t primitive_obj_size;        //< Total size of objects with ONLY primitive type fields
-  size_t non_primitive_obj_size;    //< Total size of objects with non primitive type fields
-
-  size_t num_primitive_arrays;      //< Total number of promitive arrays instances
-  size_t num_primitive_obj;         //< Total number of objects with ONLY primitive type fields
-  size_t num_non_primitive_obj;     //< Total size of objects with non primitive type fields
-
-  size_t h2_primitive_array_size;   //< Total size of H2 objects that are primitive arrays 
-  size_t num_h2_primitive_array;    //< Total number of H2 objects that are primitive arrays
-#endif
   bool traced_obj_has_ref_field;    //< Indicate that the object we
                                     // scan in the marking phase of the
                                     // major gc has references to other objects 
-#ifdef BACK_REF_STAT
-  // This histogram keeps internally statistics for the backward
-  // references (H2 to H1)
-  std::map<oop *, std::tr1::tuple<int, int, int> > histogram;
-  oop *back_ref_obj;
-#endif // BACK_REF_STAT
-
-#ifdef FWD_REF_STAT
-  // This histogram keeps internally statistics for the forward references
-  // (H1 to H2) per object
-  std::map<oop, int> fwd_ref_histo;
-  
-  // Print the histogram
-  void h2_print_fwd_ref_stat();
-#endif
 
   void h2_count_marked_objects();
 
@@ -167,26 +122,6 @@ public:
   // Deallocate the backward references stacks
   void h2_clear_back_ref_stacks();
   
-  // Keep for each thread with 'tid' the 'total time' that needed to
-  // traverse the TeraHeap card table.
-  // Each thread writes the time in a table based on each ID and then we
-  // take the maximum time from all the threads as the total time.
-  void h2_back_ref_traversal_time(unsigned int tid, uint64_t total_time);
-
-  // Keep for each thread with 'tid' the 'total time' that needed to
-  // traverse the Heap card table.
-  // Each thread writes the time in a table based on each ID and then we
-  // take the maximum time from all the threads as the total time.
-  void h1_old_to_young_traversal_time(unsigned int tid, uint64_t total_time);
-  
-  // Print the statistics of TeraHeap at the end of each minorGC
-  // Will print:
-  //	- the time to traverse the TeraHeap dirty card tables
-  //	- the time to traverse the Heap dirty card tables
-  //	- TODO number of dirty cards in TeraHeap
-  //	- TODO number of dirty cards in Heap
-  void print_minor_gc_statistics();
-
   // Give advise to kernel to expect page references in sequential order
   void h2_enable_seq_faults();
 
@@ -215,29 +150,12 @@ public:
   // ensure that they will be kept alive.
   void h2_mark_back_references();
 
-  // Increase forward ptrs from JVM heap to TeraHeap
-  void h2_increase_fwd_ref();
-
   // Update backward reference stacks that we use in marking and
   // pointer adjustment phases of major GC.
   void h2_push_backward_reference(void *p, oop o);
 
   // Adjust backwards pointers during major GC.
   void h2_adjust_back_references();
-
-  // Init the statistics counters of TeraHeap to zero when a Full GC
-  // starts
-  void h2_init_stats_counters();
-
-  // Print the statistics of TeraHeap at the end of each FGC
-  // Will print:
-  //	- the total forward pointers from the JVM heap to the
-  // TeraHeap
-  //	- the total back pointers from TeraHeap to the JVM heap
-  //	- the total objects that has been transfered to the TeraHeap
-  //	- the current total size of objects in TeraHeap
-  //	- the current total objects that are located in TeraHeap
-  void h2_print_stats();
 
   // Explicit (using systemcall) write 'data' with 'size' to the specific
   // 'offset' in the file.
@@ -334,24 +252,6 @@ public:
   // belongs to.
   uint64_t h2_get_region_partId(void *p);
 
-#ifdef BACK_REF_STAT
-  // Add a new entry to the histogram for back reference that start from
-  // 'obj' and results in H1 (new or old generation).
-  // Use this function with a single GC thread
-  void h2_update_back_ref_stats(bool is_old, bool is_tera_cache);
-
-  void h2_enable_back_ref_traversal(oop *obj);
-
-  // Print the histogram
-  void h2_print_back_ref_stats();
-#endif
-
-#ifdef FWD_REF_STAT
-  // Add a new entry to the histogram for forward reference that start from
-  // H1 and results in 'obj' in H2
-  void h2_add_fwd_ref_stat(oop obj);
-#endif
-		
   // Set non promote label value
   void set_non_promote_tag(long val);
 
@@ -400,10 +300,10 @@ public:
   bool h2_object_starts_in_region(HeapWord *obj);
 
   // Reset object ref field flag
-  void reset_obj_ref_field_flag() { traced_obj_has_ref_field = false;}
+  inline void reset_obj_ref_field_flag();
   
   // Enable the flag if the object has reference fields
-  void set_obj_ref_field_flag() { traced_obj_has_ref_field = true; }
+  inline void set_obj_ref_field_flag();
 
   // We set the object type based on the 'traced_obj_has_ref_field
   // flag value. We divide objects into three categories
@@ -412,50 +312,54 @@ public:
   // - non-primitive objets which are the objects with reference fields
   void set_obj_primitive_state(oop obj);
 
-#ifdef OBJ_STATS
-  // Update counter for objects. We divide objects into three categories
-  // - primitive arrays
-  // - leaf objects which are the objects with only primitive type fields
-  // - non-primitive objets which are the objects with reference fields
-  void update_obj_stats(int type, size_t size);
-
-  // Update counter for object H2 objects 
-  void update_stats_h2_primitive_arrays(size_t size);
-#endif // OBJ_STATS
-
   // The state machine uses this function to set if the GC should
   // shrink H1 as a result to free the physical pages. Then the OS
   // will reclaim the physical pahges and will use them as part of the
   // buffer cache.
-  void set_shrink_h1() { shrink_h1 = true; }
+  inline void set_shrink_h1();
   // Reinitalize the shrink_h1 flag
-  void unset_shrink_h1() { shrink_h1 = false; }
+  inline void unset_shrink_h1();
   // Check if the state machine identifies that we need to shrink H1.
-  bool  need_to_shink_h1() { return shrink_h1; }
+  inline bool  need_to_shink_h1(); 
   
   // The state machine uses this function to set if the GC should
   // grow H1.
-  void set_grow_h1() { grow_h1 = true; }
+  inline void set_grow_h1();
   // Reinitalize the grow_h1 flag to the default value
-  void unset_grow_h1() { grow_h1 = false; }
+  inline void unset_grow_h1();
   // Check if the state machine identifies that we need to grow H1.
-  bool  need_to_grow_h1() { return grow_h1; }
+  inline bool need_to_grow_h1();
 
-  TeraDynamicResizingPolicy* get_resizing_policy() {
-    return dynamic_resizing_policy;
-  }
+  inline TeraDynamicResizingPolicy* get_resizing_policy();
 
-  void set_direct_promotion() {
-    direct_promotion = true;
-  }
+  inline void set_direct_promotion();
 
-  void unset_direct_promotion() {
-    direct_promotion = false;
-  }
+  inline void unset_direct_promotion();
 
   void trace_dirty_h2_pages(void) {
     trace_dirty_pages->find_dirty_pages();
   }
+
+  // Check if the object belongs to metadata
+  bool is_metadata(oop obj);
+
+  // Traerse the fields of a class object
+  inline void enable_traverse_class_object_field();
+  
+  inline void disable_traverse_class_object_field();
+  
+  inline bool is_traverse_class_object_field();
+
+  // Tera statistics for objects that we move to H2, forward references,
+  // and backward references.
+  inline TeraStatistics* get_tera_stats();
+  
+  // Timers of TeraHeap to be used for breakdowns
+  inline TeraTimers* get_tera_timers();
+
+  // Increase old generation objects age. We check if the object
+  // belongs to the old generation and then we increase their age.
+  void increase_obj_age(oop obj);
 };
 
 #endif
