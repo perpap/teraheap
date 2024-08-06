@@ -66,7 +66,7 @@ function interpreter_mode() {
     $(get_flexheap_mount_point) \
     $(get_flexheap_device) \
     -XX:-UseParallelH2Allocator \
-    -XX:H2FileSize=751619276800 \
+    -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
 
@@ -92,7 +92,7 @@ function c1_mode() {
     $(get_flexheap_mount_point) \
     $(get_flexheap_device) \
     -XX:-UseParallelH2Allocator \
-    -XX:H2FileSize=751619276800 \
+    -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
 
@@ -119,7 +119,7 @@ function c2_mode() {
     $(get_flexheap_mount_point) \
     $(get_flexheap_device) \
     -XX:-UseParallelH2Allocator \
-    -XX:H2FileSize=751619276800 \
+    -XX:H2FileSize=1288490188800 \
     -Xlogtc:llarge_teraCache.txt "${class_file}" >err 2>&1 >run_tests.out
 }
 
@@ -143,7 +143,7 @@ function run_tests_msg_box() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_flexheap_mount_point) \
     $(get_flexheap_device) \
-    -XX:H2FileSize=751619276800 \
+    -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
 
@@ -167,7 +167,7 @@ function run_tests() {
     $(get_flexheap_device) \
     $(get_allocation_mode) \
     -XX:-UseParallelH2Allocator \
-    -XX:H2FileSize=751619276800 \
+    -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
 
@@ -191,7 +191,7 @@ function run_tests_debug() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_flexheap_mount_point) \
     $(get_flexheap_device) \
-    -XX:H2FileSize=751619276800 \
+    -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}"
 }
 
