@@ -66,11 +66,17 @@ void oopDesc::set_h2_dst_addr(uint64_t addr) {
 inline uint64_t oopDesc::get_h2_dst_addr() {
   return _tera_flag;
 }
-
 // Mark an object with 'id' to be moved in H2. H2 allocator uses the
+
 // 'id' to locate objects with the same 'id' by to the same region.
 // 'id' is defined by the application.
-void oopDesc::mark_move_h2(uint64_t rdd_id, uint64_t part_id) { 
+void oopDesc::mark_move_h2(uint64_t rdd_id, uint64_t part_id) {
+  #ifdef TERA_ASSERT
+  if(partId >= MAX_PARTITIONS){
+    fprintf(stderr, "[DATASET_ERROR][%s|%s|%d] partId %" PRIu64 "is out of bounds; MAX_PARTITIONS = %" PRIu64 "\n", __FILE__, __func__, __LINE__, partId, MAX_PARTITIONS);
+    exit(EXIT_FAILURE);
+  }
+  #endif
   _tera_flag = (part_id << 48);
   _tera_flag |= (rdd_id << 32);
   _tera_flag |= (0 << 16);
