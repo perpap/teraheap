@@ -690,7 +690,8 @@ void TeraHeap::mark_used_region(HeapWord *obj) {
 // Allocate new object 'obj' with 'size' in words in TeraHeap.
 // Return the allocated 'pos' position of the object
 char* TeraHeap::h2_add_object(oop obj, size_t size) {
-#if 1//perpap
+#if 0//perpap
+  if(UseParallelH2Allocator)
 	MutexLocker x(h2_allocator_lock);
 #endif
 	char *pos;			// Allocation position
