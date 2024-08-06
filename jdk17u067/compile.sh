@@ -61,6 +61,43 @@ function detect_platform() {
   fi
 }
 
+# Function to determine the microarchitecture
+function get_microarchitecture() {
+  # Extract CPU architecture and model information
+  local architecture=$(lscpu | grep 'Architecture:' | awk '{print $2}')
+  local model_name=$(lscpu | grep 'Model name:' | sed -r 's/Model name:\s+//')
+
+  # Initialize microarchitecture variable
+  local microarchitecture=""
+
+  # Check for Intel, AMD and ARM architectures
+  # Add more mappings for specific Intel, AMD and ARM microarchitectures as needed
+  if [[ $architecture == "x86_64" ]]; then
+    local vendor=$(lscpu | grep 'Vendor ID:' | awk '{print $3}')
+    if [[ $vendor == "GenuineIntel" ]]; then
+      if [[ $model_name == *"Xeon"* || $model_name == *"Core"* ]]; then
+        microarchitecture="native"
+      fi
+    elif [[ $vendor == "AuthenticAMD" ]]; then
+      if [[ $model_name == *"Ryzen"* || $model_name == *"EPYC"* ]]; then
+        microarchitecture="znver1" # or "znver2" based on generation
+      fi
+    fi
+  # Check for ARM architectures
+  elif [[ $architecture == "aarch64" ]]; then
+    if [[ $model_name == *"Neoverse-N1"* ]]; then
+      microarchitecture="armv8.2-a"
+    fi
+  fi
+
+  # Fallback to generic if no specific match is found
+  if [[ -z $microarchitecture ]]; then
+    microarchitecture="generic"
+  fi
+
+  echo "$microarchitecture"
+}
+
 # Function to display usage message
 function usage() {
   echo "Usage: $0 [options]"
@@ -86,10 +123,12 @@ function usage() {
   echo "  ./compile.sh -m \"release\"                                                                         Relink a \"release\" image without running configure."
   return 0 2>/dev/null || exit 0
 }
+
 function build_jvm_image() {
   local image_variant=$1
   local debug_level=$1
   local debug_sumbols=$2
+  local microarchitecture=$(get_microarchitecture)
 
   if [[ $image_variant == "optimized" ]]; then
     image_variant="release"
@@ -106,8 +145,8 @@ function build_jvm_image() {
     --with-jobs="$(nproc)" \
     --with-boot-jdk=$BOOT_JDK \
     --disable-cds \
-    --with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+    --with-extra-cflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cxxflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
 
   intercept-build make CONF=linux-$TARGET_PLATFORM-server-$image_variant
   cd ../
