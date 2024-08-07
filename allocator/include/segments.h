@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define ANONYMOUS 0
 #define PR_BUFFER 1						
 #define PR_BUFFER_SIZE (2*1024LU*1024) /* Promotion buffer size */
 #define HeapWordSize 8				   /* Java heap allignment */
@@ -48,10 +47,6 @@ struct region{
     char *last_allocated_start;
     char *first_allocated_start;
     struct group *dependency_list;
-#if ANONYMOUS
-  struct offset *offset_list;
-  size_t size_mapped; 
-#endif
 #if PR_BUFFER
     struct pr_buffer *pr_buffer;
 #endif

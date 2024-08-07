@@ -64,18 +64,29 @@ void create_file(const char* path, uint64_t size) {
   }
 }
 
+void initialize_global_metrics(uint64_t size) {
+  assertf(size >= 1024*1024*1024LU, "Size should be grater than 1GB");
+
+  dev_size = size;
+  region_array_size = dev_size / REGION_SIZE;
+  assertf(region_array_size >= MAX_PARTITIONS,
+          "Device size should be larger, because region_array_size is "
+          "calculated to be smaller than MAX_PARTITIONS!");
+  max_rdd_id = region_array_size / MAX_PARTITIONS;
+  group_array_size = region_array_size / 2; // deprecated
+}
+
 // Initialize allocator
 void init(uint64_t align, const char* path, uint64_t size) {
-    fd = -1;
+  fd = -1;
 
-#if ANONYMOUS
-	// Anonymous mmap
-    fd = open(DEV, O_RDWR);
-	tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
-#else
+#ifndef ANONYMOUS
   create_file(path, size);
   // Memory-mapped a file over a storage device
   tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#else 
+  initialize_global_metrics(size);
+  tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, fd, 0);
 #endif
 
 	assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
@@ -85,13 +96,7 @@ void init(uint64_t align, const char* path, uint64_t size) {
 
 	tc_mem_pool.cur_alloc_ptr = tc_mem_pool.start_address;
 	tc_mem_pool.size = 0;
-#if ANONYMOUS
-	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + V_SPACE;
-    printf("Start address:%p\n",tc_mem_pool.start_address);
-    printf("Stop address:%p\n",tc_mem_pool.stop_address);
-#else
 	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + dev_size;
-#endif
   init_regions();
   req_init();
 }
@@ -112,11 +117,7 @@ char* stop_addr_mem_pool() {
 // Return the `size` of the memory allocation pool
 size_t mem_pool_size() {
 	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");
-#if ANONYMOUS
-    return V_SPACE;
-#else
 	return dev_size;
-#endif
 }
 
 char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {

@@ -56,10 +56,6 @@ void init_regions(){
     region_array[i].last_allocated_start      = NULL;
     region_array[i].first_allocated_start     = NULL;
     region_array[i].dependency_list           = NULL;
-#if ANONYMOUS
-    region_array[i].size_mapped               = 0;
-    region_array[i].offset_list               = NULL;
-#endif
     region_array[i].rdd_id                    = rdd_id_size;
     region_array[i].part_id                   = rdd_id_size;
 #if PR_BUFFER
@@ -73,22 +69,6 @@ void init_regions(){
   for (i = 0; i < rdd_id_size; i++) {
     id_array[i]                               = NULL;
   }
-    
-
-#if ANONYMOUS
-  struct offset *prev = NULL;
-  for (i = 0 ; i < DEV_SIZE / MMAP_SIZE ; i++){
-    struct offset *ptr = malloc(sizeof(struct offset));
-    ptr->offset = MMAP_SIZE * i;
-    ptr->next = NULL;
-    if (offset_list == NULL) {
-      offset_list = ptr;
-    } else {
-      prev->next = ptr;
-    }
-    prev = ptr;
-  }
-#endif  
 }
 
 /*
@@ -163,10 +143,6 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
   gettimeofday(&start_time, NULL);
 #endif
 
-#if ANONYMOUS
-  assert(size <= REGION_SIZE);
-#endif
-
   int32_t id_index = get_id(rdd_id, partition_id);
   if (id_array[id_index] == NULL) {
     char* res = new_region(size);
@@ -181,23 +157,6 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
       id_array[id_index]->rdd_id = rdd_id;
       id_array[id_index]->part_id = partition_id;
     }
-
-#if ANONYMOUS
-    uint64_t i = 0;
-    struct offset *mmap_offset = offset_list;
-    for (i = 0; i < (size/MMAP_SIZE)+1 ; i++){
-      struct offset *tmp = offset_list;
-      assert(tmp != NULL);
-      offset_list = offset_list->next;
-      tmp->next = id_array[id_index]->offset_list;
-      id_array[id_index]->offset_list = tmp;
-    }
-    char *address_mmapped = mmap(res, MMAP_SIZE * ((size/MMAP_SIZE)+1), PROT_READ|PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, mmap_offset->offset);
-    id_array[id_index]->size_mapped += MMAP_SIZE * ((size/MMAP_SIZE)+1);
-    if (address_mmapped == MAP_FAILED){
-      fprintf(stderr, "mmap to file failed 1\n");
-    }
-#endif
 
 #if DEBUG_PRINT
     printf("Allocating from region %ld until region %ld\n",((res) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
@@ -224,22 +183,6 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 
     assertf(res != NULL, "No empty region");
 
-#if ANONYMOUS
-    uint64_t i = 0;
-    for (i = 0; i < (size/MMAP_SIZE)+1 ; i++){
-      struct offset *tmp = offset_list;
-      assert(tmp != NULL);
-      offset_list = offset_list->next;
-      tmp->next = id_array[id_index]->offset_list;
-      id_array[id_index]->offset_list = tmp;
-      char *address_mmapped = mmap(res + id_array[id_index]->size_mapped, MMAP_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, tmp->offset);
-      id_array[id_index]->size_mapped += MMAP_SIZE;
-      if (address_mmapped == MAP_FAILED){
-        fprintf(stderr, "mmap to file failed 2\n");
-      }
-    }
-#endif
-
 #if DEBUG_PRINT
     printf("Allocating from region %ld until region %ld\n",((res) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
 #endif
@@ -250,31 +193,6 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
   mark_used(id_array[id_index]->start_address);
   id_array[id_index]->last_allocated_start = id_array[id_index]->last_allocated_end;
   id_array[id_index]->last_allocated_end = id_array[id_index]->last_allocated_start + size;
-
-#if ANONYMOUS
-  if (size > MMAP_SIZE || id_array[id_index]->last_allocated_end > id_array[id_index]->start_address+id_array[id_index]->size_mapped){
-    size_t missing_size =  id_array[id_index]->last_allocated_end - (id_array[id_index]->start_address + id_array[id_index]->size_mapped); 
-    uint64_t i = 0;
-    for (i = 0; i < (missing_size/MMAP_SIZE)+1 ; i++){
-      struct offset *tmp = offset_list;
-      assert(tmp != NULL);
-      offset_list = offset_list->next;
-      tmp->next = id_array[id_index]->offset_list;
-      id_array[id_index]->offset_list = tmp;
-      void *address_mmapped = mmap(id_array[id_index]->start_address + id_array[id_index]->size_mapped, MMAP_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, fd, tmp->offset);
-      id_array[id_index]->size_mapped += MMAP_SIZE;
-      if (address_mmapped == MAP_FAILED){
-        fprintf(stderr, "mmap to file failed 3\n");
-        fprintf(stderr, "Start of region:%p\n",id_array[id_index]->start_address);
-        fprintf(stderr, "Last object ends at:%p\n",id_array[id_index]->last_allocated_start );
-        fprintf(stderr, "MMAPS needed:%zu\n",((missing_size/MMAP_SIZE)+1));
-        fprintf(stderr, "size:%zu\n",size);
-        fprintf(stderr, "missing size:%zu\n",missing_size);
-        return NULL;
-      }
-    }
-  }
-#endif
 
 #if STATISTICS
   gettimeofday(&end_time, NULL);
@@ -467,18 +385,6 @@ struct region_list* free_regions() {
       region_array[i].last_allocated_start = NULL;
       region_array[i].first_allocated_start = NULL;
 
-#if ANONYMOUS 
-      region_array[i].size_mapped = 0;
-      struct offset *offset_ptr = region_array[i].offset_list;
-      struct offset *temp = offset_ptr;
-      while (offset_ptr != NULL){
-        temp = offset_ptr->next;
-        offset_ptr->next = offset_list;
-        offset_list = offset_ptr;
-        offset_ptr = temp;
-      }
-      region_array[i].offset_list = NULL;
-#endif
       if (id_array[get_id(region_array[i].rdd_id, region_array[i].part_id)] == &region_array[i]) {
         id_array[get_id(region_array[i].rdd_id, region_array[i].part_id)] = NULL;
       }
