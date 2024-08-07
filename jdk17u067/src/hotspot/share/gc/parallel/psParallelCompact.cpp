@@ -30,6 +30,7 @@
 #include "classfile/systemDictionary.hpp"
 #include "code/codeCache.hpp"
 #include "compiler/oopMap.hpp"
+#include "gc/flexHeap/flexHeap.hpp"
 #include "gc/parallel/parallelArguments.hpp"
 #include "gc/parallel/parallelScavengeHeap.inline.hpp"
 #include "gc/parallel/parMarkBitMap.inline.hpp"
@@ -2009,6 +2010,14 @@ void PSParallelCompact::invoke(bool maximum_heap_compaction) {
     }
   }
 
+  if (EnableFlexHeap) {
+    FlexHeap *fh = Universe::flexHeap();
+    bool need_full_gc = false;
+
+    fh->dram_repartition(&need_full_gc);
+    fh->set_last_minor_gc(os::elapsedTime());
+  }
+
   if (ScavengeBeforeFullGC) {
     PSScavenge::invoke_no_policy();
   }
@@ -2030,6 +2039,9 @@ void PSParallelCompact::invoke(bool maximum_heap_compaction) {
       tera_policy->set_last_minor_gc(os::elapsedTime());
     }
   }
+
+  if (EnableFlexHeap)
+    Universe::flexHeap()->set_last_minor_gc(os::elapsedTime());
 #endif
 }
 
@@ -2050,6 +2062,10 @@ bool PSParallelCompact::invoke_no_policy(bool maximum_heap_compaction) {
   if (DynamicHeapResizing) {
     Universe::teraHeap()->get_resizing_policy()->gc_start(os::elapsedTime());
     Universe::teraHeap()->get_resizing_policy()->reset_h2_candidate_size();
+  }
+
+  if (EnableFlexHeap) {
+    Universe::flexHeap()->gc_start(os::elapsedTime());
   }
 
   _gc_timer.register_gc_start();
@@ -2350,6 +2366,10 @@ bool PSParallelCompact::invoke_no_policy(bool maximum_heap_compaction) {
   if (DynamicHeapResizing) {
     TeraDynamicResizingPolicy *tera_policy = Universe::teraHeap()->get_resizing_policy();
     tera_policy->gc_end((_gc_timer.gc_end().milliseconds() - _gc_timer.gc_start().milliseconds()), os::elapsedTime());
+  }
+
+  if (EnableFlexHeap) {
+    Universe::flexHeap()->gc_end((_gc_timer.gc_end().milliseconds() - _gc_timer.gc_start().milliseconds()), os::elapsedTime());
   }
 
   return true;

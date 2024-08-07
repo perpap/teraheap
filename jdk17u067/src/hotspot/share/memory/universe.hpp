@@ -44,6 +44,7 @@ class DeferredObjAllocEvent;
 class OopStorage;
 class ReservedHeapSpace;
 class TeraHeap;
+class FlexHeap;
 
 // A helper class for caching a Method* when the user of the cache
 // only cares about the latest version of the Method*.  This cache safely
@@ -145,6 +146,9 @@ class Universe: AllStatic {
   
   // The instance for H2 - TeraHeap
   static TeraHeap *_teraHeap;
+  
+  // FlexHeap policy - Works only for Parallel Scavenge collector
+  static FlexHeap *_flexHeap;
 
   static intptr_t _non_oop_bits;
 
@@ -306,6 +310,9 @@ class Universe: AllStatic {
   
   // Accessor of teraHeap
   static TeraHeap *teraHeap() { return _teraHeap; }
+  
+  // Accessor of flexHeap
+  static FlexHeap *flexHeap() { return _flexHeap; }
 
   DEBUG_ONLY(static bool is_in_h2_or_null(const void* p));
   DEBUG_ONLY(static bool is_in_h2(const void* p));

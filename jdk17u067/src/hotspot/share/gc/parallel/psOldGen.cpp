@@ -33,6 +33,7 @@
 #include "gc/shared/gcLocker.hpp"
 #include "gc/shared/spaceDecorator.inline.hpp"
 #include "gc/teraHeap/teraHeap.hpp"
+#include "gc/flexHeap/flexHeap.hpp"
 #include "logging/log.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/java.hpp"
@@ -328,6 +329,17 @@ void PSOldGen::resize(size_t desired_free_space) {
 
     if (th->need_to_shink_h1()) {
       new_size = tera_policy->shrink_h1();
+    }
+  } else if (EnableFlexHeap) {
+    FlexHeap *fh = Universe::flexHeap();
+    // Inside the interval we do not change the heap size
+    new_size = capacity_in_bytes();
+    if (fh->need_to_grow_heap()) {
+      new_size = fh->grow_heap();
+    }
+
+    if (fh->need_to_shrink_heap()) {
+      new_size = fh->shrink_heap();
     }
   } else {
     // Adjust according to our min and max

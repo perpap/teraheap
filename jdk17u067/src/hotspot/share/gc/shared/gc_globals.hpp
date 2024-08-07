@@ -694,6 +694,12 @@
   product(bool, EnableTeraHeap, false,                                      \
             "Enable TeraHeap. Works only with ParallelScavenge Collector")  \
                                                                             \
+  product(bool, EnableFlexHeap, false,                                      \
+            "Enable FlexHeap. Works only with ParallelScavenge Collector")  \
+                                                                            \
+  product(bool, FlexHeapStatistics, false,                                  \
+          "Print FlexHeap statistics")                                      \
+                                                                            \
   product(bool, TeraHeapStatistics, false,                                  \
           "Print TeraHeap statistics")                                      \
                                                                             \
@@ -738,10 +744,23 @@
           "2: Simple aggressive grow after wait resizing policy; "          \
           "3: Simple aggressive shrink after wait resizing policy;")        \
                                                                             \
+  product(intx, FlexResizingPolicy, 0,                                      \
+          "0: Simple resizing policy; "                                     \
+          "1: Simple wait resizing policy; "                                \
+          "2: Simple aggressive grow after wait resizing policy; "          \
+          "3: Simple aggressive shrink after wait resizing policy;")        \
+                                                                            \
   product(intx, TeraCPUStatsPolicy, 0,                                      \
           "0: Policy with /proc/stat; "                                     \
           "1: Policy with getrusage; ")                                     \
-								                                            \
+                                                                            \
+  product(intx, FlexCPUStatsPolicy, 0,                                      \
+          "0: Policy with /proc/stat; "                                     \
+          "1: Policy with getrusage; ")                                     \
+								                                                            \
+  product(uintx, FlexDRAMLimit, 0,                                          \
+          "Total size of DRAM budget (in bytes)")                           \
+								                                                            \
   product(uintx, TeraDRAMLimit, 0,                                          \
           "Total size of DRAM budget (in bytes)")
 

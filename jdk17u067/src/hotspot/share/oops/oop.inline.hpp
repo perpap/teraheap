@@ -70,10 +70,23 @@ inline uint64_t oopDesc::get_h2_dst_addr() {
 // Mark an object with 'id' to be moved in H2. H2 allocator uses the
 // 'id' to locate objects with the same 'id' by to the same region.
 // 'id' is defined by the application.
-void oopDesc::mark_move_h2(uint64_t rdd_id, uint64_t part_id) { 
-  _tera_flag = (part_id << 48);
-  _tera_flag |= (rdd_id << 32);
-  _tera_flag |= (0 << 16);
+void oopDesc::mark_move_h2(uint64_t label, uint64_t sublabel) { 
+  // Clear bits 48-63 and set them with the new value
+  _tera_flag &= ~(0xFFFFULL << 48);
+  _tera_flag |= (sublabel & 0xFFFFULL) << 48;
+
+  // Clear bits 32-47 and set them with the new value
+  _tera_flag &= ~(0xFFFFULL << 32);
+  _tera_flag |= (label & 0xFFFFULL) << 32;
+  
+  // Clear bits 0-15th and the set with the new value
+  _tera_flag &= ~((1ULL << 16) - 1);
+  _tera_flag |= MOVE_TO_TERA;
+}
+
+void oopDesc::mark_move_h2(void) {
+  // Clear bits 0-15th
+  _tera_flag &= ~((1ULL << 16) - 1);
   _tera_flag |= MOVE_TO_TERA;
 }
 
@@ -84,13 +97,8 @@ bool oopDesc::is_marked_move_h2() {
 
 // Mark this object that is located in H2 - TeraHeap
 void oopDesc::set_in_h2() { 
-  uint64_t part_id = (_tera_flag >> 48);
-  uint64_t rdd_id  = (_tera_flag >> 32) & 0xffff;
-  uint64_t primitive = (_tera_flag >> 16) & 0xffff;
-
-  _tera_flag = (part_id << 48);
-  _tera_flag |= (rdd_id << 32);
-  _tera_flag |= (primitive << 16);
+  // Clear bits 0-15th
+  _tera_flag &= ~((1ULL << 16) - 1);
   _tera_flag |= IN_TERA_HEAP;
 }
 
@@ -106,12 +114,12 @@ void oopDesc::init_obj_state() {
 
 // Get the object group id
 int oopDesc::get_obj_group_id() {
-  return ((_tera_flag >> 32) & 0xffff) ;
+  return (_tera_flag >> 32) & 0xffff;
 }
 
 // Get object partition Id
 uint64_t oopDesc::get_obj_part_id() {
-  return _tera_flag >> 48;
+  return (_tera_flag >> 48) & 0xffff;
 }
 
 // This function is used only for statistic purposes to count how
@@ -134,13 +142,8 @@ void oopDesc::reset_live() {
 // many objects in H2 are alive and how many are dead. 
 // This funtion set the teraflag to indicate that the object is live.
 void oopDesc::set_live() {
-  uint64_t part_id = (_tera_flag >> 48);
-  uint64_t rdd_id = (_tera_flag >> 32) & 0xffff;
-  uint64_t primitive = (_tera_flag >> 16) & 0xffff;
-
-  _tera_flag = (part_id << 48);
-  _tera_flag |= (rdd_id << 32);
-  _tera_flag |= (primitive << 16);
+  // Clear bits 0-15th
+  _tera_flag &= ~((1ULL << 16) - 1);
   _tera_flag |= LIVE_TERA_OBJ;
 }
 
@@ -149,13 +152,8 @@ void oopDesc::set_live() {
 // teraflag to indicate that the object is visited during marking
 // phase.
 void oopDesc::set_visited() {
-  uint64_t part_id = (_tera_flag >> 48);
-  uint64_t rdd_id = (_tera_flag >> 32) & 0xffff;
-  uint64_t primitive = (_tera_flag >> 16) & 0xffff;
-
-  _tera_flag = (part_id << 48);
-  _tera_flag |= (rdd_id << 32);
-  _tera_flag |= (primitive << 16);
+  // Clear bits 0-15th
+  _tera_flag &= ~((1ULL << 16) - 1);
   _tera_flag |= VISITED_TERA_OBJ;
 }
 
@@ -168,48 +166,75 @@ bool oopDesc::is_visited() {
   return (state == VISITED_TERA_OBJ);
 }
 
-#ifdef P_PRIMITIVE
-  // Set object flag if is promitive array or leaf object. Leaf
-  // objects are the objects that contain only primitive fields and no
-  // references to other objects
+// Set object flag if is promitive array or leaf object. Leaf
+// objects are the objects that contain only primitive fields and no
+// references to other objects
 void oopDesc::set_primitive(bool is_primitive_array) {
-  uint64_t part_id = (_tera_flag >> 48);
-  uint64_t rdd_id  = (_tera_flag >> 32) & 0xffff;
-  uint64_t state = _tera_flag & 0xffff;
-
-  _tera_flag = (part_id << 48);
-  _tera_flag |= (rdd_id << 32);
-  _tera_flag |= is_primitive_array ? (PRIMITIVE_ARRAY << 16) : (LEAF_OBJECT << 16);
-  _tera_flag |= state;
+  // Clear the 16th and 17th bits
+  _tera_flag &= ~(0x3ULL << 16);
+  _tera_flag |= (is_primitive_array) ? (1ULL << 17) : (1ULL << 16);
 }
 
 // Set object flag if is a non primitive object
 void oopDesc::set_non_primitive() {
-  uint64_t part_id = (_tera_flag >> 48);
-  uint64_t rdd_id  = (_tera_flag >> 32) & 0xffff;
-  uint64_t state = _tera_flag & 0xffff;
-
-  _tera_flag = (part_id << 48);
-  _tera_flag |= (rdd_id << 32);
-  _tera_flag |= (NON_PRIMITIVE << 16);
-  _tera_flag |= state;
+  // Clear the 16th and 17th bits
+  _tera_flag &= ~(0x3ULL << 16);
 }
   
   // Check if the object is primitive array or leaf object. Leaf
   // objects are the objects that contain only primitive fields and no
   // references to other objects
 bool oopDesc::is_primitive() {
-    uint64_t state = ((_tera_flag >> 16) & 0xffff);
-	  return (state == PRIMITIVE_ARRAY) || (state == LEAF_OBJECT);
+  // Check if either the 16th or 17th bit is set
+  return (_tera_flag & ((1ULL << 16) | (1ULL << 17))) != 0;
 }
 
 // Check if the object is non-primitive. 
 bool oopDesc::is_non_primitive() {
-  uint64_t state = ((_tera_flag >> 16) & 0xffff);
-  return state == NON_PRIMITIVE;
+  // Check if both the 16th or 17th bit are set
+  return (_tera_flag & ((1ULL << 16) | (1ULL << 17))) == 0;
 }
 
-#endif // P_PRIMITIVE
+// Increase object writeness frequency
+void oopDesc::incr_writness() {
+  // Increase the writeness of an object
+  uint64_t counter = (_tera_flag >> 20) & 0xFFF;
+  counter++;
+
+  // Clear bits 20-31 in _tera_flag
+  _tera_flag &= ~(0xFFFULL << 20);
+
+  // Set the updated counter in bits 20-31
+  _tera_flag |= (counter & 0xFFFULL) << 20;
+}
+  
+// Increase object age. This is used only for objects in the old
+// generation
+void oopDesc::incr_oldgen_obj_age() {
+  uint64_t age = (_tera_flag >> 32) & 0xFFFF;
+  age++;
+
+  // Clear bits 20-31 in _tera_flag
+  _tera_flag &= ~(0xFFFFULL << 32);
+
+  // Set the updated counter in bits 20-31
+  _tera_flag |= (age & 0xFFFULL) << 32;
+}
+  
+// Enable the class bit to indicate that this objects is in the
+// closure of an instance mirror class (class objects)
+void oopDesc::set_instance_mirror_klass_ref() {
+  // Set the 18th bit
+  _tera_flag |= (1ULL << 18);
+}
+
+// Check if this object belongs to the transitive closure of an instance
+// mirror class object (class objects)
+bool oopDesc::is_instance_mirror_klass_ref() {
+  // Check if the 18th bit is set
+  return (_tera_flag & (1ULL << 18)) != 0;
+}
+
 #endif // TERA_FLAG
 
 void oopDesc::set_mark(markWord m) {

@@ -3244,7 +3244,7 @@ struct bitmask* os::Linux::_numa_interleave_bitmask;
 struct bitmask* os::Linux::_numa_membind_bitmask;
 
 bool os::pd_uncommit_memory(char* addr, size_t size, bool exec) {
-  if (EnableTeraHeap && DynamicHeapResizing) {
+  if ((EnableTeraHeap && DynamicHeapResizing) || EnableFlexHeap) {
     int result = ::madvise(addr, size, MADV_FREE);
     if (result != 0) {
       fprintf(stderr, "Madvise ERROR %d\n", result);

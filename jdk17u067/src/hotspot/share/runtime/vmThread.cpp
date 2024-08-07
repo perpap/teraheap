@@ -24,6 +24,7 @@
 
 #include "precompiled.hpp"
 #include "compiler/compileBroker.hpp"
+#include "gc/flexHeap/flexHeap.hpp"
 #include "gc/shared/collectedHeap.hpp"
 #include "gc/teraHeap/teraHeap.hpp"
 #include "jfr/jfrEvents.hpp"
@@ -297,6 +298,24 @@ bool should_gc() {
   return false;
 }
 
+// On evey GC we are going to call
+bool flex_should_gc() {
+  if (!UseParallelGC)
+    return false;
+
+  // State machine executed at the end of each minor gc. If the
+  // interval between minor GCs is higher than windows interval then
+  // perform a minor gc.
+  FlexHeap *fh = Universe::flexHeap();
+  double ellapsedTime = os::elapsedTime() - fh->get_last_minor_gc();
+  if (ellapsedTime > fh->get_window_interval() && !fh->is_action_enabled() && SafepointSynchronize::is_at_safepoint()) {
+    fh->action_enabled();
+    return true;
+  }
+
+  return false;
+}
+
 class HandshakeALotClosure : public HandshakeClosure {
  public:
   HandshakeALotClosure() : HandshakeClosure("HandshakeALot") {}
@@ -475,6 +494,10 @@ void VMThread::wait_for_operation() {
     setup_periodic_safepoint_if_needed();
         
     if (DynamicHeapResizing && should_gc()) {
+      Universe::heap()->collect_as_vm_thread(GCCause::_heap_inspection);
+    }
+    
+    if (EnableFlexHeap && flex_should_gc()) {
       Universe::heap()->collect_as_vm_thread(GCCause::_heap_inspection);
     }
 

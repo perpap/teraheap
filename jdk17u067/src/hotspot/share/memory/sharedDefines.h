@@ -95,7 +95,7 @@
 //#define TERA_TIMERS             //< Enable timers for performance
                                   //analysis
 
-//#define TERA_STATS                //< Statistics for objects in H2
+#define TERA_STATS                //< Statistics for objects in H2
 
 //#define OBJ_STATS                 //< Take object statistics about
                                   //primitive types and non primitive
@@ -127,8 +127,6 @@
 
 #define STATIC_OBJ        938     //< Static field
 
-#define WEAK_REF_OBJ      553     //< Weak/Sorft/Phantom reference field
-
 /**********************************
  * Policies for TeraCache
  **********************************/
@@ -136,10 +134,7 @@
 
 #define P_SD_REF_EXCLUDE_CLOSURE  //< Exclude reference objects from the closure
 
-#define P_PRIMITIVE               //< Move only primitive arrays and
-                                  // primitive objects to H2.
-
-#define DYNAMIC_HEAP_RESIZING_TEST     // Dynamic heap resizing
+#define DYNAMIC_HEAP_RESIZING_TEST // Dynamic heap resizing
 
 // State machine flags for DynaHeap
 #define PER_MINOR_GC               //< Take decisions per minor GCs
