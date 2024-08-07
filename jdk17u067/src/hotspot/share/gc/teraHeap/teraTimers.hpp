@@ -5,8 +5,12 @@
 #include "gc/teraHeap/teraDynamicResizingPolicy.hpp"
 #include <sys/time.h>
 
+//#define rdtsc get_cycles
+
 class TeraTimers: public CHeapObj<mtInternal> {
 private:
+  static const uint64_t CYCLES_PER_SECOND;
+
   uint64_t h2_scavenge_start_time;
   uint64_t h2_scavenge_end_time;
 
@@ -49,8 +53,7 @@ private:
   uint64_t malloc_start_time;
   uint64_t malloc_end_time;
   double malloc_time_per_gc;
-
-  uint64_t rdtsc();
+ 
   void print_ellapsed_time(uint64_t start_time, uint64_t end_time, char* msg);
 
 public:

@@ -12,23 +12,46 @@
 *       - allocator initialization
 *       - object allocation in the correct positions
 ***************************************************/
-
-#include <stdint.h>
-#include <stdio.h>
-#include "../include/sharedDefines.h"
-#include "../include/regions.h"
-#include "../include/segments.h"
-
-#define CARD_SIZE ((uint64_t) (1 << 9))
-#define PAGE_SIZE ((uint64_t) (1 << 12))
+#include "tc_heap.h"
 
 //this test needs 256MB region size
-int main() {
+int main(int argc, char **argv) {
+    if(argc != 4){
+      fprintf(stderr,"Usage: ./tc_allocate.bin <mount_point> <h1_size> <h2_size>\n");
+      exit(EXIT_FAILURE);
+    }
+    unsigned long long h1_size = convert_string_to_number(argv[2]);
+    ERRNO_CHECK
+    unsigned long long h2_size = convert_string_to_number(argv[3]);
+    ERRNO_CHECK
+    
     char *obj1, *obj2, *obj3, *obj4, *obj5, *obj6, *obj7, *obj8, *obj9;
+     // Memory-map heap 1 (h1)
+    initialize_h1(H1_ALIGNMENT, NULL, h1_size * GB, 0);
+#if 0//perpap
+    //void* h1 = aligned_mmap(H1_SIZE, H1_ALIGNMENT, NULL, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    if (h1 == NULL) {
+        fprintf(stderr, "Failed to allocate h1\n");
+        return EXIT_FAILURE;
+    }
+    printf("h1 mapped at: (HEX)%p (DEC)%zd\n", h1, (uintptr_t)h1);
+
+    // Calculate the end address of h1
+    uintptr_t h1_end = (uintptr_t)h1 + H1_SIZE;
+    printf("h1 is aligned? %d\n", is_aligned(h1, H1_ALIGNMENT));
+    //printf("h1_end is aligned? %d\n", is_aligned((void *)h1_end, H2_ALIGNMENT));
+    printf("h1_end is aligned? %d\n", is_aligned(align_ptr_up((void *)h1_end, H2_ALIGNMENT), H2_ALIGNMENT));
 
     // Init allocator
-    init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
-
+    //init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 161061273600);
+    init(H2_ALIGNMENT, "/spare2/perpap/fmap/", H2_SIZE, (void *)h1_end);
+    printf("h2 mapped at: (HEX)%p (DEC)%zd\n", start_addr_mem_pool(), (uintptr_t)start_addr_mem_pool);
+    printf("%-20s %-20s %-20s %-20s %-20s %-20s\n", "", "START_ADDRESS(HEX)", "START_ADDRESS(DEC)", "END_ADDRESS(HEX)", "END_ADDRESS(DEC)", "SIZE(GB)");
+    printf("%-20s %-20p %-20llu %-20p %-20llu %-20td\n", "H1", h1, (long long unsigned int)h1, (void *)h1_end, (long long unsigned int)h1_end,CONVERT_TO_GB((ptrdiff_t)((char *)h1_end-(char*)h1)));
+    printf("%-20s %-20p %-20llu %-20p %-20llu %-20td\n", "H2", start_addr_mem_pool(), (long long unsigned int)start_addr_mem_pool(), stop_addr_mem_pool(), (long long unsigned int)stop_addr_mem_pool(),(ptrdiff_t)CONVERT_TO_GB((stop_addr_mem_pool()-start_addr_mem_pool())));
+#endif
+    initialize_h2(H2_ALIGNMENT, argv[1], h2_size * GB, (void *)(h1.start_address + h1_size * GB));
+    print_heap_statistics();
     //obj1 should be in region 0
     obj1 = allocate(1, 0, 0);
     fprintf(stderr, "Allocate: %p\n", obj1);

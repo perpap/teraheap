@@ -175,6 +175,11 @@ class Universe: AllStatic {
   static OopStorage* _vm_weak;
   static OopStorage* _vm_global;
 
+#if 1//perpap
+ public:
+  static void initialize_teraheap(HeapWord* heap_end);
+ private:
+#endif
   static jint initialize_heap();
   static void initialize_tlab();
   static void initialize_basic_type_mirrors(TRAPS);
@@ -323,7 +328,8 @@ class Universe: AllStatic {
   DEBUG_ONLY(static bool is_in_heap_or_null(const void* p) { return p == NULL || is_in_heap(p); })
 
   // Reserve Java heap and determine CompressedOops mode
-  static ReservedHeapSpace reserve_heap(size_t heap_size, size_t alignment);
+  //static ReservedHeapSpace reserve_heap(size_t heap_size, size_t alignment);
+  static ReservedHeapSpace reserve_heap(size_t heap_size, size_t alignment, char *requested_address = NULL);//perpap:requested_address is H2 base address or NULL(default for gc)
 
   // Global OopStorages
   static OopStorage* vm_weak();

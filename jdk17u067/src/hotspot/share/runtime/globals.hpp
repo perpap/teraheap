@@ -158,6 +158,18 @@ const intx ObjectAlignmentInBytes = 8;
                       range,                                                \
                       constraint)                                           \
                                                                             \
+  product(ccstr, DEVICE_H2, "nvme3n1", "The device used for H2")            \
+                                                                            \
+  product(uint64_t, MAX_PARTITIONS, 256,                                    \
+          "Max partitions for big data.")                                   \
+          range(16, max_jlong)                                              \
+                                                                            \
+  product(bool, AllocateH2H1, false,                                        \
+            "Allocate FlexHeap before H1. Works only with ParallelScavenge Collector")  \
+                                                                            \
+  product(bool, UseParallelH2Allocator, false,                              \
+          "Use multiple threads for allocating addresses into H2 heap")     \
+                                                                            \
   notproduct(bool, CheckCompressedOops, true,                               \
           "Generate checks in encoding/decoding code in debug VM")          \
                                                                             \

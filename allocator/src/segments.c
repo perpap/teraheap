@@ -45,9 +45,9 @@ void init_regions(){
     exit(EXIT_FAILURE);
   }
 
-#if DEBUG_PRINT 
-  fprintf(stderr, "Total num of regions:%d\n", (int32_t) region_array_size);
-#endif
+//#if DEBUG_PRINT 
+  fprintf(allocator_log_fp, "[%s|%s|%d]Total num of regions:%" PRIu64 "\nrdd_id_size:%d\n", __FILE__, __func__, __LINE__, region_array_size, rdd_id_size);
+//#endif
 
   for (i = 0; i < region_array_size ; i++) {
     region_array[i].start_address             = (i == 0) ? start_addr_mem_pool() : (region_array[i - 1].start_address + (uint64_t) REGION_SIZE);
@@ -134,6 +134,7 @@ char* new_region(size_t size){
 }
 
 uint64_t get_id(uint64_t rdd_id, uint64_t partition_id){
+  assertf(partition_id < MAX_PARTITIONS, "Partition id out of bounds");
     return (rdd_id % max_rdd_id) * MAX_PARTITIONS + partition_id;
 }
 
@@ -159,13 +160,13 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
     }
 
 #if DEBUG_PRINT
-    printf("Allocating from region %ld until region %ld\n",((res) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
+    printf("Allocating from region %ld until region %ld\n",(res - region_array[0].start_address) / ((uint64_t)REGION_SIZE),(res+size - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
 #endif
 
     return res;
   }
 
-  if (id_array[id_index]->last_allocated_end + size > ((id_array[id_index]->start_address + (uint64_t)REGION_SIZE))) {
+  if (id_array[id_index]->last_allocated_end + size > id_array[id_index]->start_address + (uint64_t)REGION_SIZE) {
 
     char* res = new_region(size);
     
@@ -176,7 +177,7 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 
     /* If object spans more than 1 region we don't want to allocate more objects with it*/
     if (size < (uint64_t) REGION_SIZE){
-      id_array[id_index] = &region_array[((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE)];
+      id_array[id_index] = &region_array[(res+size - region_array[0].start_address) / (uint64_t)REGION_SIZE];
       id_array[id_index]->rdd_id = rdd_id;
       id_array[id_index]->part_id = partition_id;
     }
@@ -184,7 +185,7 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
     assertf(res != NULL, "No empty region");
 
 #if DEBUG_PRINT
-    printf("Allocating from region %ld until region %ld\n",((res) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
+    printf("Allocating from region %ld until region %ld\n",(res - region_array[0].start_address) / (uint64_t)REGION_SIZE,(res+size - region_array[0].start_address) / (uint64_t)REGION_SIZE);
 #endif
 
     return res;
@@ -201,7 +202,7 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 #endif
 
 #if DEBUG_PRINT
-  printf("Allocating from region %ld until region %ld\n",((id_array[id_index]->last_allocated_start) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((id_array[id_index]->last_allocated_start+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
+  printf("Allocating from region %ld until region %ld\n",(id_array[id_index]->last_allocated_start - region_array[0].start_address) / (uint64_t)REGION_SIZE, (id_array[id_index]->last_allocated_start+size - region_array[0].start_address) / (uint64_t)REGION_SIZE);
 #endif
 
   return id_array[id_index]->last_allocated_start;
@@ -215,8 +216,8 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
  */
 
 void references(char *obj1, char *obj2){
-    int32_t seg1 = (obj1 - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
-    int32_t seg2 = (obj2 - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+    int32_t seg1 = (obj1 - region_array[0].start_address) / (uint64_t)REGION_SIZE;
+    int32_t seg2 = (obj2 - region_array[0].start_address) / (uint64_t)REGION_SIZE;
     if (seg1 >= region_array_size || seg2 >= region_array_size || seg1 < 0 || seg2 < 0)
         return;
   
@@ -251,7 +252,7 @@ void references(char *obj1, char *obj2){
  */
 void check_for_group(char *obj){
     int32_t seg1 = region_enabled;
-    int32_t seg2 = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+    int32_t seg2 = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
     if (seg1 >= region_array_size || seg2 >= region_array_size || seg1 < 0 || seg2 < 0){ 
         return;
     }
@@ -309,7 +310,7 @@ void reset_used(){
  */
 void mark_used(char *obj) {
 	struct group *ptr = NULL;
-    uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+    uint64_t seg = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
 
 	assertf(seg >= 0 && seg < region_array_size,
 			"Segment index is out of range %lu", seg); 
@@ -432,7 +433,7 @@ void print_used_regions(){
  * Checks if obj is before last object of region
  */
 bool is_before_last_object(char *obj){
-    uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+    uint64_t seg = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
 	assertf(seg >= 0 && seg < region_array_size,
 			"Segment index is out of range %lu", seg); 
     return (obj >= region_array[seg].last_allocated_end) ? false : true;
@@ -442,7 +443,7 @@ bool is_before_last_object(char *obj){
  * Returns last object of region
  */
 char* get_last_object(char *obj){
-    uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+    uint64_t seg = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
 	assertf(seg >= 0 && seg < region_array_size,
 			"Segment index is out of range %lu", seg); 
     return region_array[seg].last_allocated_end;
@@ -450,7 +451,7 @@ char* get_last_object(char *obj){
 
 // Returns true if object is first of its region false otherwise
 bool is_region_start(char *obj){
-    uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+    uint64_t seg = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
 	assertf(seg >= 0 && seg < region_array_size,
 			"Segment index is out of range %lu", seg); 
 
@@ -461,7 +462,7 @@ bool is_region_start(char *obj){
  * Enables groupping with the region in which obj belongs to
  */
 void enable_region_groups(char *obj){
-  region_enabled = ((uint64_t)(obj - region_array[0].start_address)) / ((uint64_t) REGION_SIZE);
+  region_enabled = ((uint64_t)(obj - region_array[0].start_address)) / (uint64_t) REGION_SIZE;
   assertf(region_enabled >= 0 && region_enabled < INT32_MAX, "Sanity check for overflow");
 }
 
@@ -510,20 +511,25 @@ char* get_next_region() {
 }
 
 char *get_first_object(char *addr) {
-  uint64_t seg = (addr - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+  uint64_t seg = (addr - region_array[0].start_address) / (uint64_t)REGION_SIZE;
   assertf(seg >= 0 && seg < region_array_size, "Segment index is out of range %lu", seg); 
   return region_array[seg].first_allocated_start;
 }
 
 int get_num_of_continuous_regions(char *addr){
-  uint64_t seg = (addr - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+  uint64_t seg = (addr - region_array[0].start_address) / (uint64_t)REGION_SIZE;
+  #ifdef ASSERT
+  static const char *border = "------------------------------------------------------------";
+  //fprintf(stderr, "%s\n[%s|%s|%d]\nsegment = %" PRIu64 "\naddress = %p\n region_array[0].start_address = %p\n%s\n", border, __FILE__, __func__, __LINE__, seg, addr, region_array[0].start_address, border);
+  assertf(addr >= region_array[0].start_address, "%s\n[%s|%s|%d]\nsegment = %" PRIu64 "\naddress = %p\n region_array[0].start_address = %p\n%s\n", border, __FILE__, __func__, __LINE__, seg, addr, region_array[0].start_address, border);
+  #endif
 
   if (region_array[seg].last_allocated_end == region_array[seg].start_address)
     return 0;
 
-  return ((region_array[seg].last_allocated_end - region_array[seg].first_allocated_start) % (uint64_t)REGION_SIZE != 0) ? 
+  return (region_array[seg].last_allocated_end - region_array[seg].first_allocated_start) % (uint64_t)REGION_SIZE != 0 ? 
   (region_array[seg].last_allocated_end - region_array[seg].first_allocated_start) / (uint64_t)REGION_SIZE + 1 :
-  (region_array[seg].last_allocated_end - region_array[seg].first_allocated_start) / (uint64_t)REGION_SIZE ; 
+  (region_array[seg].last_allocated_end - region_array[seg].first_allocated_start) / (uint64_t)REGION_SIZE; 
 }
 
 /*
@@ -544,7 +550,7 @@ char* get_region_start_addr(char *obj, uint64_t rdd_id, uint64_t part_id) {
  * Return: the object rdd id
  */
 uint64_t get_obj_group_id(char *obj) {
-  uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+  uint64_t seg = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
   assertf(seg >= 0 && seg < region_array_size,
           "Segment index is out of range %lu", seg); 
   return region_array[seg].rdd_id;
@@ -559,9 +565,9 @@ uint64_t get_obj_group_id(char *obj) {
  * returns: the object partition Id
  */
 uint64_t get_obj_part_id(char *obj) {
-  uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+  uint64_t seg = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
   assertf(seg >= 0 && seg < region_array_size,
-          "Segment index is out of range %lu", seg); 
+          "Segment index %" PRIu64 " is out of range\n%-30s = %p\n%-30s = %p\nregion_array_size = %" PRIu64 "\n", seg, "object address", obj, "region_array[0].start_address", region_array[0].start_address, region_array_size); 
 
   return region_array[seg].part_id;
 }
@@ -575,8 +581,8 @@ uint64_t get_obj_part_id(char *obj) {
  * returns: 1 if objects are in the same group, 0 otherwise
  */
 int is_in_the_same_group(char *obj1, char *obj2) {
-	uint64_t seg1 = (obj1 - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
-	uint64_t seg2 = (obj2 - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+	uint64_t seg1 = (obj1 - region_array[0].start_address) / (uint64_t)REGION_SIZE;
+	uint64_t seg2 = (obj2 - region_array[0].start_address) / (uint64_t)REGION_SIZE;
 	struct group *ptr = NULL;
 
 	assertf(seg1 < region_array_size && seg2 < region_array_size && seg1 >= 0
@@ -659,7 +665,7 @@ void flush_buffer(uint64_t seg) {
  * size: Size of the object
  */
 void buffer_insert(char* obj, char* new_adr, size_t size) {
-	uint64_t seg = (new_adr - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+	uint64_t seg = (new_adr - region_array[0].start_address) / (uint64_t)REGION_SIZE;
 	struct pr_buffer *buf = region_array[seg].pr_buffer;
 
 	char*  start_adr  = buf->first_obj_addr;
@@ -721,31 +727,33 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
  * memory to limit waste space.
  */
 void free_all_buffers() {
-	uint64_t i;
+	//uint64_t i;
 	struct pr_buffer *buf;
 
-    for (i = 0; i < region_array_size; i++) {
-		buf = region_array[i].pr_buffer;
+  for (uint64_t i = 0; i < region_array_size; i++) {
+    buf = region_array[i].pr_buffer;
+    #ifdef ASSERT
+    assertf(buf != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
+    #endif
+    /* Buffer is not empty, so flush it*/
+    if (buf->size != 0)
+      flush_buffer(i);
 
-		/* Buffer is not empty, so flush it*/
-		if (buf->size != 0)
-			flush_buffer(i);
-
-		/* If the buffer is already flushed, just free bufffer's memory */
-		if (buf->buffer != NULL) {
-			free(buf->buffer);
-			buf->buffer = NULL;
-			buf->alloc_ptr = NULL;
-			buf->first_obj_addr = NULL;
-			buf->size = 0;
-		}
-	}
+    /* If the buffer is already flushed, just free bufffer's memory */
+    if (buf->buffer != NULL) {
+      free(buf->buffer);
+      buf->buffer = NULL;
+      buf->alloc_ptr = NULL;
+      buf->first_obj_addr = NULL;
+      buf->size = 0;
+    }
+  }
 }
 
 bool object_starts_from_region(char *obj) {
-  uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+  uint64_t seg = (obj - region_array[0].start_address) / (uint64_t)REGION_SIZE;
   assertf(seg >= 0 && seg < region_array_size,
-          "Segment index is out of range %lu", seg); 
+          "Segment index %" PRIu64 " is out of range!\n%-30s = %p\n%-30s = %p\nregion_array_size = %" PRIu64 "\n", seg, "object address", obj, "region_array[0].start_address", region_array[0].start_address, region_array_size); 
   return (region_array[seg].first_allocated_start != region_array[seg].start_address) ? false : true;
 }
 #endif

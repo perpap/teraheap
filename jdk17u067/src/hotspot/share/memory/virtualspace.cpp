@@ -219,7 +219,7 @@ void ReservedSpace::reserve(size_t size,
   // - Mapping backed by normal pages or transparent huge pages
   // The first two have restrictions that requires the whole mapping to be
   // committed up front. To record this the ReservedSpace is marked 'special'.
-
+  //tty->print("[%s|%s|%d] _fd_for_heap = %d\n", __FILE__,__func__,__LINE__,_fd_for_heap);
   if (_fd_for_heap != -1) {
     // When there is a backing file directory for this space then whether
     // large pages are allocated is up to the filesystem of the backing file.
@@ -245,7 +245,9 @@ void ReservedSpace::reserve(size_t size,
     // Failed to reserve explicit large pages, fall back to normal reservation.
     page_size = os::vm_page_size();
   }
-
+  #if 0//perpap
+  // The vanilla jvm heap takes place here
+  #endif
   // Not a 'special' reservation.
   char* base = reserve_memory(requested_address, size, alignment, -1, executable);
   if (base != NULL) {
@@ -583,7 +585,8 @@ void ReservedHeapSpace::initialize_compressed_heap(const size_t size, size_t ali
   }
 }
 
-ReservedHeapSpace::ReservedHeapSpace(size_t size, size_t alignment, size_t page_size, const char* heap_allocation_directory) : ReservedSpace() {
+//ReservedHeapSpace::ReservedHeapSpace(size_t size, size_t alignment, size_t page_size, const char* heap_allocation_directory) : ReservedSpace() {
+ReservedHeapSpace::ReservedHeapSpace(size_t size, size_t alignment, size_t page_size, char* requested_address, const char* heap_allocation_directory) : ReservedSpace() {//perpap
 
   if (size == 0) {
     return;
@@ -615,7 +618,8 @@ ReservedHeapSpace::ReservedHeapSpace(size_t size, size_t alignment, size_t page_
       establish_noaccess_prefix();
     }
   } else {
-    initialize(size, alignment, page_size, NULL, false);
+    //initialize(size, alignment, page_size, NULL, false);
+    initialize(size, alignment, page_size, requested_address, false);//perpap
   }
 
   assert(markWord::encode_pointer_as_mark(_base).decode_pointer() == _base,

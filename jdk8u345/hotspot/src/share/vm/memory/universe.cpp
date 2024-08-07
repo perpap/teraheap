@@ -847,15 +847,21 @@ char *Universe::preferred_heap_base(size_t heap_size, size_t alignment,
   assert(is_ptr_aligned((char *)base, alignment), "Must be");
   return (char *)base; // also return NULL (don't care) for 32-bit VM
 }
-
+void Universe::initialize_teraheap(HeapWord* heap_end){
+	NOT_PRODUCT(assert(heap_end != NULL, "H1 heap is not initialized");)
+	_teraHeap = new TeraHeap(heap_end);
+	//log_info(gc)("Initialize Teraheap");
+}
 jint Universe::initialize_heap() {
 
   if (UseParallelGC) {
 #if INCLUDE_ALL_GCS
     Universe::_collectedHeap = new ParallelScavengeHeap();
+    #if 0//perpap
     if (EnableTeraHeap) {
       Universe::_teraHeap = new TeraHeap();
     }
+    #endif
 #else  // INCLUDE_ALL_GCS
     fatal("UseParallelGC not supported in this VM.");
 #endif // INCLUDE_ALL_GCS

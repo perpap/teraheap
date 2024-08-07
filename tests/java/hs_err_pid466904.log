@@ -1,0 +1,2508 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  Internal Error (../../src/hotspot/cpu/aarch64/macroAssembler_aarch64.cpp:4235), pid=466904, tid=466914
+#  assert(Universe::heap()->is_in(JNIHandles::resolve(obj))) failed: should be real oop
+#
+# JRE version: OpenJDK Runtime Environment (17.0.6) (fastdebug build 17.0.6-internal+0-adhoc.perpap.jdk17u067)
+# Java VM: OpenJDK 64-Bit Server VM (fastdebug 17.0.6-internal+0-adhoc.perpap.jdk17u067, mixed mode, tiered, parallel gc, linux-aarch64)
+# Problematic frame:
+# V  [libjvm.so+0x12cdc64]  MacroAssembler::movoop(RegisterImpl*, _jobject*, bool)+0x234
+#
+# Core dump will be written. Default location: Core dumps may be processed with "/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h %e" (or dumping to /spare/perpap/teraheap/tests/java/core.466904)
+#
+# If you would like to submit a bug report, please visit:
+#   https://bugreport.java.com/bugreport/crash.jsp
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+EnableTeraHeap -XX:TeraHeapSize=104152956928 -Xmx100g -Xms3g -XX:-UseCompressedOops -XX:-UseCompressedClassPointers -XX:+TeraHeapStatistics -XX:TeraStripeSize=32768 -Xlogth:llarge_teraCache.txt Array_List
+
+Host: ampere.cluster.ics.forth.gr, AArch64, 160 cores, 254G, CentOS Linux release 8.5.2111
+Time: Tue Jan 23 23:57:28 2024 CET elapsed time: 57.616557 seconds (0d 0h 0m 57s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x0000ffffb4540a20):  JavaThread "C1 CompilerThread0" daemon [_thread_in_vm, id=466914, stack(0x0000ff36b5f80000,0x0000ff36b6180000)]
+
+
+Current CompileTask:
+C1:  57616  696 %     3       Array_List::main @ 163 (219 bytes)
+
+Stack: [0x0000ff36b5f80000,0x0000ff36b6180000],  sp=0x0000ff36b617bed0,  free space=2031k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [libjvm.so+0x12cdc64]  MacroAssembler::movoop(RegisterImpl*, _jobject*, bool)+0x234
+V  [libjvm.so+0x7413fc]  LIR_Assembler::emit_op1(LIR_Op1*)+0x36c
+V  [libjvm.so+0x74046c]  LIR_Assembler::emit_lir_list(LIR_List*)+0xdc
+V  [libjvm.so+0x740ba8]  LIR_Assembler::emit_code(BlockList*)+0x74
+V  [libjvm.so+0x6e1174]  Compilation::emit_code_body()+0x144
+V  [libjvm.so+0x6e18d8]  Compilation::compile_java_method()+0x574
+V  [libjvm.so+0x6e22e8]  Compilation::compile_method()+0x1d8
+V  [libjvm.so+0x6e2c7c]  Compilation::Compilation(AbstractCompiler*, ciEnv*, ciMethod*, int, BufferBlob*, bool, DirectiveSet*)+0x2dc
+V  [libjvm.so+0x6e4228]  Compiler::compile_method(ciEnv*, ciMethod*, int, bool, DirectiveSet*)+0x158
+V  [libjvm.so+0x9e0168]  CompileBroker::invoke_compiler_on_method(CompileTask*)+0x8c8
+V  [libjvm.so+0x9e0e18]  CompileBroker::compiler_thread_loop()+0x458
+V  [libjvm.so+0x18e82d4]  JavaThread::thread_main_inner()+0x5b0
+V  [libjvm.so+0x18f13a8]  Thread::call_run()+0xf8
+V  [libjvm.so+0x1495df4]  thread_native_entry(Thread*)+0x104
+C  [libpthread.so.0+0x7898]  start_thread+0x188
+
+Register to memory mapping:
+
+R0=0x0000ffffbbc18c10
+R1=0x000000000000108b
+R2=0x0000ffffbbc1a638
+R3=0x0000ffffbbc1a620
+R4=0x0000ffffbc420000
+R5=0x0000000000000058
+R6=0x0000000000000000
+R7=0x0000000000000000
+R8=0x0000ff36b617bfa0
+R9=0x7f7f7f7f7f7f7f7f
+R10=0xaaaaaaaaa9ff5c2f
+R11=0xffffffffff7f7f7f
+R12=0x0101010101010101
+R13=0x000000000000270f
+R14=0x0000000000000002
+R15=0x0000000000000058
+R16=0x0000ffffbc0b55a8
+R17=0x0000ffffbc238f48
+R18=0x0000000000000000
+R19=0x0000ff36b01877a0
+R20=0x0000ff3678000dd8
+R21=0x0000ffffbc14c390
+R22=0x0000000000000000
+R23=0x0000000000000001
+R24=0x0000000000000000
+R25=0x0000ffffbb4c8a60
+R26=0x0000ff36b617bfa0
+R27=0x0000ff36b617c0a0
+R28=0x0000ffffbbb19610
+R29=0x0000ff36b617bed0
+R30=0x0000ffffbb2cdaf4
+
+
+Registers:
+R0 =0x0000ffffbbc18c10: <offset 0x0000000001c18c10> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+R1 =0x000000000000108b is an unknown value
+R2 =0x0000ffffbbc1a638: <offset 0x0000000001c1a638> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+R3 =0x0000ffffbbc1a620: <offset 0x0000000001c1a620> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+R4 =0x0000ffffbc420000 points into unknown readable memory: 0x0000000000000058 | 58 00 00 00 00 00 00 00
+R5 =0x0000000000000058 is an unknown value
+R6 =0x0 is NULL
+R7 =0x0 is NULL
+R8 =0x0000ff36b617bfa0 is pointing into the stack for thread: 0x0000ffffb4540a20
+R9 =0x7f7f7f7f7f7f7f7f is an unknown value
+R10=0xaaaaaaaaa9ff5c2f is an unknown value
+R11=0xffffffffff7f7f7f is an unknown value
+R12=0x0101010101010101 is an unknown value
+R13=0x000000000000270f is an unknown value
+R14=0x0000000000000002 is an unknown value
+R15=0x0000000000000058 is an unknown value
+R16=0x0000ffffbc0b55a8: <offset 0x00000000020b55a8> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+R17=0x0000ffffbc238f48: cfree+0x0000000000000000 in /lib64/libc.so.6 at 0x0000ffffbc1c0000
+R18=0x0 is NULL
+R19=0x0000ff36b01877a0 points into unknown readable memory: 0x0000ffffbc062ed0 | d0 2e 06 bc ff ff 00 00
+R20=0x0000ff3678000dd8 is a local jni handle
+R21=0x0000ffffbc14c390: <offset 0x000000000214c390> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+R22=0x0 is NULL
+R23=0x0000000000000001 is an unknown value
+R24=0x0 is NULL
+R25=0x0000ffffbb4c8a60: <offset 0x00000000014c8a60> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+R26=0x0000ff36b617bfa0 is pointing into the stack for thread: 0x0000ffffb4540a20
+R27=0x0000ff36b617c0a0 is pointing into the stack for thread: 0x0000ffffb4540a20
+R28=0x0000ffffbbb19610: <offset 0x0000000001b19610> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+R29=0x0000ff36b617bed0 is pointing into the stack for thread: 0x0000ffffb4540a20
+R30=0x0000ffffbb2cdaf4: <offset 0x00000000012cdaf4> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+
+Top of Stack: (sp=0x0000ff36b617bed0)
+0x0000ff36b617bed0:   0000ff36b617c010 0000ffffba7413fc
+0x0000ff36b617bee0:   0000ff36b0918aa0 0000ff36b617c1c0
+0x0000ff36b617bef0:   0000ff36b0918aa0 0000000000000041
+0x0000ff36b617bf00:   0000000000000208 0000ff36b0925b18
+0x0000ff36b617bf10:   0000ffffbc0c5f18 00000000000000fc
+0x0000ff36b617bf20:   0000ff36b617bf30 0000ffffba72f294
+0x0000ff36b617bf30:   0000ffffb4540a20 0000ff380a000000
+0x0000ff36b617bf40:   0000ff380a000000 000000000000001b
+0x0000ff36b617bf50:   0000ff36b617c010 0000ffffba7413fc
+0x0000ff36b617bf60:   0000ff36b0918aa0 0000ff36b617c1c0
+0x0000ff36b617bf70:   0000ff36b0918aa0 0000000000000041
+0x0000ff36b617bf80:   0000000000000208 0000ff36b0925b18
+0x0000ff36b617bf90:   0000ffffbc0c5f18 0000ffffba73ecf8
+0x0000ff36b617bfa0:   0000ff380a000000 0000ffffba7413fc
+0x0000ff36b617bfb0:   0000ff36b0918aa0 0000ff36b617c1c0
+0x0000ff36b617bfc0:   0000ff36b0918aa0 0000000000000041
+0x0000ff36b617bfd0:   0000000000000208 0000ff36b0925b18
+0x0000ff36b617bfe0:   0000ffffbc0c5f18 00000000000000fc
+0x0000ff36b617bff0:   0000ff36b617c0a0 0000ffffbbb19610
+0x0000ff36b617c000:   0000ff36b617c000 0000ffffba740570
+0x0000ff36b617c010:   0000ff36b617c040 0000ffffba74046c
+0x0000ff36b617c020:   0000ff36b617c1c0 0000ffffbc0be000
+0x0000ff36b617c030:   0000000000000200 0000ffffbc0be000
+0x0000ff36b617c040:   0000ff36b617c140 0000ffffba740ba8
+0x0000ff36b617c050:   000000000000001f 00000000000000f8
+0x0000ff36b617c060:   0000ff36b617c1c0 0000ff36b0960280
+0x0000ff36b617c070:   0000ffffbbafb200 0000000000000034
+0x0000ff36b617c080:   0000ffffbc0c4578 0000000000000058
+0x0000ff36b617c090:   0000ffffbbaf4000 0000000000000000
+0x0000ff36b617c0a0:   0000ffffbbfc1fe8 2bad4b0bbaadbabe
+0x0000ff36b617c0b0:   0000000000000000 0000005000000000
+0x0000ff36b617c0c0:   000000000000003a 0000000000000000 
+
+Instructions: (pc=0x0000ffffbb2cdc64)
+0x0000ffffbb2cdb64:   eb00007f 54001c61 f9403c40 b4001b20
+0x0000ffffbb2cdb74:   aa1403e1 9406b2e2 a9446bf9 2a0003f5
+0x0000ffffbb2cdb84:   710002bf 54000c4d 90006f61 f9400e60
+0x0000ffffbb2cdb94:   f9409821 f9400021 f9401821 f100003f
+0x0000ffffbb2cdba4:   7a400ae4 54000e01 d0006f43 90006f62
+0x0000ffffbb2cdbb4:   f9400801 528000e4 f9444060 927df021
+0x0000ffffbb2cdbc4:   f947e842 52800037 39400000 91004042
+0x0000ffffbb2cdbd4:   b9008be4 a909ffe2 291557f7 b900b3ff
+0x0000ffffbb2cdbe4:   390303ff f90067e1 34000440 aa1603e1
+0x0000ffffbb2cdbf4:   aa1303e0 9101c3e2 97ffcf91 a94153f3
+0x0000ffffbb2cdc04:   a9425bf5 a94363f7 a8d37bfd d65f03c0
+0x0000ffffbb2cdc14:   9101a3e0 9406d486 97f2ffad 72001c1f
+0x0000ffffbb2cdc24:   54fff3a0 14000069 9101a3e0 9406d4b0
+0x0000ffffbb2cdc34:   35fff6b8 b0006f84 b0004a63 b0004a62
+0x0000ffffbb2cdc44:   91188063 f9404c84 9118e042 f0004a40
+0x0000ffffbb2cdc54:   91304000 52800b05 52821161 f9400084
+0x0000ffffbb2cdc64:   39000085 97ddabba 940701a5 17ffffa6
+0x0000ffffbb2cdc74:   910343f4 52800102 aa1403e0 97cd940c
+0x0000ffffbb2cdc84:   aa1403e2 9101a3e3 aa1603e1 aa1303e0
+0x0000ffffbb2cdc94:   97fff78f b900ebf7 b0006f84 f0006f63
+0x0000ffffbb2cdca4:   f94037e5 aa1403e2 f9441c84 aa1603e1
+0x0000ffffbb2cdcb4:   f9453863 aa1303e0 f9400084 91004063
+0x0000ffffbb2cdcc4:   a90d13f6 f90073e5 a90fffe3 b9010bff
+0x0000ffffbb2cdcd4:   f90097ff 97ffcf5a a94153f3 a9425bf5
+0x0000ffffbb2cdce4:   a94363f7 a8d37bfd d65f03c0 f9401000
+0x0000ffffbb2cdcf4:   52800002 d2800001 91006000 9406b940
+0x0000ffffbb2cdd04:   2a0003f5 710002bf 54fff40c b0006f84
+0x0000ffffbb2cdd14:   f0004463 f0004462 9132c063 f9404c84
+0x0000ffffbb2cdd24:   91334042 d00040a0 911be000 52800b05
+0x0000ffffbb2cdd34:   52806f81 f9400084 39000085 97ddab84
+0x0000ffffbb2cdd44:   9407016f 90006f61 f9400e60 f9409821
+0x0000ffffbb2cdd54:   f9400021 f9401821 f100003f 7a400ae4 
+
+
+Stack slot to memory mapping:
+stack at sp + 0 slots: 0x0000ff36b617c010 is pointing into the stack for thread: 0x0000ffffb4540a20
+stack at sp + 1 slots: 0x0000ffffba7413fc: <offset 0x00000000007413fc> in /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so at 0x0000ffffba000000
+stack at sp + 2 slots: 0x0000ff36b0918aa0 points into unknown readable memory: 0x0000ffffbc06ac40 | 40 ac 06 bc ff ff 00 00
+stack at sp + 3 slots: 0x0000ff36b617c1c0 is pointing into the stack for thread: 0x0000ffffb4540a20
+stack at sp + 4 slots: 0x0000ff36b0918aa0 points into unknown readable memory: 0x0000ffffbc06ac40 | 40 ac 06 bc ff ff 00 00
+stack at sp + 5 slots: 0x0000000000000041 is an unknown value
+stack at sp + 6 slots: 0x0000000000000208 is an unknown value
+stack at sp + 7 slots: 0x0000ff36b0925b18 points into unknown readable memory: 0x0000ffffbc06a570 | 70 a5 06 bc ff ff 00 00
+
+
+---------------  P R O C E S S  ---------------
+
+uid  : 0 euid : 0 gid  : 0 egid : 0
+
+umask: 0022 (----w--w-)
+
+Threads class SMR info:
+_java_thread_list=0x0000ff36780b0070, length=11, elements={
+0x0000ffffb402c670, 0x0000ffffb44e8030, 0x0000ffffb44e9bc0, 0x0000ffffb4539db0,
+0x0000ffffb453b690, 0x0000ffffb453cf80, 0x0000ffffb453f030, 0x0000ffffb4540a20,
+0x0000ffffb4549030, 0x0000ffffb4597780, 0x0000ffffb480f690
+}
+_java_thread_list_alloc_cnt=34, _java_thread_list_free_cnt=32, _java_thread_list_max=20, _nested_thread_list_max=0
+_tlh_cnt=170, _tlh_times=3, avg_tlh_time=0.02, _tlh_time_max=3
+_deleted_thread_cnt=11, _deleted_thread_times=0, avg_deleted_thread_time=0.00, _deleted_thread_time_max=0
+_delete_lock_wait_cnt=0, _delete_lock_wait_max=0
+_to_delete_list_cnt=0, _to_delete_list_max=1
+
+Java Threads: ( => current thread )
+  0x0000ffffb402c670 JavaThread "main" [_thread_in_Java, id=466905, stack(0x0000ffffb9920000,0x0000ffffb9b20000)]
+  0x0000ffffb44e8030 JavaThread "Reference Handler" daemon [_thread_blocked, id=466908, stack(0x0000ff36b6e00000,0x0000ff36b7000000)]
+  0x0000ffffb44e9bc0 JavaThread "Finalizer" daemon [_thread_blocked, id=466909, stack(0x0000ff36b6c00000,0x0000ff36b6e00000)]
+  0x0000ffffb4539db0 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=466910, stack(0x0000ff36b6780000,0x0000ff36b6980000)]
+  0x0000ffffb453b690 JavaThread "Service Thread" daemon [_thread_blocked, id=466911, stack(0x0000ff36b6580000,0x0000ff36b6780000)]
+  0x0000ffffb453cf80 JavaThread "Monitor Deflation Thread" daemon [_thread_blocked, id=466912, stack(0x0000ff36b6380000,0x0000ff36b6580000)]
+  0x0000ffffb453f030 JavaThread "C2 CompilerThread0" daemon [_thread_blocked, id=466913, stack(0x0000ff36b6180000,0x0000ff36b6380000)]
+=>0x0000ffffb4540a20 JavaThread "C1 CompilerThread0" daemon [_thread_in_vm, id=466914, stack(0x0000ff36b5f80000,0x0000ff36b6180000)]
+  0x0000ffffb4549030 JavaThread "Sweeper thread" daemon [_thread_blocked, id=466915, stack(0x0000ff36b5d80000,0x0000ff36b5f80000)]
+  0x0000ffffb4597780 JavaThread "Common-Cleaner" daemon [_thread_blocked, id=466916, stack(0x0000ff36b5ac0000,0x0000ff36b5cc0000)]
+  0x0000ffffb480f690 JavaThread "Notification Thread" daemon [_thread_blocked, id=466922, stack(0x0000ff36b4ec0000,0x0000ff36b50c0000)]
+
+Other Threads:
+  0x0000ffffb44aca30 VMThread "VM Thread" [stack: 0x0000ff36c40f0000,0x0000ff36c42f0000] [id=466907]
+  0x0000ffffb48119d0 WatcherThread [stack: 0x0000ff36b4cc0000,0x0000ff36b4ec0000] [id=466923]
+  0x0000ffffb42ac5a0 GCTaskThread "GC Thread#0" [stack: 0x0000ffffb8510000,0x0000ffffb8710000] [id=466906]
+  0x0000ff36b00014c0 GCTaskThread "GC Thread#1" [stack: 0x0000ff36b4240000,0x0000ff36b4440000] [id=466929]
+
+Threads with active compile tasks:
+C1 CompilerThread0    57619  696 %     3       Array_List::main @ 163 (219 bytes)
+
+VM state: not at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+GC Precious Log:
+ CPUs: 160 total, 160 available
+ Memory: 254G
+ Large Page Support: Disabled
+ NUMA Support: Disabled
+ Compressed Oops: Disabled
+ Alignments: Space 512K, Generation 512K, Heap 32M
+ Heap Min Capacity: 3G
+ Heap Initial Capacity: 3G
+ Heap Max Capacity: 3G
+ Pre-touch: Disabled
+ Parallel Workers: 2
+
+Heap:
+ PSYoungGen      total 917504K, used 30460K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 3% used [0x0000ff3764000000,0x0000ff3765dbf070,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 1452K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e416b370,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+
+Card table byte_map: [0x0000ffffb8710000,0x0000ffffb8d20000] _byte_map_base: 0x0000ff801cff0000
+
+Marking Bits: (ParMarkBitMap*) 0x0000ffffbc191168
+ Begin Bits: [0x0000ff36b7000000, 0x0000ff36ba000000)
+ End Bits:   [0x0000ff36ba000000, 0x0000ff36bd000000)
+
+Polling page: 0x0000ffffb98c0000
+
+Metaspace:
+
+Usage:
+    7.23 MB used.
+
+Virtual space:
+      8.00 MB reserved,       7.31 MB ( 91%) committed,  1 nodes.
+
+Chunk freelists:
+340.00 KB
+
+MaxMetaspaceSize: unlimited
+No class space
+Initial GC threshold: 21.00 MB
+Current GC threshold: 21.00 MB
+CDS: off
+MetaspaceReclaimPolicy: balanced
+ - commit_granule_bytes: 65536.
+ - commit_granule_words: 8192.
+ - virtual_space_node_default_size: 1048576.
+ - enlarge_chunks_in_place: 1.
+ - new_chunks_are_fully_committed: 0.
+ - uncommit_free_chunks: 1.
+ - use_allocation_guard: 0.
+ - handle_deallocations: 1.
+
+
+Internal statistics:
+
+num_allocs: 43309.
+num_deallocs: 101.
+num_allocs_from_deallocated_blocks: 139.
+num_chunks_retired: 51.
+num_allocs_failed_limit: 0.
+num_arena_births: 98.
+num_arena_deaths: 0.
+num_vsnodes_births: 1.
+num_vsnodes_deaths: 0.
+num_space_committed: 117.
+num_space_uncommitted: 0.
+num_chunks_returned_to_freelist: 0.
+num_chunks_taken_from_freelist: 149.
+num_chunk_merges: 0.
+num_chunk_splits: 111.
+num_chunks_enlarged: 160.
+num_purges: 0.
+num_inconsistent_stats: 0.
+
+CodeHeap 'non-profiled nmethods': size=118272Kb used=330Kb max_used=330Kb free=117941Kb
+ bounds [0x0000ffffacc80000, 0x0000ffffacef0000, 0x0000ffffb4000000]
+CodeHeap 'profiled nmethods': size=118272Kb used=1350Kb max_used=1350Kb free=116921Kb
+ bounds [0x0000ffffa5000000, 0x0000ffffa5270000, 0x0000ffffac380000]
+CodeHeap 'non-nmethods': size=9216Kb used=1540Kb max_used=3269Kb free=7676Kb
+ bounds [0x0000ffffac380000, 0x0000ffffac6c0000, 0x0000ffffacc80000]
+ total_blobs=1462 nmethods=693 adapters=696
+ compilation: enabled
+              stopped_count=0, restarted_count=0
+ full_count=0
+
+Compilation events (20 events):
+Event: 30.582 Thread 0x0000ff369c149fe0  676       3       jdk.internal.org.objectweb.asm.MethodWriter::visitAnnotation (40 bytes)
+Event: 30.582 Thread 0x0000ffffb4540a20 nmethod 671 0x0000ffffa5147910 code [0x0000ffffa5148040, 0x0000ffffa514ab68]
+Event: 30.582 Thread 0x0000ffffb4540a20  679       3       java.lang.invoke.MethodType::erase (8 bytes)
+Event: 30.582 Thread 0x0000ffffb4540a20 nmethod 679 0x0000ffffa514d190 code [0x0000ffffa514d340, 0x0000ffffa514d4f8]
+Event: 30.582 Thread 0x0000ffffb4540a20  688       3       java.lang.invoke.LambdaForm$NamedFunction::intrinsicName (21 bytes)
+Event: 30.582 Thread 0x0000ff369c149fe0 nmethod 676 0x0000ffffa514d610 code [0x0000ffffa514d800, 0x0000ffffa514db18]
+Event: 30.582 Thread 0x0000ff369c149fe0  689       3       java.lang.reflect.Modifier::isPrivate (12 bytes)
+Event: 30.583 Thread 0x0000ff369c149fe0 nmethod 689 0x0000ffffa514dd10 code [0x0000ffffa514dec0, 0x0000ffffa514e038]
+Event: 30.583 Thread 0x0000ffffb4540a20 nmethod 688 0x0000ffffa514e110 code [0x0000ffffa514e300, 0x0000ffffa514e5e8]
+Event: 30.583 Thread 0x0000ff369c149fe0  681       1       jdk.internal.org.objectweb.asm.SymbolTable::getConstantPoolCount (5 bytes)
+Event: 30.583 Thread 0x0000ff369c149fe0 nmethod 681 0x0000ffffacccfa90 code [0x0000ffffacccfc40, 0x0000ffffacccfd78]
+Event: 51.608 Thread 0x0000ffffb4540a20  692 %     3       Array_List::calcHashCode @ 5 (46 bytes)
+Event: 51.613 Thread 0x0000ffffb4540a20 nmethod 692% 0x0000ffffa514e790 code [0x0000ffffa514ecc0, 0x0000ffffa5150cf8]
+Event: 51.613 Thread 0x0000ffffb453f030  693 %     4       Array_List::calcHashCode @ 5 (46 bytes)
+Event: 51.629 Thread 0x0000ffffb453f030 nmethod 693% 0x0000ffffacccfe10 code [0x0000ffffaccd0080, 0x0000ffffaccd0790]
+Event: 51.629 Thread 0x0000ffffb453f030  694       4       Array_List::calcHashCode (46 bytes)
+Event: 51.643 Thread 0x0000ffffb453f030 nmethod 694 0x0000ffffaccd1290 code [0x0000ffffaccd1500, 0x0000ffffaccd1b60]
+Event: 55.529 Thread 0x0000ffffb453f030  695       4       java.lang.Math::min (11 bytes)
+Event: 57.450 Thread 0x0000ffffb453f030 nmethod 695 0x0000ffffaccd2610 code [0x0000ffffaccd27c0, 0x0000ffffaccd2860]
+Event: 57.597 Thread 0x0000ffffb4540a20  696 %     3       Array_List::main @ 163 (219 bytes)
+
+GC Heap History (20 events):
+Event: 4.896 GC heap before
+{Heap before GC invocations=3 (full 0):
+ PSYoungGen      total 917504K, used 917474K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 100% used [0x0000ff3764000000,0x0000ff3794000000,0x0000ff3794000000)
+  from space 131072K, 99% used [0x0000ff379c000000,0x0000ff37a3ff8bf8,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 1115336K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 53% used [0x0000ff36e4000000,0x0000ff3728132000,0x0000ff3764000000)
+ Metaspace       used 7365K, committed 7488K, reserved 8192K
+}
+Event: 9.060 GC heap after
+{Heap after GC invocations=3 (full 0):
+ PSYoungGen      total 917504K, used 131054K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 99% used [0x0000ff3794000000,0x0000ff379bffb900,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 1764589K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 84% used [0x0000ff36e4000000,0x0000ff374fb3b510,0x0000ff3764000000)
+ Metaspace       used 7365K, committed 7488K, reserved 8192K
+}
+Event: 9.060 GC heap before
+{Heap before GC invocations=4 (full 1):
+ PSYoungGen      total 917504K, used 131054K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 99% used [0x0000ff3794000000,0x0000ff379bffb900,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 1764589K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 84% used [0x0000ff36e4000000,0x0000ff374fb3b510,0x0000ff3764000000)
+ Metaspace       used 7365K, committed 7488K, reserved 8192K
+}
+Event: 29.989 GC heap after
+{Heap after GC invocations=4 (full 1):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 682022K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 32% used [0x0000ff36e4000000,0x0000ff370da099a8,0x0000ff3764000000)
+ Metaspace       used 7365K, committed 7488K, reserved 8192K
+}
+Event: 30.771 GC heap before
+{Heap before GC invocations=5 (full 1):
+ PSYoungGen      total 917504K, used 454718K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 57% used [0x0000ff3764000000,0x0000ff377fc0fbf0,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 682022K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 32% used [0x0000ff36e4000000,0x0000ff370da099a8,0x0000ff3764000000)
+ Metaspace       used 7393K, committed 7488K, reserved 8192K
+}
+Event: 33.480 GC heap after
+{Heap after GC invocations=5 (full 1):
+ PSYoungGen      total 917504K, used 131045K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 99% used [0x0000ff3794000000,0x0000ff379bff9510,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 989566K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 47% used [0x0000ff36e4000000,0x0000ff372065f9a8,0x0000ff3764000000)
+ Metaspace       used 7393K, committed 7488K, reserved 8192K
+}
+Event: 33.480 GC heap before
+{Heap before GC invocations=6 (full 2):
+ PSYoungGen      total 917504K, used 131045K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 99% used [0x0000ff3794000000,0x0000ff379bff9510,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 989566K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 47% used [0x0000ff36e4000000,0x0000ff372065f9a8,0x0000ff3764000000)
+ Metaspace       used 7393K, committed 7488K, reserved 8192K
+}
+Event: 51.607 GC heap after
+{Heap after GC invocations=6 (full 2):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 28524K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 1% used [0x0000ff36e4000000,0x0000ff36e5bdb238,0x0000ff3764000000)
+ Metaspace       used 7393K, committed 7488K, reserved 8192K
+}
+Event: 51.734 GC heap before
+{Heap before GC invocations=7 (full 2):
+ PSYoungGen      total 917504K, used 15230K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 1% used [0x0000ff3764000000,0x0000ff3764edf848,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 28524K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 1% used [0x0000ff36e4000000,0x0000ff36e5bdb238,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 52.439 GC heap after
+{Heap after GC invocations=7 (full 2):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 28524K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 1% used [0x0000ff36e4000000,0x0000ff36e5bdb238,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 52.440 GC heap before
+{Heap before GC invocations=8 (full 3):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 28524K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 1% used [0x0000ff36e4000000,0x0000ff36e5bdb238,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 55.437 GC heap after
+{Heap after GC invocations=8 (full 3):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 16470K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e50159f8,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 55.529 GC heap before
+{Heap before GC invocations=9 (full 3):
+ PSYoungGen      total 917504K, used 15230K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 1% used [0x0000ff3764000000,0x0000ff3764edf848,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 16470K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e50159f8,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 55.554 GC heap after
+{Heap after GC invocations=9 (full 3):
+ PSYoungGen      total 917504K, used 32K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794008000,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 16470K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e50159f8,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 55.554 GC heap before
+{Heap before GC invocations=10 (full 4):
+ PSYoungGen      total 917504K, used 32K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794008000,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 16470K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e50159f8,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 57.449 GC heap after
+{Heap after GC invocations=10 (full 4):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 1452K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e416b370,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 57.541 GC heap before
+{Heap before GC invocations=11 (full 4):
+ PSYoungGen      total 917504K, used 15230K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 1% used [0x0000ff3764000000,0x0000ff3764edf848,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+  to   space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+ ParOldGen       total 2097152K, used 1452K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e416b370,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 57.542 GC heap after
+{Heap after GC invocations=11 (full 4):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 1452K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e416b370,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 57.542 GC heap before
+{Heap before GC invocations=12 (full 5):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 1452K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e416b370,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+Event: 57.596 GC heap after
+{Heap after GC invocations=12 (full 5):
+ PSYoungGen      total 917504K, used 0K [0x0000ff3764000000, 0x0000ff37a4000000, 0x0000ff37a4000000)
+  eden space 786432K, 0% used [0x0000ff3764000000,0x0000ff3764000000,0x0000ff3794000000)
+  from space 131072K, 0% used [0x0000ff379c000000,0x0000ff379c000000,0x0000ff37a4000000)
+  to   space 131072K, 0% used [0x0000ff3794000000,0x0000ff3794000000,0x0000ff379c000000)
+ ParOldGen       total 2097152K, used 1452K [0x0000ff36e4000000, 0x0000ff3764000000, 0x0000ff3764000000)
+  object space 2097152K, 0% used [0x0000ff36e4000000,0x0000ff36e416b370,0x0000ff3764000000)
+ Metaspace       used 7398K, committed 7488K, reserved 8192K
+}
+
+Dll operation events (5 events):
+Event: 0.003 Loaded shared library /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjava.so
+Event: 0.343 Loaded shared library /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnio.so
+Event: 0.400 Loaded shared library /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnet.so
+Event: 0.617 Loaded shared library /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libmanagement.so
+Event: 0.632 Loaded shared library /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libmanagement_ext.so
+
+Deoptimization events (20 events):
+Event: 2.648 Thread 0x0000ffffb402c670 Uncommon trap: trap_request=0xffffff45 fr.pc=0x0000ffffaccc65f0 relative=0x00000000000009f0
+Event: 2.648 Thread 0x0000ffffb402c670 Uncommon trap: reason=unstable_if action=reinterpret pc=0x0000ffffaccc65f0 method=Array_List.main([Ljava/lang/String;)V @ 35 c2
+Event: 2.648 Thread 0x0000ffffb402c670 DEOPT PACKING pc=0x0000ffffaccc65f0 sp=0x0000ffffb9b1e320
+Event: 2.648 Thread 0x0000ffffb402c670 DEOPT UNPACKING pc=0x0000ffffac45dc98 sp=0x0000ffffb9b1e2c0 mode 2
+Event: 4.622 Thread 0x0000ffffb402c670 DEOPT PACKING pc=0x0000ffffa513cde0 sp=0x0000ffffb9b1e180
+Event: 4.622 Thread 0x0000ffffb402c670 DEOPT UNPACKING pc=0x0000ffffac45da38 sp=0x0000ffffb9b1dfd0 mode 0
+Event: 30.144 Thread 0x0000ffffb402c670 Uncommon trap: trap_request=0xffffff45 fr.pc=0x0000ffffaccca4a0 relative=0x0000000000000aa0
+Event: 30.144 Thread 0x0000ffffb402c670 Uncommon trap: reason=unstable_if action=reinterpret pc=0x0000ffffaccca4a0 method=Array_List.main([Ljava/lang/String;)V @ 79 c2
+Event: 30.144 Thread 0x0000ffffb402c670 DEOPT PACKING pc=0x0000ffffaccca4a0 sp=0x0000ffffb9b1e320
+Event: 30.144 Thread 0x0000ffffb402c670 DEOPT UNPACKING pc=0x0000ffffac45dc98 sp=0x0000ffffb9b1e2c0 mode 2
+Event: 30.564 Thread 0x0000ffffb402c670 Uncommon trap: trap_request=0xffffff45 fr.pc=0x0000ffffacccc238 relative=0x0000000000000278
+Event: 30.564 Thread 0x0000ffffb402c670 Uncommon trap: reason=unstable_if action=reinterpret pc=0x0000ffffacccc238 method=Array_List.calcHashCode(Ljava/util/ArrayList;I)V @ 8 c2
+Event: 30.564 Thread 0x0000ffffb402c670 DEOPT PACKING pc=0x0000ffffacccc238 sp=0x0000ffffb9b1e270
+Event: 30.564 Thread 0x0000ffffb402c670 DEOPT UNPACKING pc=0x0000ffffac45dc98 sp=0x0000ffffb9b1e200 mode 2
+Event: 30.771 Thread 0x0000ffffb402c670 Uncommon trap: trap_request=0xffffff45 fr.pc=0x0000ffffacccce58 relative=0x00000000000001d8
+Event: 30.771 Thread 0x0000ffffb402c670 Uncommon trap: reason=unstable_if action=reinterpret pc=0x0000ffffacccce58 method=Array_List.calcHashCode(Ljava/util/ArrayList;I)V @ 8 c2
+Event: 30.771 Thread 0x0000ffffb402c670 DEOPT PACKING pc=0x0000ffffacccce58 sp=0x0000ffffb9b1e270
+Event: 30.771 Thread 0x0000ffffb402c670 DEOPT UNPACKING pc=0x0000ffffac45dc98 sp=0x0000ffffb9b1e200 mode 2
+Event: 51.629 Thread 0x0000ffffb402c670 DEOPT PACKING pc=0x0000ffffa51507bc sp=0x0000ffffb9b1e120
+Event: 51.629 Thread 0x0000ffffb402c670 DEOPT UNPACKING pc=0x0000ffffac45da38 sp=0x0000ffffb9b1df10 mode 0
+
+Classes unloaded (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (20 events):
+Event: 0.541 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff376441f6e8}: 'int java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object)'> (0x0000ff376441f6e8) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.544 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37644305e0}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeVirtual(java.lang.Object, java.lang.Object)'> (0x0000ff37644305e0) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.549 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff376443d858}: 'int java.lang.invoke.DirectMethodHandle$Holder.invokeSpecial(java.lang.Object, java.lang.Object)'> (0x0000ff376443d858) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.595 Thread 0x0000ffffb402c670 Implicit null exception at 0x0000ffffacca6c18 to 0x0000ffffacca6d5c
+Event: 0.601 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37645629b0}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff37645629b0) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.602 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff3764568898}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeSpecial(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff3764568898) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.603 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff376456e2d0}: 'java.lang.Object java.lang.invoke.DelegatingMethodHandle$Holder.delegate(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff376456e2d0) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.604 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff3764573d48}: 'java.lang.Object java.lang.invoke.Invokers$Holder.invokeExact_MT(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff3764573d48) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.611 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff3764593570}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff3764593570) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.614 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff376459f060}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object)'> (0x0000ff376459f060) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.615 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37645a3d10}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStaticInit(java.lang.Object)'> (0x0000ff37645a3d10) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.671 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff3764627200}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, long)'> (0x0000ff3764627200) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.674 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff3764640b58}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeSpecial(java.lang.Object, java.lang.Object, long)'> (0x0000ff3764640b58) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.680 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff376466f568}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff376466f568) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.686 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37646909f0}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, long)'> (0x0000ff37646909f0) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.690 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37646b6778}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff37646b6778) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.695 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37646e1c10}: 'java.lang.Object java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff37646e1c10) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.707 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37646f65c8}: 'int java.lang.invoke.DirectMethodHandle$Holder.invokeSpecial(java.lang.Object, java.lang.Object, java.lang.Object)'> (0x0000ff37646f65c8) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 0.724 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff37647526a0}: 'java.lang.Object java.lang.invoke.Invokers$Holder.linkToTargetMethod(int, java.lang.Object)'> (0x0000ff37647526a0) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+Event: 30.572 Thread 0x0000ffffb402c670 Exception <a 'java/lang/NoSuchMethodError'{0x0000ff377eb3f9f8}: 'long java.lang.invoke.DirectMethodHandle$Holder.invokeStatic(java.lang.Object, long, long)'> (0x0000ff377eb3f9f8) 
+thrown [../../src/hotspot/share/interpreter/linkResolver.cpp, line 758]
+
+VM Operations (20 events):
+Event: 0.558 Executing VM operation: HandshakeAllThreads
+Event: 0.558 Executing VM operation: HandshakeAllThreads done
+Event: 0.558 Executing VM operation: HandshakeAllThreads
+Event: 0.558 Executing VM operation: HandshakeAllThreads done
+Event: 0.654 Executing VM operation: HandshakeAllThreads
+Event: 0.654 Executing VM operation: HandshakeAllThreads done
+Event: 0.994 Executing VM operation: ParallelGCFailedAllocation
+Event: 2.410 Executing VM operation: ParallelGCFailedAllocation done
+Event: 2.687 Executing VM operation: ParallelGCFailedAllocation
+Event: 4.620 Executing VM operation: ParallelGCFailedAllocation done
+Event: 4.896 Executing VM operation: ParallelGCFailedAllocation
+Event: 29.989 Executing VM operation: ParallelGCFailedAllocation done
+Event: 30.771 Executing VM operation: ParallelGCSystemGC
+Event: 51.607 Executing VM operation: ParallelGCSystemGC done
+Event: 51.734 Executing VM operation: ParallelGCSystemGC
+Event: 55.438 Executing VM operation: ParallelGCSystemGC done
+Event: 55.529 Executing VM operation: ParallelGCSystemGC
+Event: 57.449 Executing VM operation: ParallelGCSystemGC done
+Event: 57.540 Executing VM operation: ParallelGCSystemGC
+Event: 57.596 Executing VM operation: ParallelGCSystemGC done
+
+Events (20 events):
+Event: 0.731 Protecting memory [0x0000ff36b4a40000,0x0000ff36b4a70000] with protection modes 0
+Event: 0.732 Thread 0x0000ff369c1c1030 Thread added: 0x0000ff369c1c1030
+Event: 0.732 Protecting memory [0x0000ff36b4840000,0x0000ff36b4870000] with protection modes 0
+Event: 0.734 Thread 0x0000ff3678049d40 Thread added: 0x0000ff3678049d40
+Event: 0.734 Protecting memory [0x0000ff36b4640000,0x0000ff36b4670000] with protection modes 0
+Event: 0.734 Thread 0x0000ff367804a5a0 Thread added: 0x0000ff367804a5a0
+Event: 0.734 Protecting memory [0x0000ff36b4440000,0x0000ff36b4470000] with protection modes 0
+Event: 0.994 Protecting memory [0x0000ff36ddc00000,0x0000ff36e4000000] with protection modes 3
+Event: 2.649 Thread 0x0000ff367804a5a0 Thread exited: 0x0000ff367804a5a0
+Event: 2.649 Thread 0x0000ff3678049d40 Thread exited: 0x0000ff3678049d40
+Event: 2.649 Thread 0x0000ff369010ff80 Thread exited: 0x0000ff369010ff80
+Event: 2.649 Thread 0x0000ff369c1c1030 Thread exited: 0x0000ff369c1c1030
+Event: 29.989 Thread 0x0000ff3690118a70 Thread exited: 0x0000ff3690118a70
+Event: 29.989 Thread 0x0000ff369c1c09a0 Thread exited: 0x0000ff369c1c09a0
+Event: 30.145 Thread 0x0000ff369010f2f0 Thread exited: 0x0000ff369010f2f0
+Event: 30.145 Thread 0x0000ff369c0e5700 Thread exited: 0x0000ff369c0e5700
+Event: 30.566 Thread 0x0000ff368c088a90 Thread exited: 0x0000ff368c088a90
+Event: 30.573 Thread 0x0000ff369c149fe0 Thread added: 0x0000ff369c149fe0
+Event: 30.573 Protecting memory [0x0000ff36b52c0000,0x0000ff36b52f0000] with protection modes 0
+Event: 51.607 Thread 0x0000ff369c149fe0 Thread exited: 0x0000ff369c149fe0
+
+
+Dynamic libraries:
+aaaad7650000-aaaad7660000 r-xp 00000000 103:0d 1529130408                /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/bin/java
+aaaad7660000-aaaad7670000 r--p 00000000 103:0d 1529130408                /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/bin/java
+aaaad7670000-aaaad7680000 rw-p 00010000 103:0d 1529130408                /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/bin/java
+aaaaf0a10000-aaaaf0a40000 rw-p 00000000 00:00 0                          [heap]
+ff3658000000-ff3658480000 rw-p 00000000 00:00 0 
+ff3658480000-ff365c000000 ---p 00000000 00:00 0 
+ff365f840000-ff365fdb0000 rw-p 00000000 00:00 0 
+ff365fdb0000-ff365fdc0000 ---p 00000000 00:00 0 
+ff365fdc0000-ff365fe00000 rw-p 00000000 00:00 0 
+ff3660000000-ff3660030000 rw-p 00000000 00:00 0 
+ff3660030000-ff3664000000 ---p 00000000 00:00 0 
+ff3664000000-ff36640b0000 rw-p 00000000 00:00 0 
+ff36640b0000-ff3668000000 ---p 00000000 00:00 0 
+ff3668000000-ff36680b0000 rw-p 00000000 00:00 0 
+ff36680b0000-ff366c000000 ---p 00000000 00:00 0 
+ff366c000000-ff366c040000 rw-p 00000000 00:00 0 
+ff366c040000-ff3670000000 ---p 00000000 00:00 0 
+ff3670000000-ff3670030000 rw-p 00000000 00:00 0 
+ff3670030000-ff3674000000 ---p 00000000 00:00 0 
+ff3674000000-ff3674030000 rw-p 00000000 00:00 0 
+ff3674030000-ff3678000000 ---p 00000000 00:00 0 
+ff3678000000-ff36781b0000 rw-p 00000000 00:00 0 
+ff36781b0000-ff367c000000 ---p 00000000 00:00 0 
+ff367c000000-ff367c030000 rw-p 00000000 00:00 0 
+ff367c030000-ff3680000000 ---p 00000000 00:00 0 
+ff3680000000-ff3680200000 rw-p 00000000 00:00 0 
+ff3680200000-ff3684000000 ---p 00000000 00:00 0 
+ff3684000000-ff3684250000 rw-p 00000000 00:00 0 
+ff3684250000-ff3688000000 ---p 00000000 00:00 0 
+ff3688000000-ff3688030000 rw-p 00000000 00:00 0 
+ff3688030000-ff368c000000 ---p 00000000 00:00 0 
+ff368c000000-ff368c2b0000 rw-p 00000000 00:00 0 
+ff368c2b0000-ff3690000000 ---p 00000000 00:00 0 
+ff3690000000-ff3690340000 rw-p 00000000 00:00 0 
+ff3690340000-ff3694000000 ---p 00000000 00:00 0 
+ff3694000000-ff3694030000 rw-p 00000000 00:00 0 
+ff3694030000-ff3698000000 ---p 00000000 00:00 0 
+ff3698000000-ff3698030000 rw-p 00000000 00:00 0 
+ff3698030000-ff369c000000 ---p 00000000 00:00 0 
+ff369c000000-ff369c250000 rw-p 00000000 00:00 0 
+ff369c250000-ff36a0000000 ---p 00000000 00:00 0 
+ff36a0000000-ff36a0030000 rw-p 00000000 00:00 0 
+ff36a0030000-ff36a4000000 ---p 00000000 00:00 0 
+ff36a4000000-ff36a4030000 rw-p 00000000 00:00 0 
+ff36a4030000-ff36a8000000 ---p 00000000 00:00 0 
+ff36a8000000-ff36a8030000 rw-p 00000000 00:00 0 
+ff36a8030000-ff36ac000000 ---p 00000000 00:00 0 
+ff36ac000000-ff36ac030000 rw-p 00000000 00:00 0 
+ff36ac030000-ff36b0000000 ---p 00000000 00:00 0 
+ff36b0000000-ff36b3e40000 rw-p 00000000 00:00 0 
+ff36b3e40000-ff36b4000000 ---p 00000000 00:00 0 
+ff36b4220000-ff36b4230000 ---p 00000000 00:00 0 
+ff36b4230000-ff36b4440000 rw-p 00000000 00:00 0 
+ff36b4440000-ff36b4470000 ---p 00000000 00:00 0 
+ff36b4470000-ff36b4640000 rw-p 00000000 00:00 0 
+ff36b4640000-ff36b4670000 ---p 00000000 00:00 0 
+ff36b4670000-ff36b4840000 rw-p 00000000 00:00 0 
+ff36b4840000-ff36b4870000 ---p 00000000 00:00 0 
+ff36b4870000-ff36b4a40000 rw-p 00000000 00:00 0 
+ff36b4a40000-ff36b4a70000 ---p 00000000 00:00 0 
+ff36b4a70000-ff36b4c40000 rw-p 00000000 00:00 0 
+ff36b4c40000-ff36b4c50000 r-xp 00000000 103:0d 461456815                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libmanagement_ext.so
+ff36b4c50000-ff36b4c60000 r--p 00000000 103:0d 461456815                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libmanagement_ext.so
+ff36b4c60000-ff36b4c70000 rw-p 00000000 00:00 0 
+ff36b4c70000-ff36b4c80000 r-xp 00000000 103:0d 461456339                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libmanagement.so
+ff36b4c80000-ff36b4c90000 r--p 00000000 103:0d 461456339                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libmanagement.so
+ff36b4c90000-ff36b4ca0000 rw-p 00000000 00:00 0 
+ff36b4ca0000-ff36b4cb0000 ---p 00000000 00:00 0 
+ff36b4cb0000-ff36b4ec0000 rw-p 00000000 00:00 0 
+ff36b4ec0000-ff36b4ef0000 ---p 00000000 00:00 0 
+ff36b4ef0000-ff36b50c0000 rw-p 00000000 00:00 0 
+ff36b50c0000-ff36b50f0000 ---p 00000000 00:00 0 
+ff36b50f0000-ff36b52c0000 rw-p 00000000 00:00 0 
+ff36b52c0000-ff36b52f0000 ---p 00000000 00:00 0 
+ff36b52f0000-ff36b54c0000 rw-p 00000000 00:00 0 
+ff36b54c0000-ff36b54f0000 ---p 00000000 00:00 0 
+ff36b54f0000-ff36b56c0000 rw-p 00000000 00:00 0 
+ff36b56c0000-ff36b56f0000 ---p 00000000 00:00 0 
+ff36b56f0000-ff36b58c0000 rw-p 00000000 00:00 0 
+ff36b58c0000-ff36b58f0000 ---p 00000000 00:00 0 
+ff36b58f0000-ff36b5ac0000 rw-p 00000000 00:00 0 
+ff36b5ac0000-ff36b5af0000 ---p 00000000 00:00 0 
+ff36b5af0000-ff36b5d00000 rw-p 00000000 00:00 0 
+ff36b5d00000-ff36b5d20000 r-xp 00000000 103:0d 461445256                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnet.so
+ff36b5d20000-ff36b5d30000 r--p 00010000 103:0d 461445256                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnet.so
+ff36b5d30000-ff36b5d40000 rw-p 00020000 103:0d 461445256                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnet.so
+ff36b5d40000-ff36b5d60000 r-xp 00000000 103:0d 461445269                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnio.so
+ff36b5d60000-ff36b5d70000 r--p 00010000 103:0d 461445269                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnio.so
+ff36b5d70000-ff36b5d80000 rw-p 00020000 103:0d 461445269                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libnio.so
+ff36b5d80000-ff36b5db0000 ---p 00000000 00:00 0 
+ff36b5db0000-ff36b5f80000 rw-p 00000000 00:00 0 
+ff36b5f80000-ff36b5fb0000 ---p 00000000 00:00 0 
+ff36b5fb0000-ff36b6180000 rw-p 00000000 00:00 0 
+ff36b6180000-ff36b61b0000 ---p 00000000 00:00 0 
+ff36b61b0000-ff36b6380000 rw-p 00000000 00:00 0 
+ff36b6380000-ff36b63b0000 ---p 00000000 00:00 0 
+ff36b63b0000-ff36b6580000 rw-p 00000000 00:00 0 
+ff36b6580000-ff36b65b0000 ---p 00000000 00:00 0 
+ff36b65b0000-ff36b6780000 rw-p 00000000 00:00 0 
+ff36b6780000-ff36b67b0000 ---p 00000000 00:00 0 
+ff36b67b0000-ff36b6980000 rw-p 00000000 00:00 0 
+ff36b6980000-ff36b6c00000 r--p 00000000 103:0b 402654905                 /usr/lib/locale/en_US.utf8/LC_COLLATE
+ff36b6c00000-ff36b6c30000 ---p 00000000 00:00 0 
+ff36b6c30000-ff36b6e00000 rw-p 00000000 00:00 0 
+ff36b6e00000-ff36b6e30000 ---p 00000000 00:00 0 
+ff36b6e30000-ff36c0000000 rw-p 00000000 00:00 0 
+ff36c0000000-ff36c1440000 rw-p 00000000 00:00 0 
+ff36c1440000-ff36c4000000 ---p 00000000 00:00 0 
+ff36c4010000-ff36c4070000 r--p 00000000 103:0b 402976887                 /usr/lib/locale/en_US.utf8/LC_CTYPE
+ff36c4070000-ff36c4080000 r--p 00000000 103:0b 402976890                 /usr/lib/locale/en_US.utf8/LC_NUMERIC
+ff36c4080000-ff36c4090000 r--p 00000000 103:0b 333294                    /usr/lib/locale/en_US.utf8/LC_TIME
+ff36c4090000-ff36c40a0000 r--p 00000000 103:0b 333273                    /usr/lib/locale/en_US.utf8/LC_MONETARY
+ff36c40a0000-ff36c40b0000 r--p 00000000 103:0b 2591                      /usr/lib/locale/en_US.utf8/LC_MESSAGES/SYS_LC_MESSAGES
+ff36c40b0000-ff36c40c0000 r--p 00000000 103:0b 268684985                 /usr/lib/locale/en_US.utf8/LC_PAPER
+ff36c40c0000-ff36c40d0000 r--p 00000000 103:0b 402976889                 /usr/lib/locale/en_US.utf8/LC_NAME
+ff36c40d0000-ff36c40e0000 ---p 00000000 00:00 0 
+ff36c40e0000-ff36c4900000 rw-p 00000000 00:00 0 
+ff36c4900000-ff36c4920000 rw-p 00000000 00:00 0 
+ff36c4920000-ff36c4940000 rw-p 00000000 00:00 0 
+ff36c4940000-ff36c4980000 rw-p 00000000 00:00 0 
+ff36c4980000-ff36c4b00000 rw-p 00000000 00:00 0 
+ff36c4b00000-ff36c4b30000 rw-p 00000000 00:00 0 
+ff36c4b30000-ff36c4b80000 ---p 00000000 00:00 0 
+ff36c4b80000-ff36c4ba0000 rw-p 00000000 00:00 0 
+ff36c4ba0000-ff36c4c00000 ---p 00000000 00:00 0 
+ff36c4c00000-ff36c4c10000 r--p 00000000 103:0b 2575                      /usr/lib/locale/en_US.utf8/LC_ADDRESS
+ff36c4c10000-ff36c4c20000 r--p 00000000 103:0b 333293                    /usr/lib/locale/en_US.utf8/LC_TELEPHONE
+ff36c4c20000-ff36c4c30000 r--p 00000000 103:0b 332810                    /usr/lib/locale/en_US.utf8/LC_MEASUREMENT
+ff36c4c30000-ff36ddc00000 rw-p 00000000 00:00 0 
+ff36ddc00000-ff36e3ff0000 rw-p 00000000 00:00 0 
+ff36e3ff0000-ff3764000000 rw-p 00000000 00:00 0 
+ff3764000000-ff37a4110000 rw-p 00000000 00:00 0 
+ff37a4110000-ff37a5000000 rw-p 00000000 00:00 0 
+ff37a5000000-ffffa5000000 rw-s 00000000 103:0c 131                       /mnt/fmap/H2.txt
+ffffa5000000-ffffa5270000 rwxp 00000000 00:00 0 
+ffffa5270000-ffffac380000 ---p 00000000 00:00 0 
+ffffac380000-ffffac6c0000 rwxp 00000000 00:00 0 
+ffffac6c0000-ffffacc80000 ---p 00000000 00:00 0 
+ffffacc80000-ffffacef0000 rwxp 00000000 00:00 0 
+ffffacef0000-ffffb4000000 ---p 00000000 00:00 0 
+ffffb4000000-ffffb48b0000 rw-p 00000000 00:00 0 
+ffffb48b0000-ffffb8000000 ---p 00000000 00:00 0 
+ffffb8000000-ffffb8010000 r--s 00000000 103:0b 268848726                 /usr/lib64/gconv/gconv-modules.cache
+ffffb8010000-ffffb8020000 r--p 00000000 103:0b 332809                    /usr/lib/locale/en_US.utf8/LC_IDENTIFICATION
+ffffb8020000-ffffb84f0000 rw-p 00000000 00:00 0 
+ffffb84f0000-ffffb8500000 ---p 00000000 00:00 0 
+ffffb8500000-ffffb8b10000 rw-p 00000000 00:00 0 
+ffffb8b10000-ffffb8d30000 rw-p 00000000 00:00 0 
+ffffb8d30000-ffffb8e10000 ---p 00000000 00:00 0 
+ffffb8e10000-ffffb8e20000 rw-p 00000000 00:00 0 
+ffffb8e20000-ffffb8f00000 ---p 00000000 00:00 0 
+ffffb8f00000-ffffb8f10000 rw-p 00000000 00:00 0 
+ffffb8f10000-ffffb8f20000 ---p 00000000 00:00 0 
+ffffb8f20000-ffffb8f50000 r-xp 00000000 103:0d 461445173                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjava.so
+ffffb8f50000-ffffb8f60000 r--p 00020000 103:0d 461445173                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjava.so
+ffffb8f60000-ffffb8f70000 rw-p 00030000 103:0d 461445173                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjava.so
+ffffb8f70000-ffffb8f80000 r-xp 00000000 103:0b 223236                    /usr/lib64/libnss_files-2.28.so
+ffffb8f80000-ffffb8f90000 r--p 00000000 103:0b 223236                    /usr/lib64/libnss_files-2.28.so
+ffffb8f90000-ffffb8fa0000 rw-p 00010000 103:0b 223236                    /usr/lib64/libnss_files-2.28.so
+ffffb8fa0000-ffffb9880000 r--s 00000000 103:0b 269056192                 /var/lib/sss/mc/passwd
+ffffb9880000-ffffb9890000 r-xp 00000000 103:0b 331301                    /usr/lib64/libnss_sss.so.2
+ffffb9890000-ffffb98a0000 r--p 00000000 103:0b 331301                    /usr/lib64/libnss_sss.so.2
+ffffb98a0000-ffffb98b0000 rw-p 00010000 103:0b 331301                    /usr/lib64/libnss_sss.so.2
+ffffb98b0000-ffffb98c0000 rw-s 00000000 103:0b 270850448                 /tmp/hsperfdata_root/466904
+ffffb98c0000-ffffb98d0000 ---p 00000000 00:00 0 
+ffffb98d0000-ffffb98e0000 r--p 00000000 00:00 0 
+ffffb98e0000-ffffb9900000 r-xp 00000000 103:0d 461445253                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjimage.so
+ffffb9900000-ffffb9910000 r--p 00010000 103:0d 461445253                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjimage.so
+ffffb9910000-ffffb9920000 rw-p 00020000 103:0d 461445253                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjimage.so
+ffffb9920000-ffffb9950000 ---p 00000000 00:00 0 
+ffffb9950000-ffffb9b20000 rw-p 00000000 00:00 0 
+ffffb9b20000-ffffb9bd0000 r-xp 00000000 103:0b 223234                    /usr/lib64/libm-2.28.so
+ffffb9bd0000-ffffb9be0000 r--p 000a0000 103:0b 223234                    /usr/lib64/libm-2.28.so
+ffffb9be0000-ffffb9bf0000 rw-p 000b0000 103:0b 223234                    /usr/lib64/libm-2.28.so
+ffffb9bf0000-ffffb9c00000 r-xp 00000000 103:0d 453710750                 /spare/perpap/teraheap/tera_malloc/lib/libteraalloc.so
+ffffb9c00000-ffffb9c10000 r--p 00000000 103:0d 453710750                 /spare/perpap/teraheap/tera_malloc/lib/libteraalloc.so
+ffffb9c10000-ffffb9c20000 rw-p 00010000 103:0d 453710750                 /spare/perpap/teraheap/tera_malloc/lib/libteraalloc.so
+ffffb9c20000-ffffb9c30000 r-xp 00000000 103:0d 1720269708                /spare/perpap/teraheap/allocator/lib/libregions.so
+ffffb9c30000-ffffb9c40000 r--p 00000000 103:0d 1720269708                /spare/perpap/teraheap/allocator/lib/libregions.so
+ffffb9c40000-ffffb9c50000 rw-p 00010000 103:0d 1720269708                /spare/perpap/teraheap/allocator/lib/libregions.so
+ffffb9c50000-ffffb9fd0000 rw-p 00000000 00:00 0 
+ffffb9fd0000-ffffb9fe0000 r-xp 00000000 103:0b 223239                    /usr/lib64/librt-2.28.so
+ffffb9fe0000-ffffb9ff0000 r--p 00000000 103:0b 223239                    /usr/lib64/librt-2.28.so
+ffffb9ff0000-ffffba000000 rw-p 00010000 103:0b 223239                    /usr/lib64/librt-2.28.so
+ffffba000000-ffffbbfb0000 r-xp 00000000 103:0d 460013375                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so
+ffffbbfb0000-ffffbbfc0000 ---p 01fb0000 103:0d 460013375                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so
+ffffbbfc0000-ffffbc0c0000 r--p 01fb0000 103:0d 460013375                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so
+ffffbc0c0000-ffffbc100000 rw-p 020b0000 103:0d 460013375                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/server/libjvm.so
+ffffbc100000-ffffbc1c0000 rw-p 00000000 00:00 0 
+ffffbc1c0000-ffffbc320000 r-xp 00000000 103:0b 2626                      /usr/lib64/libc-2.28.so
+ffffbc320000-ffffbc330000 r--p 00150000 103:0b 2626                      /usr/lib64/libc-2.28.so
+ffffbc330000-ffffbc340000 rw-p 00160000 103:0b 2626                      /usr/lib64/libc-2.28.so
+ffffbc340000-ffffbc350000 r-xp 00000000 103:0b 223233                    /usr/lib64/libdl-2.28.so
+ffffbc350000-ffffbc360000 r--p 00000000 103:0b 223233                    /usr/lib64/libdl-2.28.so
+ffffbc360000-ffffbc370000 rw-p 00010000 103:0b 223233                    /usr/lib64/libdl-2.28.so
+ffffbc370000-ffffbc390000 r-xp 00000000 103:0b 223237                    /usr/lib64/libpthread-2.28.so
+ffffbc390000-ffffbc3a0000 r--p 00010000 103:0b 223237                    /usr/lib64/libpthread-2.28.so
+ffffbc3a0000-ffffbc3b0000 rw-p 00020000 103:0b 223237                    /usr/lib64/libpthread-2.28.so
+ffffbc3b0000-ffffbc3c0000 r-xp 00000000 103:0d 461445142                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjli.so
+ffffbc3c0000-ffffbc3d0000 r--p 00000000 103:0d 461445142                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjli.so
+ffffbc3d0000-ffffbc3e0000 rw-p 00010000 103:0d 461445142                 /spare/perpap/teraheap/jdk17u067/build/linux-aarch64-server-fastdebug/jdk/lib/libjli.so
+ffffbc3e0000-ffffbc400000 r-xp 00000000 103:0b 2778                      /usr/lib64/libz.so.1.2.11
+ffffbc400000-ffffbc410000 r--p 00010000 103:0b 2778                      /usr/lib64/libz.so.1.2.11
+ffffbc410000-ffffbc420000 rw-p 00000000 00:00 0 
+ffffbc420000-ffffbc430000 rwxp 00000000 00:00 0 
+ffffbc430000-ffffbc450000 r--p 00000000 00:00 0                          [vvar]
+ffffbc450000-ffffbc460000 r-xp 00000000 00:00 0                          [vdso]
+ffffbc460000-ffffbc490000 r-xp 00000000 103:0b 2599                      /usr/lib64/ld-2.28.so
+ffffbc490000-ffffbc4a0000 r--p 00020000 103:0b 2599                      /usr/lib64/ld-2.28.so
+ffffbc4a0000-ffffbc4b0000 rw-p 00030000 103:0b 2599                      /usr/lib64/ld-2.28.so
+ffffdee10000-ffffdee40000 rw-p 00000000 00:00 0                          [stack]
+
+
+VM Arguments:
+jvm_args: -XX:+UseParallelGC -XX:ParallelGCThreads=2 -XX:+EnableTeraHeap -XX:TeraHeapSize=104152956928 -Xmx100g -Xms3g -XX:-UseCompressedOops -XX:-UseCompressedClassPointers -XX:+TeraHeapStatistics -XX:TeraStripeSize=32768 -Xlogth:llarge_teraCache.txt 
+java_command: Array_List
+java_class_path (initial): .
+Launcher Type: SUN_STANDARD
+
+[Global flags]
+     intx CICompilerCount                          = 21                                        {product} {ergonomic}     Number of compiler threads to run
+     bool EnableTeraHeap                           = true                                      {product} {command line}  Enable TeraHeap. Works only with ParallelScavenge Collector
+   size_t InitialHeapSize                          = 3221225472                                {product} {command line}  Initial heap size (in bytes); zero means use ergonomics
+   size_t MaxHeapSize                              = 3221225472                                {product} {command line}  Maximum heap size (in bytes)
+   size_t MaxNewSize                               = 1073741824                                {product} {ergonomic}     Maximum new generation size (in bytes), max_uintx means set ergonomically
+   size_t MinHeapDeltaBytes                        = 524288                                    {product} {ergonomic}     The minimum change in heap space due to GC (in bytes)
+   size_t MinHeapSize                              = 3221225472                                {product} {command line}  Minimum heap size (in bytes); zero means use ergonomics
+   size_t NewSize                                  = 1073741824                                {product} {ergonomic}     Initial new generation size (in bytes)
+    uintx NonNMethodCodeHeapSize                   = 9373076                                {pd product} {ergonomic}     Size of code heap with non-nmethods (in bytes)
+    uintx NonProfiledCodeHeapSize                  = 121142582                              {pd product} {ergonomic}     Size of code heap with non-profiled methods (in bytes)
+   size_t OldSize                                  = 2147483648                                {product} {ergonomic}     Initial tenured generation size (in bytes)
+     uint ParallelGCThreads                        = 2                                         {product} {command line}  Number of parallel threads parallel gc will use
+    uintx ProfiledCodeHeapSize                     = 121142582                              {pd product} {ergonomic}     Size of code heap with profiled methods (in bytes)
+    uintx ReservedCodeCacheSize                    = 251658240                              {pd product} {ergonomic}     Reserved code cache size (in bytes) - maximum code cache size
+     bool SegmentedCodeCache                       = true                                      {product} {ergonomic}     Use a segmented code cache
+   size_t SoftMaxHeapSize                          = 3221225472                             {manageable} {ergonomic}     Soft limit for maximum heap size (in bytes)
+    uintx TeraHeapSize                             = 104152956928                              {product} {command line}  Initial TeraHeap total size (in bytes)
+     bool TeraHeapStatistics                       = true                                      {product} {command line}  Print TeraHeap statistics
+    uintx TeraStripeSize                           = 32768                                     {product} {command line}  Size of TeraHeap stripe size (e.g 128)
+     bool UseCompressedClassPointers               = false                          {product lp64_product} {command line} Use 32-bit class pointers in 64-bit VM. lp64_product means flag is always constant in 32 bit VM
+     bool UseCompressedOops                        = false                          {product lp64_product} {command line} Use 32-bit object references in 64-bit VM. lp64_product means flag is always constant in 32 bit VM
+     bool UseParallelGC                            = true                                      {product} {command line}  Use the Parallel garbage collector.
+
+Logging:
+Log output configuration:
+ #0: stdout all=warning uptime,level,tags
+ #1: stderr all=off uptime,level,tags
+
+Environment Variables:
+JAVA_HOME=/spare/perpap/openjdk/jdk-17.0.8.1+1
+PATH=/spare/perpap/teraheap/tests/java/../../tera_malloc/include/:/spare/perpap/teraheap/tests/java/../../allocator/include/:/spare/perpap/teraheap/tests/java/../../tera_malloc/include/:/spare/perpap/teraheap/tests/java/../../allocator/include/:/opt/rh/gcc-toolset-11/root/usr/bin:/home1/private/perpap/kakoune/src:/spare/miniconda3/envs/teraheap-aarch64-env/bin:/spare/miniconda3/condabin:/opt/rh/gcc-toolset-11/root/usr/bin:/home1/private/perpap/.local/bin:/spare/perpap/openjdk/jdk-17.0.8.1+1:/usr/share/Modules/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home1/private/perpap/bin:/home1/private/perpap/bin
+LD_LIBRARY_PATH=/spare/perpap/teraheap/tests/java/../../tera_malloc/lib/:/spare/perpap/teraheap/tests/java/../../allocator/lib/:/spare/perpap/teraheap/tests/java/../../tera_malloc/lib/:/spare/perpap/teraheap/tests/java/../../allocator/lib/:/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+SHELL=/bin/bash
+LANG=en_US.UTF-8
+TERM=xterm-256color
+
+Signal Handlers:
+   SIGSEGV: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+    SIGBUS: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+    SIGFPE: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+   SIGPIPE: javaSignalHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+   SIGXFSZ: javaSignalHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+    SIGILL: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+   SIGUSR2: SR_handler in libjvm.so, mask=00000000000000000000000000000000, flags=SA_RESTART|SA_SIGINFO
+    SIGHUP: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+    SIGINT: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+   SIGTERM: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+   SIGQUIT: UserHandler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+   SIGTRAP: crash_handler in libjvm.so, mask=11100100010111111101111111111110, flags=SA_RESTART|SA_SIGINFO
+
+
+---------------  S Y S T E M  ---------------
+
+OS:
+CentOS Linux release 8.5.2111
+uname: Linux ampere.cluster.ics.forth.gr 4.18.0-348.7.1.el8_5.aarch64 #1 SMP Wed Dec 22 13:24:11 UTC 2021 aarch64
+OS uptime: 24 days 5:21 hours
+libc: glibc 2.28 NPTL 2.28 
+rlimit (soft/hard): STACK 8192k/infinity , CORE 0k/infinity , NPROC 260208/260208 , NOFILE 262144/262144 , AS infinity/infinity , CPU infinity/infinity , DATA infinity/infinity , FSIZE infinity/infinity , MEMLOCK 64k/64k
+load average: 0.94 0.37 0.16
+
+/proc/meminfo:
+MemTotal:       266484224 kB
+MemFree:        229316224 kB
+MemAvailable:   222052928 kB
+Buffers:            5120 kB
+Cached:         24924800 kB
+SwapCached:            0 kB
+Active:          5701184 kB
+Inactive:       23499456 kB
+Active(anon):      25792 kB
+Inactive(anon):  4335936 kB
+Active(file):    5675392 kB
+Inactive(file): 19163520 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:       4194240 kB
+SwapFree:        4194240 kB
+Dirty:            188032 kB
+Writeback:             0 kB
+AnonPages:       4287104 kB
+Mapped:          1515328 kB
+Shmem:             83008 kB
+KReclaimable:     763840 kB
+Slab:            3714176 kB
+SReclaimable:     763840 kB
+SUnreclaim:      2950336 kB
+KernelStack:      115712 kB
+PageTables:        16896 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    137436352 kB
+Committed_AS:    4904640 kB
+VmallocTotal:   133009506240 kB
+VmallocUsed:           0 kB
+VmallocChunk:          0 kB
+Percpu:           358400 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:   2097152 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:     524288 kB
+Hugetlb:               0 kB
+
+/sys/kernel/mm/transparent_hugepage/enabled: [always] madvise never
+/sys/kernel/mm/transparent_hugepage/defrag (defrag/compaction efforts parameter): always defer defer+madvise [madvise] never
+
+Process Memory:
+Virtual Size: 844636992K (peak: 861656256K)
+Resident Set Size: 5253248K (peak: 5784512K) (anon: 3907328K, file: 1345920K, shmem: 0K)
+Swapped out: 0K
+C-Heap outstanding allocations: 38667K, retained: 90932K (may have wrapped)
+glibc malloc tunables: (default)
+
+/proc/sys/kernel/threads-max (system-wide limit on the number of threads): 520417
+/proc/sys/vm/max_map_count (maximum number of memory map areas a process may have): 65530
+/proc/sys/kernel/pid_max (system-wide limit on number of process identifiers): 4194304
+
+container (cgroup) information:
+container_type: cgroupv1
+cpu_cpuset_cpus: 0-159
+cpu_memory_nodes: 0-7
+active_processor_count: 160
+cpu_quota: no quota
+cpu_period: 100000
+cpu_shares: no shares
+memory_limit_in_bytes: unlimited
+memory_and_swap_limit_in_bytes: unlimited
+memory_soft_limit_in_bytes: unlimited
+memory_usage_in_bytes: 21742464 k
+memory_max_usage_in_bytes: 45721984 k
+kernel_memory_usage_in_bytes: 269632 k
+kernel_memory_max_usage_in_bytes: unlimited
+kernel_memory_limit_in_bytes: 567808 k
+maximum number of tasks: unlimited
+current number of tasks: 24
+
+Steal ticks since vm start: 0
+Steal ticks percentage since vm start:  0.000
+
+CPU: total 160 (initial active 160) 0x41:0x3:0xd0c:1, fp, simd, evtstrm, aes, pmull, sha1, sha256, crc, lse, dcpop
+/proc/cpuinfo:
+processor	: 0
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 1
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 2
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 3
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 4
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 5
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 6
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 7
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 8
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 9
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 10
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 11
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 12
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 13
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 14
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 15
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 16
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 17
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 18
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 19
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 20
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 21
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 22
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 23
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 24
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 25
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 26
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 27
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 28
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 29
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 30
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 31
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 32
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 33
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 34
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 35
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 36
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 37
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 38
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 39
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 40
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 41
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 42
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 43
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 44
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 45
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 46
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 47
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 48
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 49
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 50
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 51
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 52
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 53
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 54
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 55
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 56
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 57
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 58
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 59
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 60
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 61
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 62
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 63
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 64
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 65
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 66
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 67
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 68
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 69
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 70
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 71
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 72
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 73
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 74
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 75
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 76
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 77
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 78
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 79
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 80
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 81
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 82
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 83
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 84
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 85
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 86
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 87
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 88
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 89
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 90
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 91
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 92
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 93
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 94
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 95
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 96
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 97
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 98
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 99
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 100
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 101
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 102
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 103
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 104
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 105
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 106
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 107
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 108
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 109
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 110
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 111
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 112
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 113
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 114
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 115
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 116
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 117
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 118
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 119
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 120
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 121
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 122
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 123
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 124
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 125
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 126
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 127
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 128
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 129
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 130
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 131
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 132
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 133
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 134
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 135
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 136
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 137
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 138
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 139
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 140
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 141
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 142
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 143
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 144
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 145
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 146
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 147
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 148
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 149
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 150
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 151
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 152
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 153
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 154
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 155
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 156
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 157
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 158
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+processor	: 159
+BogoMIPS	: 50.00
+Features	: fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp ssbs
+CPU implementer	: 0x41
+CPU architecture: 8
+CPU variant	: 0x3
+CPU part	: 0xd0c
+CPU revision	: 1
+
+
+Online cpus: 0-159
+Offline cpus: 
+cache level: 1
+cache type: Data
+cache size: 64K
+cache coherency line size: 64
+cache level: 1
+cache type: Instruction
+cache size: 64K
+cache coherency line size: 64
+cache level: 2
+cache type: Unified
+cache size: 1024K
+cache coherency line size: 64
+
+Memory: 64k page, physical 266484224k(229316224k free), swap 4194240k(4194240k free)
+Page Sizes: 64k
+
+vm_info: OpenJDK 64-Bit Server VM (fastdebug 17.0.6-internal+0-adhoc.perpap.jdk17u067) for linux-aarch64 JRE (17.0.6-internal+0-adhoc.perpap.jdk17u067), built on Jan 23 2024 21:17:39 by "perpap" with gcc 11.2.1 20210728 (Red Hat 11.2.1-1)
+
+END.

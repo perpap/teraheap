@@ -795,18 +795,24 @@ jint universe_init() {
   return JNI_OK;
 }
 
+void Universe::initialize_teraheap(HeapWord* heap_end){
+	assert(heap_end != NULL, "H1 heap is not initialized");
+  _teraHeap = new TeraHeap(heap_end);
+	log_info(gc)("Initialize Teraheap");
+}
+
 jint Universe::initialize_heap() {
   assert(_collectedHeap == NULL, "Heap already created");
   _collectedHeap = GCConfig::arguments()->create_heap();
 
   log_info(gc)("Using %s", _collectedHeap->name());
-  
-  if (EnableTeraHeap) {
+ 
+  if (EnableTeraHeap && !EnableFlexHeap) {
     _teraHeap = new TeraHeap();
     log_info(gc)("Initialize Teraheap");
   }
   
-  if (EnableFlexHeap) {
+  if (EnableFlexHeap && ! EnableTeraHeap) {
     _flexHeap = new FlexHeap();
     log_info(gc)("Initialize FlexHeap");
   }
@@ -821,7 +827,8 @@ void Universe::initialize_tlab() {
   }
 }
 
-ReservedHeapSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
+//ReservedHeapSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
+ReservedHeapSpace Universe::reserve_heap(size_t heap_size, size_t alignment, char *requested_address) {
 
   assert(alignment <= Arguments::conservative_max_heap_alignment(),
          "actual alignment " SIZE_FORMAT " must be within maximum heap alignment " SIZE_FORMAT,
@@ -841,7 +848,8 @@ ReservedHeapSpace Universe::reserve_heap(size_t heap_size, size_t alignment) {
   }
 
   // Now create the space.
-  ReservedHeapSpace total_rs(total_reserved, alignment, page_size, AllocateHeapAt);
+  //ReservedHeapSpace total_rs(total_reserved, alignment, page_size, AllocateHeapAt);
+  ReservedHeapSpace total_rs(total_reserved, alignment, page_size, requested_address, AllocateHeapAt);
 
   if (total_rs.is_reserved()) {
     assert((total_reserved == total_rs.size()) && ((uintptr_t)total_rs.base() % alignment == 0),

@@ -21,6 +21,7 @@
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
+  static char *_start_mmap;         // TeraHeap unaligned start address of mmap region
   static char *_start_addr;         // TeraHeap start address of mmap region
   static char *_stop_addr;          // TeraHeap ends address of mmap region
 
@@ -128,15 +129,16 @@ private:
 #endif
 
 public:
-  // Constructor
-  TeraHeap();
-  
+  // Default Constructor with hint for H2 placement after H1 address range
+  TeraHeap(HeapWord* heap_end = nullptr);
   // Destructor
   ~TeraHeap();
-  
+
   // Get object start array for h2
   ObjectStartArray *h2_start_array() { return &_start_array; }
-  
+ 
+  // Return H2 unaligned start address
+  char *h2_start_mmap_addr(void);
   // Return H2 start address
   char *h2_start_addr(void);
 
@@ -359,6 +361,12 @@ public:
   void trace_dirty_h2_pages(void) {
     trace_dirty_pages->find_dirty_pages();
   }
+
+  #if 0//perpap
+  bool is_aligned(char *p, uintptr_t N);
+  uint64_t available_virtual_space(void *address1, void *address2);
+  void check_address(pid_t pid, uintptr_t address);
+  #endif
 };
 
 #endif
