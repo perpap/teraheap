@@ -45,9 +45,9 @@ void init_regions(){
     exit(EXIT_FAILURE);
   }
 
-//#if DEBUG_PRINT 
+#if DEBUG_PRINT 
   fprintf(allocator_log_fp, "[%s|%s|%d]Total num of regions:%" PRIu64 "\nrdd_id_size:%d\n", __FILE__, __func__, __LINE__, region_array_size, rdd_id_size);
-//#endif
+#endif
 
   for (i = 0; i < region_array_size ; i++) {
     region_array[i].start_address             = (i == 0) ? start_addr_mem_pool() : (region_array[i - 1].start_address + (uint64_t) REGION_SIZE);

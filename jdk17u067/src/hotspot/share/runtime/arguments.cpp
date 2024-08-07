@@ -2476,12 +2476,6 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
         }
       }
 #endif // !INCLUDE_JVMTI 
-    }else if(match_option(option, "-XX:+AllocateH2H1", &tail)){
-    	FLAG_SET_DEFAULT(AllocateH2H1, true);
-    	//NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] AllocateH2H1:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, "true");)
-    	if (FLAG_SET_CMDLINE(AllocateH2H1, true) != JVMFlag::SUCCESS) {
-    	   return JNI_EINVAL;
-    	}
 		// Set H2 backing device via DEVICE_H2 jvm runtime flag
     }else if(match_option(option, "-XX:DEVICE_H2=", &tail)){
        //tty->print("[FILE:%s|FUNCTION:%s|LINE:%d] DEVICE_H2:%s\n", __FILE__, __func__, __LINE__, tail);

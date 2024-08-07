@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 
 # Declare an associative array used for error handling
 declare -A ERRORS
@@ -19,8 +18,6 @@ cpu_arch=$(uname -p)
 FLEXHEAP=false
 FLEXHEAP_DEVICE="nvme0n1p1"
 FLEXHEAP_MOUNT_POINT="/spare2/fmap/"
-ALLOCATION_MODE=2 #0: H1, 1: H1H2, 2:H2H1
-#FLEXHEAP_ALLOCATE_H2_BEFORE_H1=false
 
 EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList"
   "Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference"
@@ -55,7 +52,7 @@ function interpreter_mode() {
     -XX:+ShowMessageBoxOnError \
     -XX:+UseParallelGC \
     -XX:ParallelGCThreads=${num_gc_thread} \
-    $(get_flexheap_flag) \
+    $(get_teraheap_flag) \
     -XX:TeraHeapSize=${TERACACHE_SIZE} \
     -Xmx${MAX}g \
     -Xms${XMS}g \
@@ -63,7 +60,7 @@ function interpreter_mode() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
-    $(get_flexheap_mount_point) \
+    $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=1288490188800 \
@@ -83,13 +80,13 @@ function c1_mode() {
     -XX:TieredStopAtLevel=3 -XX:+UseParallelGC \
     -XX:ParallelGCThreads=${num_gc_thread} \
     -XX:-UseParallelOldGC \
-    $(get_flexheap_flag) \
+    $(get_teraheap_flag) \
     -XX:TeraHeapSize=${TERACACHE_SIZE} \
     -Xmx${MAX}g \
     -Xms${XMS}g \
     -XX:-UseCompressedOops \
     -XX:+TeraHeapStatistics \
-    $(get_flexheap_mount_point) \
+    $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=1288490188800 \
@@ -109,14 +106,14 @@ function c2_mode() {
     -XX:+UseParallelGC \
     -XX:ParallelGCThreads=${num_gc_thread} \
     -XX:-UseParallelOldGC \
-    $(get_flexheap_flag) \
+    $(get_teraheap_flag) \
     -XX:TeraCacheSize=${TERACACHE_SIZE} \
     -Xmx${MAX}g \
     -Xms${XMS}g \
     -XX:TeraCacheThreshold=0 \
     -XX:-UseCompressedOops \
     -XX:+TeraCacheStatistics \
-    $(get_flexheap_mount_point) \
+    $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=1288490188800 \
@@ -133,7 +130,7 @@ function run_tests_msg_box() {
     -XX:+ShowMessageBoxOnError \
     -XX:+UseParallelGC \
     -XX:ParallelGCThreads=${num_gc_thread} \
-    $(get_flexheap_flag) \ 
+    $(get_teraheap_flag) \ 
   -XX:TeraHeapSize=${TERACACHE_SIZE} \
     -Xmx${MAX}g \
     -Xms${XMS}g \
@@ -141,7 +138,7 @@ function run_tests_msg_box() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
-    $(get_flexheap_mount_point) \
+    $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
@@ -155,7 +152,7 @@ function run_tests() {
   ${JAVA} \
     -XX:+UseParallelGC \
     -XX:ParallelGCThreads=${num_gc_thread} \
-    $(get_flexheap_flag) \
+    $(get_teraheap_flag) \
     -XX:TeraHeapSize=${TERACACHE_SIZE} \
     -Xmx${MAX}g \
     -Xms${XMS}g \
@@ -163,9 +160,8 @@ function run_tests() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
-    $(get_flexheap_mount_point) \
+    $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    $(get_allocation_mode) \
     -XX:-UseParallelH2Allocator \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
@@ -181,7 +177,7 @@ function run_tests_debug() {
     -XX:+ShowMessageBoxOnError \
     -XX:+UseParallelGC \
     -XX:ParallelGCThreads=${num_gc_thread} \
-    $(get_flexheap_flag) \
+    $(get_teraheap_flag) \
     -XX:TeraHeapSize=${TERACACHE_SIZE} \
     -Xmx${MAX}g \
     -Xms${XMS}g \
@@ -189,7 +185,7 @@ function run_tests_debug() {
     -XX:-UseCompressedClassPointers \
     -XX:+TeraHeapStatistics \
     -XX:TeraStripeSize=${STRIPE_SIZE} \
-    $(get_flexheap_mount_point) \
+    $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}"
@@ -203,28 +199,12 @@ function get_flexheap_device() {
   fi
 }
 
-function get_flexheap_mount_point() {
-  if [ "$FLEXHEAP" == true ]; then
-    echo "-XX:AllocateH2At=$FLEXHEAP_MOUNT_POINT"
-  else
-    echo " "
-  fi
+function get_teraheap_mount_point() {
+  echo "-XX:AllocateH2At=$FLEXHEAP_MOUNT_POINT"
 }
 
-function get_flexheap_flag() {
-  if [ "$FLEXHEAP" == true ]; then
-    #local jvm_flexheap_flag="-XX:+EnableTeraHeap"
-    echo "-XX:+EnableTeraHeap"
-  else
-    #local jvm_flexheap_flag="-XX:-EnableTeraHeap"
-    echo "-XX:-EnableTeraHeap"
-  fi
-}
-
-function get_allocation_mode() {
-  if [ "$ALLOCATION_MODE" == 2 ]; then
-    echo "-XX:+AllocateH2BeforeH1"
-  fi
+function get_teraheap_flag() {
+  echo "-XX:+EnableTeraHeap"
 }
 
 # Usage
@@ -234,13 +214,11 @@ usage() {
   echo -n "      $0 [option ...] [-h]"
   echo
   echo "Options:"
-  echo "      -d, --device   <flexheap_device>    The fast storage device used for H2(eg. nvme0n1, nvme4n1)"
   echo "      -p, --point    <mount_point>        The mount point used for the H2 file(eg. /mnt/fmap/)"
   echo "      -j, --jvm      <jvm_build>          The jvm build([release|r], [fastdebug|f], Default: release)"
   echo "      -m, --mode     <execution_mode>     The jvm execution mode(0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)"
   echo "      -t, --threads  <threads>            The number of GC threads (2, 4, 8, 16, 32)"
   echo "      -f, --flexheap                      Enable flexheap"
-  echo "      -a, --allocate <allocation_mode>    Specify allocation mode; [0: H1, 1:H1H2, 2: H2H1]"
   echo "      -h  Show usage"
   echo
 
@@ -301,8 +279,8 @@ print_msg() {
 }
 
 function parse_script_arguments() {
-  local OPTIONS=p:j:m:t:a:fh
-  local LONGOPTIONS=point:,jvm:,mode:,threads:,allocate:,flexheap,help
+  local OPTIONS=p:j:m:t:fh
+  local LONGOPTIONS=point:,jvm:,mode:,threads:,flexheap,help
 
   # Use getopt to parse the options
   local PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
@@ -335,15 +313,8 @@ function parse_script_arguments() {
       IFS=',' read -r -a PARALLEL_GC_THREADS <<<"$2"
       shift 2
       ;;
-    -a | --allocate)
-      ALLOCATION_MODE="$2"
-      echo "ALLOCATION_MODE = $ALLOCATION_MODE"
-      shift 2
-      ;;
     -f | --flexheap)
       FLEXHEAP=true
-      #FLEXHEAP_ALLOCATION_MODE="$2"
-      #echo "FLEXHEAP_ALLOCATION_MODE = $FLEXHEAP_ALLOCATION_MODE"
       shift 2
       ;;
     -h | --help)

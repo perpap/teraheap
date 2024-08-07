@@ -43,7 +43,6 @@ static void calculate_h2_region_array_size(){
   assertf(region_array_size >= MAX_PARTITIONS,
           "Device size should be larger, because region_array_size is "
           "calculated to be smaller than MAX_PARTITIONS!");
-  //fprintf(stderr, "%"PRIu64"regions of size %"PRIu64"MB fit into the mmaped-file of size %"PRIu64"GB...\ndev_size = %"PRIu64"GB\nmmap_size = %"PRIu64"GB\nmax_rdd_id = %"PRIu64"\ngroup_array_size = %"PRIu64"\n", region_array_size, CONVERT_TO_MB(REGION_SIZE), CONVERT_TO_GB(dev_size), CONVERT_TO_GB(dev_size), CONVERT_TO_GB(mmap_size), max_rdd_id, group_array_size);
 }
 
 // Function to check if the address is already mapped
@@ -129,7 +128,7 @@ void create_file(const char* path, uint64_t size) {
 void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fd = -1;
     assertf((allocator_log_fp = fopen("allocator_log", "w")) != NULL, "Allocator logger failed!");
-    
+
     create_file(path, size);
     // Memory-mapped a file over a storage device
     tc_mem_pool.mmap_start = mmap(0, /*dev_size*/size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0); 
@@ -144,7 +143,6 @@ void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fprintf(allocator_log_fp, "%s\n[%s|%s|%d]Use memory-mapped IO for H2 using a file of %zd GB...\n%-30s = %p\n%-30s = %p\n%-30s = %p\n%s\n", border, __FILE__, __func__, __LINE__, CONVERT_TO_GB(size), "tc_mem_pool.mmap_start", tc_mem_pool.mmap_start, "tc_mem_pool.start_address", tc_mem_pool.start_address, "tc_mem_pool.stop_address", tc_mem_pool.stop_address, border);
 #endif
     calculate_h2_region_array_size();
-    check_h2_addresses();
     init_regions();
     req_init();
     fclose(allocator_log_fp);

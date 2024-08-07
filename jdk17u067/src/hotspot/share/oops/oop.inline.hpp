@@ -72,8 +72,8 @@ inline uint64_t oopDesc::get_h2_dst_addr() {
 // 'id' is defined by the application.
 void oopDesc::mark_move_h2(uint64_t label, uint64_t sublabel) {
 #ifdef TERA_ASSERT
-  if(partId >= MAX_PARTITIONS){
-    fprintf(stderr, "[DATASET_ERROR][%s|%s|%d] partId %" PRIu64 "is out of bounds; MAX_PARTITIONS = %" PRIu64 "\n", __FILE__, __func__, __LINE__, partId, MAX_PARTITIONS);
+  if(sublabel >= MAX_PARTITIONS){
+    fprintf(stderr, "[DATASET_ERROR][%s|%s|%d] partId %" PRIu64 "is out of bounds; MAX_PARTITIONS = %" PRIu64 "\n", __FILE__, __func__, __LINE__, sublabel, MAX_PARTITIONS);
     exit(EXIT_FAILURE);
   }
 #endif
