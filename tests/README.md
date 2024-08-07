@@ -12,20 +12,16 @@ cd ./java
 ./compile.sh
 cd -
 ```
-## Run Tests
-There are different modes that you can run the TeraHeap tests.
+## How to run the benchmarks
 
 ```sh
-# Run tests in interpreter mode
-./run.sh 1
-
-# Run tests using only C1 JIT compiler
-./run.sh 2
-
-# Run tests using only C2 JIT compiler
-./run.sh 3
-
-# Run tests using gdb
-./run.sh 4
-
+Usage:
+      ./run.sh [option ...] [-h]
+Options:
+      -p, --point    <mount_point>        The mount point used for the H2 file(eg. /mnt/fmap/)
+      -j, --jvm      <jvm_build>          The jvm build([release|r], [fastdebug|f], Default: release)
+      -m, --mode     <execution_mode>     The jvm execution mode(0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)
+      -t, --threads  <threads>            The number of GC threads (2, 4, 8, 16, 32)
+      -f, --flexheap                      Enable flexheap
+      -h  Show usage
 ```
