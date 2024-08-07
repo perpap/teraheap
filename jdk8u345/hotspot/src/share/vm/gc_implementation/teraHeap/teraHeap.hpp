@@ -86,9 +86,12 @@ private:
   void h2_reset_marked_objects();
 
 public:
-  // Constructor
-  TeraHeap();
-  
+  // Default Constructor
+  //TeraHeap():TeraHeap(nullptr){};
+#if 1//perpap
+  // Custom Constructor with hint for H2 placement after H1 address range
+  TeraHeap(HeapWord* heap_end = NULL);
+#endif 
   // Get object start array for h2
   ObjectStartArray *start_array() { return &_start_array; }
   

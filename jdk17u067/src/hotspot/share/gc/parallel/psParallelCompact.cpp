@@ -92,6 +92,106 @@
 
 #include <math.h>
 
+#if 1//perpap
+#ifdef TERA_MAJOR_GC
+  class ParallelPreCompactH2Task: public AbstractGangTask {
+  private:
+	  uint _total_workers;
+	  HeapWord* _source_beg;
+	  HeapWord* _source_end;
+	  ParMarkBitMap* _mark_bitmap;
+	  ParallelCompactData& _summary_data;
+  public:
+
+	  ParallelPreCompactH2Task(const char* name, uint total_workers, HeapWord* source_beg, HeapWord* source_end/*, ParMarkBitMap* mb, ParallelCompactData* sd*/)
+	  : AbstractGangTask(name), _total_workers(total_workers), _source_beg(source_beg), _source_end(source_end), _mark_bitmap(PSParallelCompact::mark_bitmap()), _summary_data(PSParallelCompact::summary_data()) {}
+	  virtual void work(uint worker_id){
+		  internal_work(worker_id);
+	  }
+	  void internal_work(uint worker_id/*, uint total_workers*/) {
+		  size_t start_region = _summary_data.addr_to_region_idx(_source_beg);
+		  size_t end_region = _summary_data.addr_to_region_idx(_summary_data.region_align_up(_source_end));
+		  size_t total_regions = end_region - start_region;
+
+		  // Divide regions among workers
+		  size_t regions_per_worker = total_regions / _total_workers;
+		  size_t my_start_region = start_region + worker_id * regions_per_worker;
+		  size_t my_end_region = (worker_id == _total_workers - 1) ? end_region : my_start_region + regions_per_worker;
+		  tty->print("[precompact_h2_candidates] worker_id:%u regions:[%zu-%zu]\n",worker_id, my_start_region, my_end_region);
+		  // Process each assigned region
+		  for (size_t cur_region = my_start_region; cur_region < my_end_region; ++cur_region) {
+			  process_region(worker_id, cur_region);
+		  }
+	  }
+
+  private:
+	  void process_region(uint worker_id, size_t region_idx) {
+		  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
+		  // Implement the logic specific to each region as shown in `precompact_h2_candidate_objects`
+		  HeapWord *beg_addr = _summary_data.region_to_addr(region_idx);
+		  size_t end_bit = _mark_bitmap->addr_to_bit(beg_addr + ParallelCompactData::RegionSize);
+		  // The bitmap routines require the right boundary to be word-aligned.
+		  size_t range_end = _mark_bitmap->align_range_end(end_bit);
+		  size_t beg_bit = _mark_bitmap->find_h2_candidate(_mark_bitmap->addr_to_bit(beg_addr), range_end);
+		  DEBUG_ONLY(size_t region_size = _summary_data._region_data[region_idx].data_size();)
+
+		  // Get the forwarding table of the region
+		  TeraForwardingTable *fd_table = _summary_data._region_data[region_idx].get_forwarding_table();
+
+		  // Create a forwarding table only for the regions that have H2
+		  // candidate objects. Reduce the number of metadata.
+		  if (beg_bit < range_end) {
+			  assert(fd_table == NULL, "Sanity check");
+			  fd_table = new TeraForwardingTable();
+#ifdef TERA_STATS
+			  Universe::teraHeap()->get_tera_stats()->add_fwd_tables();
+#endif
+		  }
+
+		  while (beg_bit < range_end) {
+			  HeapWord *h1_addr = _mark_bitmap->bit_to_addr(beg_bit);
+			  oop obj = cast_to_oop(h1_addr);
+			  assert(obj->is_marked_move_h2(), "H1: %p | TF = %lu\n", h1_addr, obj->get_obj_state());
+			  size_t size = obj->size();
+			  // Get the last bit where the object ends
+			  size_t tmp_end = _mark_bitmap->addr_to_bit(h1_addr + size - 1);
+
+			  if (Universe::teraHeap()->get_policy()->h2_transfer_policy(obj)) {
+				  // Get the new object location in H2 and create an entry in the forwarding table
+				  HeapWord* h2_addr = (HeapWord*) Universe::teraHeap()->h2_add_object(obj, size);
+				  fd_table->add(h1_addr, h2_addr);
+				  obj->set_h2_dst_addr((uint64_t) h2_addr);
+				  assert(h2_addr == fd_table->find(h1_addr)->literal(), "Sanity check");
+
+				  // Clear the bits from obj_beg and obj_end bitmaps. We mark the
+				  // H2 candidate objects as dead to exclude them from the summary
+				  // phase calculations of H1.
+				  _mark_bitmap->unmark_obj(obj, size);
+				  _summary_data.remove_obj(obj, size);
+			  } else {
+				  // If the candidate objects is a non-primitive type then we
+				  // change its state. In that way, we avoid to handle this
+				  // object as an 'h2 candidate objects' in the next major GC.
+				  if (obj->is_non_primitive())
+					  obj->init_obj_state();
+
+				  _mark_bitmap->unmark_h2_candidate_obj(obj);
+			  }
+
+			  if (tmp_end >= range_end)
+				  break;
+
+			  beg_bit = _mark_bitmap->find_h2_candidate(tmp_end + 1, range_end);
+		  }
+
+		  _summary_data._region_data[region_idx].set_forwarding_table(fd_table);
+		  assert(_summary_data._region_data[region_idx].data_size() <= region_size,
+				  "Region size differ, size before = %lu and size after = %lu", region_size, _summary_data._region_data[region_idx].data_size());
+	  }
+  };
+#endif //TERA_MAJOR_GC
+#endif
+
 // All sizes are in HeapWords.
 const size_t ParallelCompactData::Log2RegionSize  = 16; // 64K words
 const size_t ParallelCompactData::RegionSize      = (size_t)1 << Log2RegionSize;
@@ -1678,13 +1778,29 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_start();
 #endif //TERA_TIMERS
-
+#if 1//perpap
+  uint total_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();//.active_workers();
+  static const char *_task_names[] = {
+          "Parallel H2 Candidate PreCompaction Old Generation Task",
+          "Parallel H2 Candidate PreCompaction Young Generation(Eden) Task",
+          "Parallel H2 Candidate PreCompaction Young Generation(From) Task",
+          "Parallel H2 Candidate PreCompaction Young Generation(To) Task"
+  };
+#endif
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
-    _summary_data.precompact_h2_candidate_objects(space->bottom(),
-                                                  space->top(),
-                                                  _mark_bitmap,
-                                                  _summary_data);
+    //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+#if 1//perpap
+    if(UseParallelH2Allocator){
+      tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
+      //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);
+      ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
+      tty->print("[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
+      ParallelScavengeHeap::heap()->workers().run_task(&task);
+    }else{
+      _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+    }
+#endif
   }
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_end();
@@ -1964,6 +2080,8 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
     Universe::teraHeap()->getTeraTimer()->h1_summary_phase_end();
 #endif //TERA_TIMERS
 }
+
+
 
 // This method should contain all heap-specific policy for invoking a full
 // collection.  invoke_no_policy() will only attempt to compact the heap; it

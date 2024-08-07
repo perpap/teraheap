@@ -55,37 +55,114 @@
 #include "services/memTracker.hpp"
 #include "utilities/macros.hpp"
 #include "utilities/vmError.hpp"
-
+/*
+#define H1_CARD_SIZE ((size_t) (1 << 9))
+#define H2_CARD_SIZE ((size_t) (1 << 13))
+#define PAGE_SIZE ((size_t)sysconf(_SC_PAGESIZE))
+#define H1_ALIGNMENT H1_CARD_SIZE * PAGE_SIZE
+#define H2_ALIGNMENT H2_CARD_SIZE * PAGE_SIZE
+#define CONVERT_TO_GB(bytes) bytes >> 30
+#define CONVERT_TO_MB(bytes) bytes >> 20
+#define CONVERT_TO_KB(bytes) bytes >> 10
+*/
 PSYoungGen*  ParallelScavengeHeap::_young_gen = NULL;
 PSOldGen*    ParallelScavengeHeap::_old_gen = NULL;
 PSAdaptiveSizePolicy* ParallelScavengeHeap::_size_policy = NULL;
 PSGCAdaptivePolicyCounters* ParallelScavengeHeap::_gc_policy_counters = NULL;
 
+static inline char* align_ptr_down(char* ptr, uintptr_t alignment) {
+  return (char *) ( ((uintptr_t)ptr) & ~(alignment - 1) );
+}
+
+static inline char* align_ptr_up(char* ptr, uintptr_t alignment) {
+  return (char *) ( ((uintptr_t)ptr + alignment - 1) & ~(alignment - 1) );
+}
+
+static ReservedHeapSpace reserve_virtual_space(const size_t reserved_heap_size){	
+  fprintf(stderr,"\033[1;32m[%s|%s|%d]H1 size: %lu(bytes) %lu(GB)\n\033[0m",strstr(__FILE__, "parallel"), __func__, __LINE__, reserved_heap_size, CONVERT_TO_GB(reserved_heap_size));
+  if(EnableTeraHeap){
+    if(AllocateH2H1){
+      uint8_t scale = 1;
+      uintptr_t h1_start;
+      
+      while(true){
+        //fprintf(stderr,"h2_start_mmap_addr=%p\n", Universe::teraHeap()->h2_start_mmap_addr());
+        //fprintf(stderr, "scale=%" PRIu8 " reserved_heap_size=%zd scale*reserved_heap_size=%lu(GB)\n", scale, reserved_heap_size, CONVERT_TO_GB(scale*reserved_heap_size));
+        //fprintf(stderr, "Move h1_start %lu(GB) lower from %p\n", CONVERT_TO_GB(scale*reserved_heap_size), Universe::teraHeap()->h2_start_mmap_addr());
+        h1_start = (uintptr_t)Universe::teraHeap()->h2_start_mmap_addr() - reserved_heap_size * scale;
+        fprintf(stderr,"[%s|%s|%d]Available virtual space(H1): %lu GB\n", strstr(__FILE__, "parallel"), __func__, __LINE__, available_virtual_space((char *)h1_start, Universe::teraHeap()->h2_start_mmap_addr()));
+        if(!is_aligned(h1_start, H1_ALIGNMENT)){
+          fprintf(stderr,"[%s|%s|%d]H1 start(%-20p) is not aligned\n", strstr(__FILE__, "parallel"), __func__, __LINE__,(char *)h1_start);
+          h1_start = (uintptr_t)align_ptr_down((char *)h1_start, H1_ALIGNMENT);
+        }
+        pid_t pid = getpid();
+        fprintf(stderr,"[%s|%s|%d]Checking h1 start %-20p if available for mmap : ", strstr(__FILE__, "parallel"), __func__, __LINE__,(char *)h1_start);
+        if(is_address_mapped(pid, h1_start)){
+          fprintf(stderr,"not available\n");
+          ++scale;
+          continue;
+        }else{
+          fprintf(stderr,"available\n");
+        }
+        fprintf(stderr,"[%s|%s|%d]Checking h1 end   %-20p if available for mmap : ", strstr(__FILE__, "parallel"), __func__, __LINE__,(char *)(h1_start + reserved_heap_size));
+        if(is_address_mapped(pid, h1_start + reserved_heap_size)){ 
+          fprintf(stderr,"not available\n");
+          ++scale;
+          continue;
+        }else{
+          //tty->print("available\n");
+          fprintf(stderr,"available\n");
+          break;
+        }
+      }
+      return Universe::reserve_heap(reserved_heap_size, HeapAlignment, (char *)h1_start);
+      //return Universe::reserve_heap(reserved_heap_size, HeapAlignment, (char *)((uintptr_t)align_ptr_down(Universe::teraHeap()->h2_start_addr(), H1_ALIGNMENT) - reserved_heap_size * 64));
+    }
+  }
+  return Universe::reserve_heap(reserved_heap_size, HeapAlignment);
+}
+
 jint ParallelScavengeHeap::initialize() {
   const size_t reserved_heap_size = ParallelArguments::heap_reserved_size_bytes();
-
-  ReservedHeapSpace heap_rs = Universe::reserve_heap(reserved_heap_size, HeapAlignment);
-
+  //ReservedHeapSpace heap_rs = Universe::reserve_heap(reserved_heap_size, HeapAlignment);
+  ReservedHeapSpace heap_rs = reserve_virtual_space(reserved_heap_size);
   trace_actual_reserved_page_size(reserved_heap_size, heap_rs);
-
+   
   initialize_reserved_region(heap_rs);
+  fprintf(stderr,"[%s|%s|%d]%-20s %-20s %-20s %-20s %-20s %-20s %-20s\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "HEAP", "START ADDRESS", "END ADDRESS", "SIZE(GB)", "ALIGNMENT(KB)", "CARD_SIZE(KB)", "PAGE_SIZE(KB)");
+	fprintf(stderr,"[%s|%s|%d]%-20s %-20p %-20p %-20td %-20llu %-20llu %-20llu\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "H1", heap_rs.base(), heap_rs.end(), CONVERT_TO_GB((uintptr_t)(heap_rs.end()-heap_rs.base())), CONVERT_TO_KB((unsigned long long)HeapAlignment), CONVERT_TO_KB((unsigned long long)CardTable::card_size), CONVERT_TO_KB((unsigned long long)os::vm_page_size()));
+  
+  //fprintf(stderr,"[%s|%s|%d]%-20s %-20p %-20p %-20td %-20llu %-20llu %-20llu\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "H1", _reserved.start(), _reserved.end(), CONVERT_TO_GB((uintptr_t)(_reserved.end()-_reserved.start())), CONVERT_TO_KB((unsigned long long)HeapAlignment), CONVERT_TO_KB((unsigned long long)CardTable::card_size), CONVERT_TO_KB((unsigned long long)os::vm_page_size()));
+	//fprintf(stderr,"[%s|%s|%d]%-20s %-20p %-20p %-20td %-20llu\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "OLD GEN", _old_gen->virtual_space()->reserved_low_addr(), _old_gen->virtual_space()->reserved_high_addr(), CONVERT_TO_GB((uintptr_t)(_old_gen->virtual_space()->reserved_high_addr() - _old_gen->virtual_space()->reserved_low_addr())), (unsigned long long)_old_gen->virtual_space()->alignment());
+	//fprintf(stderr,"[%s|%s|%d]%-20s %-20p %-20p %-20td %-20llu\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "YOUNG GEN", _young_gen->virtual_space()->reserved_low_addr(), _young_gen->virtual_space()->reserved_high_addr(), CONVERT_TO_GB((uintptr_t)(_young_gen->virtual_space()->reserved_high_addr() - _young_gen->virtual_space()->reserved_low_addr())), (unsigned long long)_young_gen->virtual_space()->alignment());
 
 #ifdef TERA_CARDS
   PSCardTable* card_table;
   if (EnableTeraHeap) {
+	
+	  if(AllocateH2H1 == false){
+      Universe::initialize_teraheap((HeapWord*)heap_rs.end());
+      //Universe::initialize_teraheap((HeapWord*)reserved.end();
+      //Universe::initialize_teraheap((HeapWord*)_young_gen->to_space()->_end());
+    }
+ 
     _tera_heap_reserved = MemRegion((HeapWord*)Universe::teraHeap()->h2_start_addr(),
                                     (HeapWord*)Universe::teraHeap()->h2_end_addr());
-
-    if (!(_tera_heap_reserved.start() >= _reserved.end()))
-      vm_shutdown_during_initialization(
-          "H2 should be in greater addresses than H1");
-
+    
+    if (!(_tera_heap_reserved.start() >= _reserved.end())){
+      vm_shutdown_during_initialization("H2 should be in greater addresses than H1");
+    }  
+    
+    fprintf(stderr,"[%s|%s|%d]%-20s %-20p %-20p %-20td %-20llu %-20llu %-20llu\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "H2", Universe::teraHeap()->h2_start_addr(), Universe::teraHeap()->h2_end_addr(), CONVERT_TO_GB((uintptr_t)(Universe::teraHeap()->h2_end_addr() - Universe::teraHeap()->h2_start_addr())), CONVERT_TO_KB((unsigned long long)CardTable::th_ct_max_alignment_constraint()), CONVERT_TO_KB((unsigned long long)CardTable::th_card_size), CONVERT_TO_KB((unsigned long long)os::vm_page_size()));
+    //fprintf(stderr,"[%s|%s|%d]%-20s %-20p %-20p %-20td %-20llu %-20llu %-20llu\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "H2", _tera_heap_reserved.start(), _tera_heap_reserved.end(), CONVERT_TO_GB((uintptr_t)(_tera_heap_reserved.end() - _tera_heap_reserved.start())), CONVERT_TO_KB((unsigned long long)CardTable::th_ct_max_alignment_constraint()), CONVERT_TO_KB((unsigned long long)CardTable::th_card_size), CONVERT_TO_KB((unsigned long long)os::vm_page_size()));
+    fprintf(stderr, "[%s|%s|%d]%s = %llu GB, %s = %llu GB\n", strstr(__FILE__, "parallel"), __func__, __LINE__, "H2FileSize", CONVERT_TO_GB((unsigned long long)H2FileSize), "TeraHeapSize", CONVERT_TO_GB((unsigned long long)TeraHeapSize));
+    
     card_table = new PSCardTable(heap_rs.region(), _tera_heap_reserved);
     card_table->initialize();
     card_table->th_card_table_initialize();
     
     Universe::teraHeap()->h2_start_array()->th_initialize(_tera_heap_reserved);
-	  Universe::teraHeap()->h2_start_array()->th_set_covered_region(_tera_heap_reserved);
+    Universe::teraHeap()->h2_start_array()->th_set_covered_region(_tera_heap_reserved);
 
   } else {
     card_table = new PSCardTable(heap_rs.region());

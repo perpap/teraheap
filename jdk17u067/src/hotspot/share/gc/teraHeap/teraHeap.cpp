@@ -8,6 +8,7 @@
 #include "runtime/mutexLocker.hpp"
 #include <tera_allocator.h>
 
+char *TeraHeap::_start_mmap = NULL;
 char *TeraHeap::_start_addr = NULL;
 char *TeraHeap::_stop_addr = NULL;
 
@@ -18,16 +19,16 @@ long int TeraHeap::cur_obj_group_id;
 long int TeraHeap::cur_obj_part_id;
 
 // Constructor of TeraHeap
-TeraHeap::TeraHeap() {
-
+TeraHeap::TeraHeap(HeapWord* heap_end) {
   uint64_t align = CardTable::th_ct_max_alignment_constraint();
 
   if (AllocateH2At == NULL || H2FileSize == 0) {
     ShouldNotReachHere();
   }
 
-  init(align, AllocateH2At, H2FileSize);
+  init(align, AllocateH2At, H2FileSize, (char *)heap_end);
 
+  _start_mmap = start_mmap_region();
   _start_addr = start_addr_mem_pool();
   _stop_addr = stop_addr_mem_pool();
 
@@ -67,7 +68,11 @@ TeraHeap::~TeraHeap() {
   if (DynamicHeapResizing)
     delete dynamic_resizing_policy;
 }
-
+// Return H2 unaligned start address
+char* TeraHeap::h2_start_mmap_addr(void) {
+	assert((char *)(_start_mmap) != NULL, "H2 allocator is not initialized");
+	return _start_mmap;
+}
 // Return H2 start address
 char* TeraHeap::h2_start_addr(void) {
 	assert((char *)(_start_addr) != NULL, "H2 allocator is not initialized");
@@ -76,7 +81,6 @@ char* TeraHeap::h2_start_addr(void) {
 
 // Return H2 stop address
 char* TeraHeap::h2_end_addr(void) {
-	assert((char *)(_start_addr) != NULL, "H2 allocator is not initialized");
 	assert((char *)(_stop_addr) != NULL, "H2 allocator is not initialized");
 	return _stop_addr;
 }
@@ -539,6 +543,10 @@ void TeraHeap::mark_used_region(HeapWord *obj) {
 // Allocate new object 'obj' with 'size' in words in TeraHeap.
 // Return the allocated 'pos' position of the object
 char* TeraHeap::h2_add_object(oop obj, size_t size) {
+#ifdef TERA_PARALLEL_H2_SUMMARY_PHASE 
+	if(UseParallelH2Allocator)
+	MutexLocker x(h2_allocator_lock);
+#endif
 	char *pos;			// Allocation position
 
 #ifdef TERA_STATS

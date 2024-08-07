@@ -65,7 +65,6 @@
  * Implementation of the jdk.internal.misc.Unsafe class
  */
 
-
 #define MAX_OBJECT_SIZE \
   ( arrayOopDesc::header_size(T_DOUBLE) * HeapWordSize \
     + ((julong)max_jint * sizeof(double)) )
@@ -365,7 +364,14 @@ UNSAFE_ENTRY(void, Unsafe_h2TagAndMoveRoot(JNIEnv *env, jobject unsafe,
   // If the object is already in TeraCache then do not mark its teraflag
   if (Universe::teraHeap()->is_obj_in_h2(o))
   	return;
-
+  
+  #ifdef TERA_ASSERT
+  if((uint64_t)partId >= MAX_PARTITIONS){
+    fprintf(stderr, "[DATASET_ERROR][%s|%s|%d] partId %" PRIu64 " is out of bounds; MAX_PARTITIONS = %" PRIu64 "\n", __FILE__, __func__, __LINE__, partId, MAX_PARTITIONS);
+    exit(EXIT_FAILURE);
+  }
+  #endif
+  
   // Initialize object's teraflag. Group them in H2 based on partition ID.
   o->mark_move_h2(label, partId);
 UNSAFE_END
@@ -381,7 +387,14 @@ UNSAFE_ENTRY(void, Unsafe_h2TagRoot(JNIEnv *env, jobject unsafe,
   // If the object is already in TeraCache then do not mark its teraflag
   if (Universe::teraHeap()->is_obj_in_h2(o))
   	return;
-
+  
+  #ifdef TERA_ASSERT
+  if((uint64_t)partId >= MAX_PARTITIONS){
+    fprintf(stderr, "[DATASET_ERROR][%s|%s|%d] partId %" PRIu64 " is out of bounds; MAX_PARTITIONS = %" PRIu64 "\n", __FILE__, __func__, __LINE__, partId, MAX_PARTITIONS);
+    exit(EXIT_FAILURE);
+  }
+  #endif
+  
   // Initialize object's teraflag
   o->mark_move_h2(Universe::teraHeap()->get_policy()->get_non_promote_tag(), partId);
 UNSAFE_END

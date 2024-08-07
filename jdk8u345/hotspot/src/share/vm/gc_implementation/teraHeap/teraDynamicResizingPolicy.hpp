@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+//#define rdtsc get_cycles //FIXME
+
 #define HIST_SIZE 5
 #define GC_HIST_SIZE 1
 #define NUM_ACTIONS 8
@@ -16,6 +18,7 @@
 
 class TeraDynamicResizingPolicy : public CHeapObj<mtInternal> {
 private:
+  static const uint64_t CYCLES_PER_SECOND;//FIXME
   char state_name[NUM_STATES][NAME_LEN]; //< Define state names
   char action_name[NUM_ACTIONS][NAME_LEN]; //< Define state names
   uint64_t window_start_time;         //< Window start time
@@ -99,12 +102,8 @@ private:
   // Count timer. We avoid to use os::elapsed_time() because internally
   // uses the clock_get_time which adds extra overhead. This function
   // is executed in the common path.
-  uint64_t rdtsc() {
-    unsigned int lo, hi;
-    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64_t)hi << 32) | lo;
-  }
-
+  //uint64_t get_cycles();
+  uint64_t rdtsc(); //FIXME
   // Find the average of the array elements
   double calc_avg_time(double *arr, int size);
 

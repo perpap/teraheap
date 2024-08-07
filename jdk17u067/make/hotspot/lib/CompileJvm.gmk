@@ -42,6 +42,8 @@ JVM_LDFLAGS += \
     $(SHARED_LIBRARY_FLAGS) \
     $(JVM_LDFLAGS_FEATURES) \
     $(EXTRA_LDFLAGS) \
+    -L$(ALLOCATOR_HOME)/lib -Wl,-rpath=$(ALLOCATOR_HOME)/lib \
+    -L$(TERA_MALLOC_HOME)/lib -Wl,-rpath=$(TERA_MALLOC_HOME)/lib \
     #
 
 JVM_ASFLAGS += $(EXTRA_ASFLAGS)

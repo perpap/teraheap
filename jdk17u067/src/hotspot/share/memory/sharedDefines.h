@@ -15,6 +15,17 @@
 /************************************
  * Source code that we need to remove after testing
  ************************************/
+#define TERA_ASSERT
+#define H1_CARD_SIZE ((size_t) (1 << 9))
+#define H2_CARD_SIZE ((size_t) (1 << 13))
+#define PAGE_SIZE ((size_t)sysconf(_SC_PAGESIZE))
+#define H1_ALIGNMENT H1_CARD_SIZE * PAGE_SIZE
+#define H2_ALIGNMENT H2_CARD_SIZE * PAGE_SIZE
+#define CONVERT_TO_GB(bytes) bytes >> 30
+#define CONVERT_TO_MB(bytes) bytes >> 20
+#define CONVERT_TO_KB(bytes) bytes >> 10
+
+
 #define TERA_LOG				         //< Define logging for TeraHeap
 
 #define TERA_FLAG				         //< Define teraFlag word
@@ -40,7 +51,7 @@
                                   // e.g 9 = 512bytes
 
 #define TERA_INTERPRETER	        //< Enable Interpreter to support TeraHeap
-
+//#define TERA_PARALLEL_H2_SUMMARY_PHASE
 #define TERA_C1				            //< Enable C1 to support TeraHeap
 
 #define TERA_C2				            //< Enable C1 to support TeraHeap
@@ -95,7 +106,7 @@
 //#define TERA_TIMERS             //< Enable timers for performance
                                   //analysis
 
-//#define TERA_STATS                //< Statistics for objects in H2
+#define TERA_STATS                //< Statistics for objects in H2
 
 //#define OBJ_STATS                 //< Take object statistics about
                                   //primitive types and non primitive
