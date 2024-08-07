@@ -27,6 +27,7 @@
 #include "classfile/stringTable.hpp"
 #include "code/codeCache.hpp"
 #include "compiler/oopMap.hpp"
+#include "gc/flexHeap/flexHeap.hpp"
 #include "gc/parallel/parallelScavengeHeap.hpp"
 #include "gc/parallel/psAdaptiveSizePolicy.hpp"
 #include "gc/parallel/psClosure.inline.hpp"
@@ -258,6 +259,9 @@ bool PSScavenge::invoke() {
     tera_policy->dram_repartition(&need_full_gc, &need_resizing);
   }
 
+  if (EnableFlexHeap)
+    Universe::flexHeap()->dram_repartition(&need_full_gc);
+
   if (UsePerfData) {
     PSGCAdaptivePolicyCounters* const counters = heap->gc_policy_counters();
     const int ffs_val = need_full_gc ? full_follows_scavenge : not_skipped;
@@ -283,6 +287,8 @@ bool PSScavenge::invoke() {
     }
   }
 #endif //TERA_MINOR_GC
+  if (EnableFlexHeap)
+    Universe::flexHeap()->set_last_minor_gc(os::elapsedTime());
 
   return full_gc_done;
 }

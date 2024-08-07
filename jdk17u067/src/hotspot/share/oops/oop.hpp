@@ -67,12 +67,19 @@ class oopDesc {
   //+-------+----------------------------------------------------------------+
   //| 63-48 | Represent the sublabel Id                                      |
   //+-------+----------------------------------------------------------------+
-  //| 32-47 | Represent the label Id										                     |
+  //| 47-32 | Represent the label Id										                     |
   //+-------+----------------------------------------------------------------+
-  //| 16-47 | Represent if object is leaf or primitive_array                 |
+  //| 31-20 | Counters for writes   										                     |
   //+-------+----------------------------------------------------------------+
-  //| 15-0  | Represent the state of the object                              |
+  //|    18 | Class object                                                   |
   //+-------+----------------------------------------------------------------+
+  //|    17 | Primitive array                                                |
+  //+-------+----------------------------------------------------------------+
+  //|    16 | Leaf object                                                    |
+  //+-------+----------------------------------------------------------------+
+  //|  15-0 | Represent the state of the object                              |
+  //+-------+----------------------------------------------------------------+
+  //
 
   volatile uint64_t _tera_flag;      //< Mark TeraHeap objects
 #endif // TERA_FLAG
@@ -93,7 +100,10 @@ class oopDesc {
   // Mark an object with 'id' to be moved in H2. H2 allocator uses the
   // 'id' to locate objects with the same 'id' by to the same region.
   // 'id' is defined by the application.
-  inline void mark_move_h2(uint64_t rdd_id, uint64_t part_id);
+  inline void mark_move_h2(uint64_t label, uint64_t sublabel);
+
+  // Just mark an object to be moved to H2
+  inline void mark_move_h2(void);
 
   // Check if an object is marked to be moved in H2
   inline bool is_marked_move_h2();
@@ -123,7 +133,6 @@ class oopDesc {
 
   inline bool is_visited();
 
-#ifdef P_PRIMITIVE
   // Set object flag if is promitive array or leaf object. Leaf
   // objects are the objects that contain only primitive fields and no
   // references to other objects
@@ -139,8 +148,22 @@ class oopDesc {
 
   // Check if the object is non-primitive. 
   inline bool is_non_primitive();
+
+  // Increase object writeness frequency
+  inline void incr_writness();
+
+  // Increase object age. This is used only for objects in the old
+  // generation
+  inline void incr_oldgen_obj_age();
+
+  // Enable the class bit to indicate that this objects is in the
+  // closure of an instance mirror class (class objects)
+  inline void set_instance_mirror_klass_ref();
+
+  // Check if this object belongs to the transitive closure of an instance
+  // mirror class object (class objects)
+  inline bool is_instance_mirror_klass_ref();
   
-#endif // P_PRIMITIVE
 #endif // TERA_FLAG
 
   inline void set_mark(markWord m);

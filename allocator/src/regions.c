@@ -129,60 +129,20 @@ void create_file(const char* path, uint64_t size) {
 void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fd = -1;
     assertf((allocator_log_fp = fopen("allocator_log", "w")) != NULL, "Allocator logger failed!");
-
-#if ANONYMOUS
-    // Anonymous mmap
-    fd = open(dev, O_RDWR);
-    tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
-#else
+    
     create_file(path, size);
     // Memory-mapped a file over a storage device
-    if(h1_end == NULL){
-      //Memory-map heap 2 (h2) using memory-mapped IO
-      tc_mem_pool.mmap_start = mmap(0, /*dev_size*/size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0); 
-    }else{
-      //FIXME-- Following code needs work
-      char *h2_start = h1_end;//align_ptr_up(h1_end, align);
-      #ifdef ASSERT
-      pid_t pid = getpid();
-      fprintf(stderr, "%-20s = %p\n%-20s = %p\n", "Allocator H1end", h1_end, "Allocator H2Start", h2_start); 
-      check_address(pid, (uintptr_t)h1_end);
-      check_address(pid, (uintptr_t)h2_start);
-      check_address(pid, (uintptr_t)h1_end + size);
-      #endif
-      fprintf(stderr, "Allocate virtual address space for H2 through memory-mapping a file of %zd GB...\n", CONVERT_TO_GB(size));
-      tc_mem_pool.mmap_start = mmap(h2_start, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
-    }
-#endif
+    tc_mem_pool.mmap_start = mmap(0, /*dev_size*/size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0); 
     assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
     // Card table in JVM needs the start address of TeraCache to be align up
     tc_mem_pool.start_address = align_ptr_up(tc_mem_pool.mmap_start, align); 
     tc_mem_pool.cur_alloc_ptr = tc_mem_pool.start_address;
     tc_mem_pool.size = 0;
-#if ANONYMOUS
-    tc_mem_pool.stop_address = tc_mem_pool.mmap_start + V_SPACE;
-    printf("Start address:%p\n",tc_mem_pool.start_address);
-    printf("Stop address:%p\n",tc_mem_pool.stop_address);
-#else
     tc_mem_pool.stop_address = tc_mem_pool.mmap_start + /*dev_size*/size;
-    #ifdef ASSERT
+#ifdef ASSERT
     static const char *border = "-----------------------------------------------------------";
     fprintf(allocator_log_fp, "%s\n[%s|%s|%d]Use memory-mapped IO for H2 using a file of %zd GB...\n%-30s = %p\n%-30s = %p\n%-30s = %p\n%s\n", border, __FILE__, __func__, __LINE__, CONVERT_TO_GB(size), "tc_mem_pool.mmap_start", tc_mem_pool.mmap_start, "tc_mem_pool.start_address", tc_mem_pool.start_address, "tc_mem_pool.stop_address", tc_mem_pool.stop_address, border);
-    /*
-    fprintf(stderr, "Allocate virtual address space for H2 through memory-mapping a file of %zd GB...\n", CONVERT_TO_GB(size));
-    fprintf(stderr, "[Allocator] tc_mem_pool.mmap_start    = %p\n", tc_mem_pool.mmap_start);
-    fprintf(stderr, "[Allocator] tc_mem_pool.start_address = %p\n", tc_mem_pool.start_address);
-    fprintf(stderr, "[Allocator] tc_mem_pool.stop_address  = %p\n", tc_mem_pool.stop_address);
-    */
-    #endif
 #endif
-    /*#ifdef ASSERT
-    pid_t pid = getpid();
-    fprintf(stderr, "%-30s = %p\n%-30s = %p\n%-30s = %p\n", "H1End", h1_end, "H2Start(mmap_start)", tc_mem_pool.mmap_start, "H2Start(aligned mmap_start)", tc_mem_pool.start_address); 
-    check_address(pid, (uintptr_t)h1_end);
-    check_address(pid, (uintptr_t)tc_mem_pool.mmap_start);
-    check_address(pid, (uintptr_t)h1_end + size);
-    #endif*/
     calculate_h2_region_array_size();
     check_h2_addresses();
     init_regions();
@@ -239,11 +199,7 @@ char* stop_addr_mem_pool() {
 // Return the `size` of the memory allocation pool
 size_t mem_pool_size() {
 	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");
-#if ANONYMOUS
-    return V_SPACE;
-#else
 	return dev_size;
-#endif
 }
 
 char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
