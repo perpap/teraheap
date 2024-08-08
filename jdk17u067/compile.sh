@@ -233,7 +233,6 @@ function export_env_vars() {
   export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$CPLUS_INCLUDE_PATH
   export TERA_MALLOC_HOME=${PROJECT_DIR}/tera_malloc
 
-  #export LD_LIBRARY_PATH=/spare/miniconda3/envs/teraheap-aarch64-env/aarch64-conda-linux-gnu/sysroot/usr/lib64:$LD_LIBRARY_PATH
   echo "set LD_LIBRARY_PATH to '$LD_LIBRARY_PATH'"
 }
 
@@ -245,7 +244,7 @@ function parse_script_arguments() {
 
   # Check for errors in getopt
   if [[ $? -ne 0 ]]; then
-    return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+    exit ${ERRORS[INVALID_OPTION]}
   fi
 
   # Evaluate the parsed options
@@ -277,7 +276,7 @@ function parse_script_arguments() {
         JVM_IMAGE_VARIANT="$2"
       else
         │ echo "Invalid jvm image variant; Use release|optimized|fastdebug|slowdebug or r|o|f|s"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -286,7 +285,7 @@ function parse_script_arguments() {
         DEBUG_SYMBOLS="$2"
       else
         │ echo "Invalid native debug symbols method; Use none|internal|extrenal|zipped"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -294,10 +293,10 @@ function parse_script_arguments() {
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         RELINK=true
         JVM_IMAGE_VARIANT="$2"
-        return 0 2>/dev/null || exit 0 # This will return if sourced, and exit if run as a standalone script
+        exit 0 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -305,10 +304,10 @@ function parse_script_arguments() {
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         CLEAN_AND_MAKE=true
         JVM_IMAGE_VARIANT="$2"
-        return 0 2>/dev/null || exit 0 # This will return if sourced, and exit if run as a standalone script
+        exit 0 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -318,8 +317,7 @@ function parse_script_arguments() {
       ;;
     -h | --help)
       usage
-      #break  # Exit the loop after displaying the usage message
-      return 0 2>/dev/null || exit 0 # This will return if sourced, and exit if run as a standalone script
+      exit 0
       ;;
     --)
       shift
@@ -327,7 +325,7 @@ function parse_script_arguments() {
       ;;
     *)
       echo "Programming error"
-      return ${ERRORS[PROGRAMMING_ERROR]} 2>/dev/null || exit ${ERRORS[PROGRAMMING_ERROR]} # This will return if sourced, and exit if run as a standalone script
+      exit ${ERRORS[PROGRAMMING_ERROR]} 
       ;;
     esac
   done

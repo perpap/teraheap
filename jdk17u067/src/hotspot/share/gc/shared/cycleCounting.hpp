@@ -5,8 +5,8 @@
  *      Author: perpap
  */
 
-#ifndef _SHARE_GC_TERAHEAP_CYCLE_COUNTING_HPP_
-#define _SHARE_GC_TERAHEAP_CYCLE_COUNTING_HPP_
+#ifndef _SHARE_GC_SHARED_CYCLE_COUNTING_HPP_
+#define _SHARE_GC_SHARED_CYCLE_COUNTING_HPP_
 
 #ifndef __GNUC__
 # error "Works only on GCC"
@@ -104,4 +104,4 @@ static inline uint64_t get_cycles_per_second() {
     return cpu_frequency;
 }
 
-#endif /* _SHARE_GC_TERAHEAP_CYCLE_COUNTING_HPP_ */
+#endif /* _SHARE_GC_SHARED_CYCLE_COUNTING_HPP_ */

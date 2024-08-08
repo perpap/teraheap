@@ -315,7 +315,7 @@ function parse_script_arguments() {
       ;;
     -f | --flexheap)
       FLEXHEAP=true
-      shift 2
+      shift
       ;;
     -h | --help)
       usage
@@ -327,7 +327,7 @@ function parse_script_arguments() {
       ;;
     *)
       echo "Programming error"
-      return ${ERRORS[PROGRAMMING_ERROR]} 2>/dev/null || exit ${ERRORS[PROGRAMMING_ERROR]} # This will return if sourced, and exit if run as a standalone script
+      exit ${ERRORS[PROGRAMMING_ERROR]} 
       ;;
     esac
   done

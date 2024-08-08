@@ -1,12 +1,12 @@
 #include "gc/shared/collectedHeap.hpp"
+#include "gc/shared/cycleCounting.hpp"
 #include "gc/parallel/parallelScavengeHeap.hpp"
 #include "gc/flexHeap/flexHeap.hpp"
 #include "memory/universe.hpp"
-#include "memory/universe.hpp"
 
 #define BUFFER_SIZE 1024
-#define CYCLES_PER_SECOND 2.4e9; // CPU frequency of 2.4 GHz
 #define REGULAR_INTERVAL ((2LL * 1000)) 
+const uint64_t FlexHeap::CYCLES_PER_SECOND{get_cycles_per_second()};
 
 // Intitilize the cpu usage statistics
 FlexCPUUsage* FlexHeap::init_cpu_usage_stats() {
@@ -122,7 +122,7 @@ void FlexHeap::calculate_gc_io_costs(double *avg_gc_time_ms,
 FlexHeap::FlexHeap() {
   cpu_usage = init_cpu_usage_stats();
 
-  window_start_time = rdtsc();
+  window_start_time = get_cycles();
   cpu_usage->read_cpu_usage(STAT_START);
   gc_time = 0;
   cur_action = FH_NO_ACTION;
@@ -149,7 +149,7 @@ double FlexHeap::ellapsed_time(uint64_t start_time,
 
 // Set current time since last window
 void FlexHeap::reset_counters() {
-  window_start_time = rdtsc();
+  window_start_time = get_cycles();
   cpu_usage->read_cpu_usage(STAT_START);
   gc_time = 0;
   window_interval = REGULAR_INTERVAL;
@@ -159,7 +159,7 @@ void FlexHeap::reset_counters() {
 bool FlexHeap::is_window_limit_exeed() {
   uint64_t window_end_time;
   static int i = 0;
-  window_end_time = rdtsc();
+  window_end_time = get_cycles();
   interval = ellapsed_time(window_start_time, window_end_time);
 
 #ifdef PER_MINOR_GC
