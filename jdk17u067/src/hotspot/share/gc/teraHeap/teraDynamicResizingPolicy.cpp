@@ -2,7 +2,7 @@
 #include "gc/parallel/parallelScavengeHeap.hpp"
 #include "gc/teraHeap/teraDynamicResizingPolicy.hpp"
 #include "memory/universe.hpp"
-#include "gc/teraHeap/cycleCounting.hpp"
+#include "gc/shared/cycleCounting.hpp"
 #include "gc/teraHeap/teraHeap.hpp"
 #include "memory/universe.hpp"
 

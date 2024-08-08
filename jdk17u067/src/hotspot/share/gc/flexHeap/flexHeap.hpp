@@ -17,6 +17,7 @@
 
 class FlexHeap : public CHeapObj<mtInternal> {
 private:
+  static const uint64_t CYCLES_PER_SECOND;
   char state_name[FH_NUM_STATES][FH_NAME_LEN]; //< Define state names
   char action_name[FH_NUM_ACTIONS][FH_NAME_LEN]; //< Define state names
   uint64_t window_start_time;         //< Window start time
@@ -64,15 +65,6 @@ private:
 
   // Calculate ellapsed time
   double ellapsed_time(uint64_t start_time, uint64_t end_time);
-
-  // Count timer. We avoid to use os::elapsed_time() because internally
-  // uses the clock_get_time which adds extra overhead. This function
-  // is executed in the common path.
-  uint64_t rdtsc() {
-    unsigned int lo, hi;
-    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-    return ((uint64_t)hi << 32) | lo;
-  }
 
   // Find the average of the array elements
   double calc_avg_time(double *arr, int size);
