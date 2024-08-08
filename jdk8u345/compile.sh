@@ -61,6 +61,45 @@ function detect_platform() {
   fi
 }
 
+
+
+# function to determine the microarchitecture
+function get_microarchitecture() {
+  # Extract CPU architecture and model information
+  local architecture=$(lscpu | grep 'Architecture:' | awk '{print $2}')
+  local model_name=$(lscpu | grep 'Model name:' | sed -r 's/Model name:\s+//')
+
+  # Initialize microarchitecture variable
+  local microarchitecture=""
+
+  # Check for Intel, AMD and ARM architectures
+  # Add more mappings for specific Intel, AMD and ARM microarchitectures as needed
+  if [[ $architecture == "x86_64" ]]; then
+    local vendor=$(lscpu | grep 'Vendor ID:' | awk '{print $3}')
+    if [[ $vendor == "GenuineIntel" ]]; then
+      if [[ $model_name == *"Xeon"* || $model_name == *"Core"* ]]; then
+        microarchitecture="native"
+      fi
+    elif [[ $vendor == "AuthenticAMD" ]]; then
+      if [[ $model_name == *"Ryzen"* || $model_name == *"EPYC"* ]]; then
+        microarchitecture="znver1" # or "znver2" based on generation
+      fi
+    fi
+  # Check for ARM architectures
+  elif [[ $architecture == "aarch64" ]]; then
+    if [[ $model_name == *"Neoverse-N1"* ]]; then
+      microarchitecture="armv8.2-a"
+    fi
+  fi
+
+  # Fallback to generic if no specific match is found
+  if [[ -z $microarchitecture ]]; then
+    microarchitecture="generic"
+  fi
+
+  echo "$microarchitecture"
+}
+
 # Function to display usage message
 function usage() {
   echo "Usage: $0 [options]"
@@ -86,33 +125,33 @@ function usage() {
   echo "  ./compile.sh -m \"release\"                                                                         Relink a \"release\" image without running configure."
   return 0 2>/dev/null || exit 0
 }
+
 function build_jvm_image() {
   local image_variant=$1
   local debug_level=$1
   local debug_sumbols=$2
+  local microarchitecture=$(get_microarchitecture)  
 
   if [[ $image_variant == "optimized" ]]; then
     image_variant="release"
   fi
 
-  make CONF=linux-$TARGET_PLATFORM-server-$image_variant clean
-  make CONF=linux-$TARGET_PLATFORM-server-$image_variant dist-clean
+  make CONF=linux-$TARGET_PLATFORM-normal-server-$image_variant clean
+  make CONF=linux-$TARGET_PLATFORM-normal-server-$image_variant dist-clean
 
   bash ./configure \
     --with-debug-level=$debug_level \
     --with-native-debug-symbols=$debug_sumbols \
-    --disable-warnings-as-errors \
     --enable-ccache \
     --with-jobs="$(nproc)" \
     --with-boot-jdk=$BOOT_JDK \
-    --disable-cds \
-    --with-extra-cflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
-    --with-extra-cxxflags="-march=armv8.2-a -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+    --with-extra-cflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cxxflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
 
-  intercept-build make CONF=linux-$TARGET_PLATFORM-server-$image_variant
+  intercept-build make CONF=linux-$TARGET_PLATFORM-normal-server-$image_variant
   cd ../
-  compdb -p jdk17u067 list >compile_commands_$image_variant.json
-  mv compile_commands_$image_variant.json jdk17u067
+  compdb -p jdk8u345 list >compile_commands_$image_variant.json
+  mv compile_commands_$image_variant.json jdk8u345
   cd - || exit
 }
 
@@ -136,10 +175,10 @@ function run_make() {
   if [[ $1 == "all" ]]; then
     local variants=("release" "fastdebug" "slowdebug")
     for variant in "${variants[@]}"; do
-      intercept-build make CONF=linux-$TARGET_PLATFORM-server-$variant
+      intercept-build make CONF=linux-$TARGET_PLATFORM-normal-server-$variant
       cd ../
-      compdb -p jdk17u067 list >compile_commands_$variant.json
-      mv compile_commands_$variant.json jdk17u067
+      compdb -p jdk8u345 list >compile_commands_$variant.json
+      mv compile_commands_$variant.json jdk8u345
       cd - || exit
     done
   else
@@ -148,10 +187,10 @@ function run_make() {
     if [[ $variant == "optimized" ]]; then
       variant="release"
     fi
-    intercept-build make CONF=linux-$TARGET_PLATFORM-server-$variant
+    intercept-build make CONF=linux-$TARGET_PLATFORM-normal-server-$variant
     cd ../
-    compdb -p jdk17u067 list >compile_commands_$variant.json
-    mv compile_commands_$variant.json jdk17u067
+    compdb -p jdk8u345 list >compile_commands_$variant.json
+    mv compile_commands_$variant.json jdk8u345
     cd - || exit
   fi
 }
@@ -160,14 +199,14 @@ function run_clean_make() {
   if [[ $1 == "all" ]]; then
     local variants=("release" "fastdebug" "slowdebug")
     for variant in "${variants[@]}"; do
-      make CONF=linux-$TARGET_PLATFORM-server-$variant clean && make CONF=linux-$TARGET_PLATFORM-server-$variant dist-clean && make CONF=linux-$TARGET_PLATFORM-server-$variant images
+      make CONF=linux-$TARGET_PLATFORM-normal-server-$variant clean && make CONF=linux-$TARGET_PLATFORM-normal-server-$variant dist-clean && make CONF=linux-$TARGET_PLATFORM-normal-server-$variant images
     done
   else
     local variant=$1
     if [[ $variant == "optimized" ]]; then
       variant="release"
     fi
-    make CONF=linux-$TARGET_PLATFORM-server-$variant clean && make CONF=linux-$TARGET_PLATFORM-server-$variant dist-clean && make CONF=linux-$TARGET_PLATFORM-server-$variant images
+    make CONF=linux-$TARGET_PLATFORM-normal-server-$variant clean && make CONF=linux-$TARGET_PLATFORM-normal-server-$variant dist-clean && make CONF=linux-$TARGET_PLATFORM-normal-server-$variant images
   fi
 }
 
@@ -175,8 +214,7 @@ function export_env_vars() {
   #local PROJECT_DIR="$(pwd)/../"
   detect_platform
 
-  export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
-  #export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
+  export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
   echo "JAVA_HOME = $JAVA_HOME"
 
   ### TeraHeap Allocator
@@ -206,7 +244,7 @@ function parse_script_arguments() {
 
   # Check for errors in getopt
   if [[ $? -ne 0 ]]; then
-    return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+    exit ${ERRORS[INVALID_OPTION]}
   fi
 
   # Evaluate the parsed options
@@ -238,7 +276,7 @@ function parse_script_arguments() {
         JVM_IMAGE_VARIANT="$2"
       else
         │ echo "Invalid jvm image variant; Use release|optimized|fastdebug|slowdebug or r|o|f|s"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -247,7 +285,7 @@ function parse_script_arguments() {
         DEBUG_SYMBOLS="$2"
       else
         │ echo "Invalid native debug symbols method; Use none|internal|extrenal|zipped"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -255,10 +293,10 @@ function parse_script_arguments() {
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         RELINK=true
         JVM_IMAGE_VARIANT="$2"
-        return 0 2>/dev/null || exit 0 # This will return if sourced, and exit if run as a standalone script
+        exit 0 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -266,10 +304,10 @@ function parse_script_arguments() {
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         CLEAN_AND_MAKE=true
         JVM_IMAGE_VARIANT="$2"
-        return 0 2>/dev/null || exit 0 # This will return if sourced, and exit if run as a standalone script
+        exit 0 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
-        │ return ${ERRORS[INVALID_OPTION]} 2>/dev/null || exit ${ERRORS[INVALID_OPTION]}
+        │ exit ${ERRORS[INVALID_OPTION]}
       fi
       shift 2
       ;;
@@ -279,8 +317,7 @@ function parse_script_arguments() {
       ;;
     -h | --help)
       usage
-      #break  # Exit the loop after displaying the usage message
-      return 0 2>/dev/null || exit 0 # This will return if sourced, and exit if run as a standalone script
+      exit 0
       ;;
     --)
       shift
@@ -288,7 +325,7 @@ function parse_script_arguments() {
       ;;
     *)
       echo "Programming error"
-      return ${ERRORS[PROGRAMMING_ERROR]} 2>/dev/null || exit ${ERRORS[PROGRAMMING_ERROR]} # This will return if sourced, and exit if run as a standalone script
+      exit ${ERRORS[PROGRAMMING_ERROR]} 
       ;;
     esac
   done
