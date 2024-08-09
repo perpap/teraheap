@@ -115,12 +115,12 @@ function usage() {
   echo
   echo "   Examples:"
   echo
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"release\"                            Configure and build a \"release\" image usigne ."
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"optimized\" -s \"internal\"          Configure and build an \"optimized\" image with \"internal\" debug symbols."
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ --image \"fastdebug\"                     Configure and build a \"fastdebug\" image."
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 7.4.0 -i \"release\"                   Configure and build a \"release\" image using gcc-7.4.0"
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 13.2.0 -i \"release\"                  Configure and build a \"release\" image using gcc-13.2.0"
-  echo "  ./compile.sh -m \"release\"                                                                         Relink a \"release\" image without running configure."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"release\"                            Configure and build a \"release\" image usigne ."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"optimized\" -s \"internal\"          Configure and build an \"optimized\" image with \"internal\" debug symbols."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ --image \"fastdebug\"                     Configure and build a \"fastdebug\" image."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 7.4.0 -i \"release\"                   Configure and build a \"release\" image using gcc-7.4.0"
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 13.2.0 -i \"release\"                  Configure and build a \"release\" image using gcc-13.2.0"
+  echo "  ./compile.sh -t x86_64 -m \"release\"                                                                         Relink a \"release\" image without running configure."
   return 0 2>/dev/null || exit 0
 }
 
@@ -211,12 +211,7 @@ function run_clean_make() {
 }
 
 function export_env_vars() {
-  #local PROJECT_DIR="$(pwd)/../"
   detect_platform
-
-  export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
-  #export JAVA_HOME="/spare/perpap/openjdk/jdk-17.0.8.1+1"
-  echo "JAVA_HOME = $JAVA_HOME"
 
   ### TeraHeap Allocator
   export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
@@ -293,7 +288,6 @@ function parse_script_arguments() {
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         RELINK=true
         JVM_IMAGE_VARIANT="$2"
-        exit 0 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
         │ exit ${ERRORS[INVALID_OPTION]}

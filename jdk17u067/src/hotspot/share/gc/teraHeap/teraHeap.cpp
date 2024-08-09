@@ -692,3 +692,11 @@ void TeraHeap::destroy_tera_dram_allocator() {
   free_arena();
 }
 
+// Check if the address is already reserved and mapped
+bool TeraHeap::check_if_address_is_mapped(pid_t pid, uintptr_t h1_end_addr) {
+  return is_address_mapped(pid, h1_end_addr);
+}
+  
+bool TeraHeap::is_address_aligned(uintptr_t p, uintptr_t alignment) {
+  return is_aligned(p, alignment);
+}
