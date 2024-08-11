@@ -227,8 +227,6 @@ function export_env_vars() {
   export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH
   export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$CPLUS_INCLUDE_PATH
   export TERA_MALLOC_HOME=${PROJECT_DIR}/tera_malloc
-
-  echo "set LD_LIBRARY_PATH to '$LD_LIBRARY_PATH'"
 }
 
 function parse_script_arguments() {
@@ -298,7 +296,6 @@ function parse_script_arguments() {
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         CLEAN_AND_MAKE=true
         JVM_IMAGE_VARIANT="$2"
-        exit 0 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
         │ exit ${ERRORS[INVALID_OPTION]}

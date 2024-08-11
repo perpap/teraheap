@@ -42,6 +42,7 @@
 #include "gc/shared/locationPrinter.inline.hpp"
 #include "gc/shared/scavengableNMethods.hpp"
 #include "gc/teraHeap/teraHeap.hpp"
+#include "gc/teraHeap/teraPebs.hpp"
 #include "logging/log.hpp"
 #include "memory/iterator.hpp"
 #include "memory/metaspaceCounters.hpp"
@@ -107,6 +108,7 @@ jint ParallelScavengeHeap::initialize() {
   trace_actual_reserved_page_size(reserved_heap_size, heap_rs);
    
   initialize_reserved_region(heap_rs);
+  Universe::teraPebs()->init_perf(true);
 
 #ifdef TERA_CARDS
   PSCardTable* card_table;
@@ -163,6 +165,10 @@ jint ParallelScavengeHeap::initialize() {
       MinOldSize,
       MaxOldSize,
       "old", 1);
+  
+  //Universe::teraPebs()->init_pebs((char *)_old_gen->reserved().start(),
+  //                                (char *)_young_gen->reserved().start(),
+  //                                (char *)_young_gen->reserved().end(), 1, true);
 
   assert(young_gen()->max_gen_size() == young_rs.size(),"Consistency check");
   assert(old_gen()->max_gen_size() == old_rs.size(), "Consistency check");

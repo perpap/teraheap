@@ -45,6 +45,7 @@
 #include "gc/shared/stringdedup/stringDedup.hpp"
 #include "gc/shared/tlab_globals.hpp"
 #include "gc/teraHeap/teraHeap.hpp"
+#include "gc/teraHeap/teraPebs.hpp"
 #include "gc/flexHeap/flexHeap.hpp"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
@@ -155,6 +156,7 @@ OopStorage*     Universe::_vm_global = NULL;
 CollectedHeap*  Universe::_collectedHeap = NULL;
 TeraHeap *Universe::_teraHeap = NULL;
 FlexHeap *Universe::_flexHeap = NULL;
+TeraPebs *Universe::_teraPebs = NULL;
 
 objArrayOop Universe::the_empty_class_array ()  {
   return (objArrayOop)_the_empty_class_array.resolve();
@@ -795,12 +797,6 @@ jint universe_init() {
   return JNI_OK;
 }
 
-void Universe::initialize_teraheap(HeapWord* heap_end){
-	assert(heap_end != NULL, "H1 heap is not initialized");
-  _teraHeap = new TeraHeap(heap_end);
-	log_info(gc)("Initialize Teraheap");
-}
-
 jint Universe::initialize_heap() {
   assert(_collectedHeap == NULL, "Heap already created");
   _collectedHeap = GCConfig::arguments()->create_heap();
@@ -816,6 +812,8 @@ jint Universe::initialize_heap() {
     _flexHeap = new FlexHeap();
     log_info(gc)("Initialize FlexHeap");
   }
+
+  _teraPebs = new TeraPebs();
 
   return _collectedHeap->initialize();
 }
