@@ -39,7 +39,6 @@ static void calculate_h2_region_array_size(){
   region_array_size = /*dev_size*/mmap_size / REGION_SIZE;
   max_rdd_id = region_array_size / MAX_PARTITIONS;
   group_array_size = region_array_size / 2; // deprecated
-  fprintf(allocator_log_fp, "[%s|%s|%d]\n%-30s=%lu\n%-30s=%lu\n%-30s = %" PRIu64 "GB\n%-20s = %" PRIu64 "GB\n%-20s = %" PRIu64 "\n%-20s = %" PRIu64 "\n%-20s = %" PRIu64 "\n", __FILE__, __func__, __LINE__, "tc_mem_pool.stop_address", (uintptr_t)tc_mem_pool.stop_address, "tc_mem_pool.start_address", (uintptr_t)tc_mem_pool.start_address, "dev_size", CONVERT_TO_GB(dev_size), "mmap_size", CONVERT_TO_GB(mmap_size), "region_array_size", region_array_size, "max_rdd_id", max_rdd_id, "group_array_size", group_array_size);
   assertf(region_array_size >= MAX_PARTITIONS,
           "Device size should be larger, because region_array_size is "
           "calculated to be smaller than MAX_PARTITIONS!");
@@ -145,7 +144,9 @@ void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
     calculate_h2_region_array_size();
     init_regions();
     req_init();
+#ifdef ASSERT
     fclose(allocator_log_fp);
+#endif
 }
 
 void* aligned_mmap(size_t size, size_t alignment, void *address, int prot, int flags, int fd, off_t offset){
