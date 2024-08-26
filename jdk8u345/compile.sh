@@ -135,19 +135,35 @@ function build_jvm_image() {
   if [[ $image_variant == "optimized" ]]; then
     image_variant="release"
   fi
+  export PROPER_COMPILER_CC=/usr/bin/gcc-9
+  export CC=/usr/bin/gcc-9
+  export CXX=/usr/bin/g++-9
+  
+  #export PROPER_COMPILER_CC=/archive/users/perpap/gcc-7.4.0/bin/gcc-7.4.0
+  #export CC=/archive/users/perpap/gcc-7.4.0/bin/gcc-7.4.0
+  #export CXX=/archive/users/perpap/gcc-7.4.0/bin/g++-7.4.0
 
   make CONF=linux-$TARGET_PLATFORM-normal-server-$image_variant clean
   make CONF=linux-$TARGET_PLATFORM-normal-server-$image_variant dist-clean
 
   bash ./configure \
+    --with-toolchain-type=gcc \
     --with-debug-level=$debug_level \
     --with-native-debug-symbols=$debug_sumbols \
-    --enable-ccache \
+    --disable-ccache \
     --with-jobs="$(nproc)" \
     --with-boot-jdk=$BOOT_JDK \
     --with-extra-cflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
     --with-extra-cxxflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
-
+ : '
+  bash ./configure \
+    --with-debug-level=$debug_level \
+    --with-native-debug-symbols=$debug_sumbols \
+    --with-jobs="$(nproc)" \
+    --with-boot-jdk=$BOOT_JDK \
+    --with-extra-cflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include" \
+    --with-extra-cxxflags="-march=${microarchitecture} -I${PROJECT_DIR}/allocator/include -I${PROJECT_DIR}/tera_malloc/include"
+'
   intercept-build make CONF=linux-$TARGET_PLATFORM-normal-server-$image_variant
   cd ../
   compdb -p jdk8u345 list >compile_commands_$image_variant.json
@@ -213,9 +229,15 @@ function run_clean_make() {
 function export_env_vars() {
   #local PROJECT_DIR="$(pwd)/../"
   detect_platform
-
-  export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
-  echo "JAVA_HOME = $JAVA_HOME"
+  #export CCACHE_COMPILER_CHECK=content
+  export CC="aarch64-linux-gnu-gcc-9"
+  export CXX="aarch64-linux-gnu-g++-9"
+  #export CC=/archive/users/perpap/gcc-7.4.0/bin/gcc-7.4.0
+  #export CXX=/archive/users/perpap/gcc-7.4.0/bin/g++-7.4.0
+  #export LD_LIBRARY_PATH=/archive/users/$(whoami)/gcc-7.4.0/lib64:$LD_LIBRARY_PATH
+  echo "CC:$CC CXX:$CXX"
+  #export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
+  #echo "JAVA_HOME = $JAVA_HOME"
 
   ### TeraHeap Allocator
   export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
