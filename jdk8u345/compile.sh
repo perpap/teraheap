@@ -238,24 +238,26 @@ function export_env_vars() {
   echo "CC:$CC CXX:$CXX"
   #export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk"
   #echo "JAVA_HOME = $JAVA_HOME"
-
-  ### TeraHeap Allocator
-  export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LIBRARY_PATH
-  export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib:$LD_LIBRARY_PATH
-  export PATH=${PROJECT_DIR}/allocator/include:$PATH
-  export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$C_INCLUDE_PATH
-  export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include:$CPLUS_INCLUDE_PATH
   export ALLOCATOR_HOME=${PROJECT_DIR}/allocator
-
-  export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
-  export LD_LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LD_LIBRARY_PATH
-  export PATH=${PROJECT_DIR}/tera_malloc/include:$PATH
-  export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH
-  export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$CPLUS_INCLUDE_PATH
   export TERA_MALLOC_HOME=${PROJECT_DIR}/tera_malloc
+  ### TeraHeap Allocator
+  export LIBRARY_PATH=${ALLOCATOR_HOME}/lib:${TERA_MALLOC_HOME}/lib:$LIBRARY_PATH
+  export LD_LIBRARY_PATH=${ALLOCATOR_HOME}/lib:${TERA_MALLOC_HOME}/lib:$LD_LIBRARY_PATH
+  #export PATH=${PROJECT_DIR}/allocator/include:$PATH
+  export C_INCLUDE_PATH=${ALLOCATOR_HOME}/include:${TERA_MALLOC_HOME}/include:$C_INCLUDE_PATH
+  export CPLUS_INCLUDE_PATH=${ALLOCATOR_HOME}/include:${TERA_MALLOC_HOME}/include:$CPLUS_INCLUDE_PATH
+  
+
+  #export LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LIBRARY_PATH
+  #export LD_LIBRARY_PATH=${PROJECT_DIR}/tera_malloc/lib:$LD_LIBRARY_PATH
+  #export PATH=${PROJECT_DIR}/tera_malloc/include:$PATH
+  #export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$C_INCLUDE_PATH
+  #export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include:$CPLUS_INCLUDE_PATH
+  echo "ALLOCATOR_HOME=$ALLOCATOR_HOME"
+  echo "TERA_MALLOC_HOME=$TERA_MALLOC_HOME"
 
   #export LD_LIBRARY_PATH=/spare/miniconda3/envs/teraheap-aarch64-env/aarch64-conda-linux-gnu/sysroot/usr/lib64:$LD_LIBRARY_PATH
-  echo "set LD_LIBRARY_PATH to '$LD_LIBRARY_PATH'"
+  echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 }
 
 function parse_script_arguments() {
@@ -314,8 +316,7 @@ function parse_script_arguments() {
     -m | --make)
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         RELINK=true
-        JVM_IMAGE_VARIANT="$2"
-        exit 0 
+        JVM_IMAGE_VARIANT="$2" 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
         │ exit ${ERRORS[INVALID_OPTION]}
@@ -326,7 +327,6 @@ function parse_script_arguments() {
       if [[ "$2" == "all" || "$2" == "a" || "$2" == "release" || "$2" == "r" || "$2" == "optimized" || "$2" == "o" || "$2" == "fastdebug" || "$2" == "f" || "$2" == "slowdebug" || "$2" == "s" ]]; then
         CLEAN_AND_MAKE=true
         JVM_IMAGE_VARIANT="$2"
-        exit 0 
       else
         │ echo "Invalid jvm image variant; Please provide one of: all|release|optimized|fastdebug|slowdebug or a|r|o|f|s"
         │ exit ${ERRORS[INVALID_OPTION]}
