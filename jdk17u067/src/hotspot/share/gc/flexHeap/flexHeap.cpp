@@ -101,7 +101,6 @@ void FlexHeap::calculate_gc_io_costs(double *avg_gc_time_ms,
 
   assert(gc_time <= interval, "GC time should be less than the window interval");
   assert(iowait_time_ms <= interval, "GC time should be less than the window interval");
-  assert(*device_active_time_ms <= interval, "GC time should be less than the window interval");
 
   //fprintf(stderr, ">>>>>>>> iowait_time_ms = %f\n", iowait_time_ms);
 

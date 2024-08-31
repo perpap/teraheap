@@ -16,8 +16,8 @@ void TeraTimers::print_ellapsed_time(uint64_t start_time,
 
 TeraTimers::TeraTimers(){
 
-	if (!TeraHeapStatistics)
-		vm_exit_during_initialization("Enable -XX:+TeraHeapStatistics");
+  if (!TeraHeapStatistics)
+    vm_exit_during_initialization("Enable -XX:+TeraHeapStatistics");
 
 	h1_card_table_start_time = NEW_C_HEAP_ARRAY(uint64_t, ParallelGCThreads, mtGC);
 	h1_card_table_end_time = NEW_C_HEAP_ARRAY(uint64_t, ParallelGCThreads, mtGC);
