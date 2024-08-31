@@ -14,9 +14,11 @@
 
 #include <stdint.h>
 
+namespace{
 #if defined(__x86_64__)
 
-static inline uint64_t get_cycles()
+//static inline uint64_t get_cycles()
+uint64_t get_cycles()
 {
     uint32_t low, high;
     asm volatile("rdtsc" : "=a" (low), "=d" (high));
@@ -25,7 +27,8 @@ static inline uint64_t get_cycles()
 
 #elif defined(__arm__) || defined(__aarch64__)
 
-static inline uint64_t get_cycles()
+//static inline uint64_t get_cycles()
+uint64_t get_cycles()
 {
     uint64_t val;
     asm volatile("mrs %0, cntvct_el0" : "=r" (val));
@@ -60,8 +63,8 @@ int main(){
 
 #if defined(_WIN32)
 #include <windows.h>
-
-static inline uint64_t get_cpu_frequency() {
+//static inline uint64_t get_cpu_frequency() {
+uint64_t get_cpu_frequency() {
     LARGE_INTEGER frequency;
     QueryPerformanceFrequency(&frequency);
     return frequency.QuadPart;
@@ -70,7 +73,8 @@ static inline uint64_t get_cpu_frequency() {
 #elif defined(__linux__)
 #include <stdio.h>
 
-static inline uint64_t get_cpu_frequency() {
+//static inline uint64_t get_cpu_frequency() {
+uint64_t get_cpu_frequency() {
     FILE *fp = fopen("/proc/cpuinfo", "r");
     if (!fp) return 0;
 
@@ -92,7 +96,8 @@ static inline uint64_t get_cpu_frequency() {
 #error "Unsupported platform"
 #endif
 
-static inline uint64_t get_cycles_per_second() {
+//static inline uint64_t get_cycles_per_second() {
+uint64_t get_cycles_per_second() {
     static uint64_t cpu_frequency = 0;
     if (cpu_frequency == 0) {
         cpu_frequency = get_cpu_frequency();
@@ -103,5 +108,5 @@ static inline uint64_t get_cycles_per_second() {
     }
     return cpu_frequency;
 }
-
+}//unamed namespace end
 #endif /* _SHARE_GC_SHARED_CYCLE_COUNTING_HPP_ */

@@ -1801,7 +1801,7 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
     }else{
       _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
     }
-#endif
+#endif 
   }
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_end();
