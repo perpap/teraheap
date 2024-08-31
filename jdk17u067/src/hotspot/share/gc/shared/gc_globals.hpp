@@ -697,6 +697,9 @@
   product(bool, EnableFlexHeap, false,                                      \
             "Enable FlexHeap. Works only with ParallelScavenge Collector")  \
                                                                             \
+  product(bool, EnablePebs, false,                                          \
+            "Enable Pebs. Works only with ParallelScavenge Collector")      \
+                                                                            \
   product(bool, FlexHeapStatistics, false,                                  \
           "Print FlexHeap statistics")                                      \
                                                                             \

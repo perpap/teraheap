@@ -15,7 +15,6 @@
 /************************************
  * Source code that we need to remove after testing
  ************************************/
-#define TERA_ASSERT
 #define H1_CARD_SIZE ((size_t) (1 << 9))
 #define H2_CARD_SIZE ((size_t) (1 << 13))
 #define PAGE_SIZE ((size_t)sysconf(_SC_PAGESIZE))
@@ -70,7 +69,7 @@
 									                // from H2 to old generation (H1) during
 									                // minor GC
 
-#define TERA_ASSERT               // Extended assertions for TeraHeap
+//#define TERA_ASSERT               // Extended assertions for TeraHeap
 
 //#define FASTMAP                 // Enable this define when you run
                                   // with fastmap with enabled
@@ -103,10 +102,10 @@
  **********************************/
 //#define FWD_REF_STAT               //< Collect statistics for class object
 
-//#define TERA_TIMERS             //< Enable timers for performance
-                                  //analysis
+// #define TERA_TIMERS             //< Enable timers for performance
+                                   // analysis
 
-#define TERA_STATS                //< Statistics for objects in H2
+//#define TERA_STATS                //< Statistics for objects in H2
 
 //#define OBJ_STATS                 //< Take object statistics about
                                   //primitive types and non primitive

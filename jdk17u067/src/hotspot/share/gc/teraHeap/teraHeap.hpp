@@ -362,6 +362,12 @@ public:
     trace_dirty_pages->find_dirty_pages();
   }
 
+  // Check if the address is already reserved and mapped
+  bool check_if_address_is_mapped(pid_t pid, uintptr_t h1_end_addr);
+  
+  // Check if the address is already reserved and mapped
+  bool is_address_aligned(uintptr_t p, uintptr_t alignment);
+
   #if 0//perpap
   bool is_aligned(char *p, uintptr_t N);
   uint64_t available_virtual_space(void *address1, void *address2);

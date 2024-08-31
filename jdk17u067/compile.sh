@@ -115,12 +115,12 @@ function usage() {
   echo
   echo "   Examples:"
   echo
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"release\"                            Configure and build a \"release\" image usigne ."
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"optimized\" -s \"internal\"          Configure and build an \"optimized\" image with \"internal\" debug symbols."
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ --image \"fastdebug\"                     Configure and build a \"fastdebug\" image."
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 7.4.0 -i \"release\"                   Configure and build a \"release\" image using gcc-7.4.0"
-  echo "  ./compile.sh -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 13.2.0 -i \"release\"                  Configure and build a \"release\" image using gcc-13.2.0"
-  echo "  ./compile.sh -m \"release\"                                                                         Relink a \"release\" image without running configure."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"release\"                            Configure and build a \"release\" image usigne ."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"optimized\" -s \"internal\"          Configure and build an \"optimized\" image with \"internal\" debug symbols."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ --image \"fastdebug\"                     Configure and build a \"fastdebug\" image."
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 7.4.0 -i \"release\"                   Configure and build a \"release\" image using gcc-7.4.0"
+  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -g 13.2.0 -i \"release\"                  Configure and build a \"release\" image using gcc-13.2.0"
+  echo "  ./compile.sh -t x86_64 -m \"release\"                                                                         Relink a \"release\" image without running configure."
   return 0 2>/dev/null || exit 0
 }
 
@@ -141,7 +141,6 @@ function build_jvm_image() {
     --with-debug-level=$debug_level \
     --with-native-debug-symbols=$debug_sumbols \
     --disable-warnings-as-errors \
-    --enable-ccache \
     --with-jobs="$(nproc)" \
     --with-boot-jdk=$BOOT_JDK \
     --disable-cds \
@@ -213,18 +212,13 @@ function run_clean_make() {
 function export_env_vars() {
   detect_platform
   export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
-  #echo "JAVA_HOME = $JAVA_HOME"
-  ### TeraHeap Allocator
+
   export ALLOCATOR_HOME=${PROJECT_DIR}/allocator
   export TERA_MALLOC_HOME=${PROJECT_DIR}/tera_malloc
   export LIBRARY_PATH=${ALLOCATOR_HOME}/lib:${TERA_MALLOC_HOME}/lib:$LIBRARY_PATH
   export LD_LIBRARY_PATH=${ALLOCATOR_HOME}/lib:${TERA_MALLOC_HOME}/lib:$LD_LIBRARY_PATH
   export C_INCLUDE_PATH=${ALLOCATOR_HOME}/include:${TERA_MALLOC_HOME}/include:$C_INCLUDE_PATH
   export CPLUS_INCLUDE_PATH=${ALLOCATOR_HOME}/include:${TERA_MALLOC_HOME}/include:$CPLUS_INCLUDE_PATH
- 
-  #echo "ALLOCATOR_HOME=$ALLOCATOR_HOME"
-  #echo "TERA_MALLOC_HOME=$TERA_MALLOC_HOME"
-  #echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 }
 
 function parse_script_arguments() {
