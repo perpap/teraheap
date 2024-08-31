@@ -45,6 +45,7 @@ class OopStorage;
 class ReservedHeapSpace;
 class TeraHeap;
 class FlexHeap;
+class TeraPebs;
 
 // A helper class for caching a Method* when the user of the cache
 // only cares about the latest version of the Method*.  This cache safely
@@ -149,6 +150,9 @@ class Universe: AllStatic {
   
   // FlexHeap policy - Works only for Parallel Scavenge collector
   static FlexHeap *_flexHeap;
+  
+  // FlexHeap policy - Works only for Parallel Scavenge collector
+  static TeraPebs *_teraPebs;
 
   static intptr_t _non_oop_bits;
 
@@ -175,11 +179,6 @@ class Universe: AllStatic {
   static OopStorage* _vm_weak;
   static OopStorage* _vm_global;
 
-#if 1//perpap
- public:
-  static void initialize_teraheap(HeapWord* heap_end);
- private:
-#endif
   static jint initialize_heap();
   static void initialize_tlab();
   static void initialize_basic_type_mirrors(TRAPS);
@@ -318,6 +317,9 @@ class Universe: AllStatic {
   
   // Accessor of flexHeap
   static FlexHeap *flexHeap() { return _flexHeap; }
+  
+  // Accessor of flexHeap
+  static TeraPebs *teraPebs() { return _teraPebs; }
 
   DEBUG_ONLY(static bool is_in_h2_or_null(const void* p));
   DEBUG_ONLY(static bool is_in_h2(const void* p));
