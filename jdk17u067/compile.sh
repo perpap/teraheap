@@ -141,7 +141,6 @@ function build_jvm_image() {
     --with-debug-level=$debug_level \
     --with-native-debug-symbols=$debug_sumbols \
     --disable-warnings-as-errors \
-    --enable-ccache \
     --with-jobs="$(nproc)" \
     --with-boot-jdk=$BOOT_JDK \
     --disable-cds \
