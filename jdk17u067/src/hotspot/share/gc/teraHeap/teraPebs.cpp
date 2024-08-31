@@ -15,6 +15,7 @@ void TeraPebs::initialize_counters(void) {
   total_pebs_samples      = 0;
   total_young_gen_samples = 0;
   total_old_gen_samples   = 0;
+  total_zero_addr_samples = 0;
   total_throttles         = 0;
   total_unthrottles       = 0;
 }
@@ -39,6 +40,7 @@ void* TeraPebs::pebs_scan_thread(void* arg) {
   uint64_t *total_pebs_samples = args->total_pebs_samples;
   uint64_t *young_gen_samples = args->total_young_gen_samples;
   uint64_t *old_gen_samples = args->total_old_gen_samples;
+  uint64_t *zero_addr_samples = args->total_zero_addr_samples;
   uint64_t *total_throttles = args->total_throttles;
   uint64_t *total_unthrottles = args->total_unthrottles;
 
@@ -50,8 +52,8 @@ void* TeraPebs::pebs_scan_thread(void* arg) {
   CPU_SET(0, &cpu_set);
 
   int ret = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpu_set);
-  if (ret != 0) { perror("pthread_setaffinity_np");
-    assert(0);
+  if (ret != 0) {
+    perror("pthread_setaffinity_np");
   }
 
   struct perf_event_mmap_page *metadata_page = pebs_buffer;
@@ -70,11 +72,12 @@ void* TeraPebs::pebs_scan_thread(void* arg) {
       switch (ph->type) {
         case PERF_RECORD_SAMPLE:
           ps = (PerfSample *) ph;
-          assert(ps != NULL);
+          assert(ps != NULL, "Perf sample record is null");
 
           (*total_pebs_samples)++;
 
           if (ps->addr == 0) {
+            (*zero_addr_samples)++;
             break;
           }
 
@@ -117,7 +120,8 @@ void TeraPebs::init_pebs(char *old_gen_start, char *young_gen_start,
 
   pe.type = PERF_TYPE_RAW;
   pe.size = sizeof(struct perf_event_attr);
-  pe.config = load_ops ? 0x81d0 : 0x82d0;
+  // pe.config = load_ops ? 0x81d0 : 0x82d0;
+  pe.config = load_ops ? 0x20d1 : 0x82d0;
   pe.disabled = 0;
   pe.exclude_kernel = 1;
   pe.exclude_hv = 1;
@@ -157,6 +161,7 @@ void TeraPebs::init_pebs(char *old_gen_start, char *young_gen_start,
   args->total_pebs_samples = &total_pebs_samples;
   args->total_young_gen_samples = &total_young_gen_samples;
   args->total_old_gen_samples = &total_old_gen_samples;
+  args->total_zero_addr_samples = &total_zero_addr_samples;
   args->total_throttles = &total_throttles;
   args->total_unthrottles = &total_unthrottles;
 
@@ -179,7 +184,8 @@ void TeraPebs::init_perf(bool load_ops) {
 
   pe.type = PERF_TYPE_RAW;
   pe.size = sizeof(struct perf_event_attr);
-  pe.config = load_ops ? 0x81d0 : 0x82d0;
+  // pe.config = load_ops ? 0x81d0 : 0x82d0;
+  pe.config = load_ops ? 0x20d1 : 0x82d0;
   pe.disabled = 0;
   pe.exclude_kernel = 1;
   pe.exclude_hv = 1;
@@ -225,7 +231,8 @@ void TeraPebs::print_pebs_statistics(void) {
   fprintf(stderr, "Pebs Samples: %lu\n", total_pebs_samples);
   fprintf(stderr, "Young Gen. Samples: %lu\n", total_young_gen_samples);
   fprintf(stderr, "Old Gen. Samples: %lu\n", total_old_gen_samples);
-  uint64_t other_samples = total_pebs_samples - (total_young_gen_samples + total_old_gen_samples);
+  fprintf(stderr, "Zero Addr Samples: %lu\n", total_zero_addr_samples);
+  uint64_t other_samples = total_pebs_samples - (total_young_gen_samples + total_old_gen_samples + total_zero_addr_samples);
   fprintf(stderr, "Irrelevant Samples: %lu\n", other_samples);
   fprintf(stderr, "Throttle Samples: %lu\n", total_throttles);
   fprintf(stderr, "Total_unthrottles Samples: %lu\n", total_unthrottles);
@@ -233,7 +240,12 @@ void TeraPebs::print_pebs_statistics(void) {
 
 void TeraPebs::print_total_loads() {
   long long count = 0;
-  read(fd, &count, sizeof(long long));
+  ssize_t bytesRead = read(fd, &count, sizeof(long long));
+
+  if (bytesRead == -1 || bytesRead != sizeof(long long)) {
+    perror("Error reading file");
+    exit(EXIT_FAILURE);
+  }
 
   total_loads += count;
 

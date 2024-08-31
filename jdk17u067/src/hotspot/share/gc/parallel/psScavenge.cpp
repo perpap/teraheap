@@ -239,9 +239,11 @@ bool PSScavenge::invoke() {
   assert(Thread::current() == (Thread*)VMThread::vm_thread(), "should be in vm thread");
   assert(!ParallelScavengeHeap::heap()->is_gc_active(), "not reentrant");
 
-  Universe::teraPebs()->stop_perf();
-  Universe::teraPebs()->print_total_loads();
-  //Universe::teraPebs()->print_pebs_statistics();
+  if (EnablePebs) {
+    Universe::teraPebs()->stop_perf();
+    // Universe::teraPebs()->print_total_loads();
+    Universe::teraPebs()->print_pebs_statistics();
+  }
 
   ParallelScavengeHeap* const heap = ParallelScavengeHeap::heap();
   PSAdaptiveSizePolicy* policy = heap->size_policy();
@@ -295,7 +297,8 @@ bool PSScavenge::invoke() {
   if (EnableFlexHeap)
     Universe::flexHeap()->set_last_minor_gc(os::elapsedTime());
   
-  Universe::teraPebs()->start_perf();
+  if (EnablePebs)
+    Universe::teraPebs()->start_perf();
 
   return full_gc_done;
 }

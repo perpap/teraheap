@@ -813,7 +813,8 @@ jint Universe::initialize_heap() {
     log_info(gc)("Initialize FlexHeap");
   }
 
-  _teraPebs = new TeraPebs();
+  if (EnablePebs)
+    _teraPebs = new TeraPebs();
 
   return _collectedHeap->initialize();
 }

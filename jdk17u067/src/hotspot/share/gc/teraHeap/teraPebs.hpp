@@ -20,6 +20,7 @@ struct PebsArgs {
   uint64_t *total_pebs_samples;
   uint64_t *total_young_gen_samples;
   uint64_t *total_old_gen_samples;
+  uint64_t *total_zero_addr_samples;
   uint64_t *total_throttles;
   uint64_t *total_unthrottles;
 };
@@ -42,6 +43,7 @@ private:
   uint64_t total_pebs_samples;
   uint64_t total_young_gen_samples;
   uint64_t total_old_gen_samples;
+  uint64_t total_zero_addr_samples;
   uint64_t total_throttles;
   uint64_t total_unthrottles;
 
