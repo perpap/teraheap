@@ -77,7 +77,7 @@ public class Array_List {
 
 		calcHashCode(arl, num_elements);
 
-    gc();
+                gc();
 		calcHashCode(arl, num_elements);
 
 		gc();
@@ -92,9 +92,9 @@ public class Array_List {
 
 		calcHashCode(arl, num_elements);
 
-    gc();
+                gc();
 
-    calcHashCode(arl2, num_elements);
+                calcHashCode(arl2, num_elements);
 
 		mem_info("Memory After");
 	}

@@ -50,7 +50,7 @@
                                   // e.g 9 = 512bytes
 
 #define TERA_INTERPRETER	        //< Enable Interpreter to support TeraHeap
-//#define TERA_PARALLEL_H2_SUMMARY_PHASE
+#define TERA_PARALLEL_H2_SUMMARY_PHASE  // Enable parallel execution of summary_phase's precompaction for H2 
 #define TERA_C1				            //< Enable C1 to support TeraHeap
 
 #define TERA_C2				            //< Enable C1 to support TeraHeap
@@ -102,10 +102,10 @@
  **********************************/
 //#define FWD_REF_STAT               //< Collect statistics for class object
 
-// #define TERA_TIMERS             //< Enable timers for performance
+#define TERA_TIMERS             //< Enable timers for performance
                                    // analysis
 
-//#define TERA_STATS                //< Statistics for objects in H2
+#define TERA_STATS                //< Statistics for objects in H2
 
 //#define OBJ_STATS                 //< Take object statistics about
                                   //primitive types and non primitive

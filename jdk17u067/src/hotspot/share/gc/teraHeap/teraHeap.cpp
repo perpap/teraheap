@@ -543,21 +543,25 @@ void TeraHeap::mark_used_region(HeapWord *obj) {
 // Allocate new object 'obj' with 'size' in words in TeraHeap.
 // Return the allocated 'pos' position of the object
 char* TeraHeap::h2_add_object(oop obj, size_t size) {
+    char *pos;			// Allocation position
 #ifdef TERA_PARALLEL_H2_SUMMARY_PHASE 
-	if(UseParallelH2Allocator)
-	MutexLocker x(h2_allocator_lock);
-#endif
-	char *pos;			// Allocation position
-
+    if(UseParallelH2Allocator){
+        //MutexLocker x(h2_allocator_lock);    
 #ifdef TERA_STATS
-  tera_stats->add_object(size);
-  tera_stats->update_object_distribution(size);
+	tera_stats->add_object(size);
+	tera_stats->update_object_distribution(size);
 #endif
-
-  pos = allocate(size, (uint64_t)obj->get_obj_group_id(), (uint64_t)obj->get_obj_part_id());
-
+	pos = allocate(size, (uint64_t)obj->get_obj_group_id(), (uint64_t)obj->get_obj_part_id());
 	_start_array.th_allocate_block((HeapWord *)pos);
-
+    }
+#else
+#ifdef TERA_STATS
+	tera_stats->add_object(size);
+	tera_stats->update_object_distribution(size);
+#endif
+	pos = allocate(size, (uint64_t)obj->get_obj_group_id(), (uint64_t)obj->get_obj_part_id());
+	_start_array.th_allocate_block((HeapWord *)pos);
+#endif
 	return pos;
 }
 

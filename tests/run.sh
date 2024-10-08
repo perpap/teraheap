@@ -18,12 +18,12 @@ cpu_arch=$(uname -p)
 FLEXHEAP=false
 FLEXHEAP_DEVICE="nvme0n1p1"
 FLEXHEAP_MOUNT_POINT="/spare2/fmap/"
-
+USE_PARALLEL_H2_ALLOCATOR=false
 EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList"
   "Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference"
   "HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap"
   "Test_WeakHashMap" "ClassInstance")
-
+#EXEC=("Array_List")
 # Export Enviroment Variables
 export_env_vars() {
   PROJECT_DIR="$(pwd)/../.."
@@ -62,7 +62,7 @@ function interpreter_mode() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    -XX:-UseParallelH2Allocator \
+    $(get_h2_allocator_flag) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -88,7 +88,7 @@ function c1_mode() {
     -XX:+TeraHeapStatistics \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    -XX:-UseParallelH2Allocator \
+    $(get_h2_allocator_flag) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -115,7 +115,7 @@ function c2_mode() {
     -XX:+TeraCacheStatistics \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    -XX:-UseParallelH2Allocator \
+    $(get_h2_allocator_flag) \
     -XX:H2FileSize=1288490188800 \
     -Xlogtc:llarge_teraCache.txt "${class_file}" >err 2>&1 >run_tests.out
 }
@@ -140,6 +140,7 @@ function run_tests_msg_box() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
+    $(get_h2_allocator_flag) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -162,7 +163,7 @@ function run_tests() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    -XX:-UseParallelH2Allocator \
+    $(get_h2_allocator_flag) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -187,6 +188,7 @@ function run_tests_debug() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
+    $(get_h2_allocator_flag) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}"
 }
@@ -207,6 +209,14 @@ function get_teraheap_flag() {
   echo "-XX:+EnableTeraHeap"
 }
 
+function get_h2_allocator_flag(){
+  if [ "$USE_PARALLEL_H2_ALLOCATOR" == true ]; then
+    echo "-XX:+UseParallelH2Allocator"
+  else
+    echo " "
+  fi
+}
+
 # Usage
 usage() {
   echo
@@ -219,6 +229,7 @@ usage() {
   echo "      -m, --mode     <execution_mode>     The jvm execution mode(0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)"
   echo "      -t, --threads  <threads>            The number of GC threads (2, 4, 8, 16, 32)"
   echo "      -f, --flexheap                      Enable flexheap"
+  echo "      -a, --parallel-h2-allocator         Use parallel H2 allocator"
   echo "      -h  Show usage"
   echo
 
@@ -279,8 +290,8 @@ print_msg() {
 }
 
 function parse_script_arguments() {
-  local OPTIONS=p:j:m:t:fh
-  local LONGOPTIONS=point:,jvm:,mode:,threads:,flexheap,help
+  local OPTIONS=p:j:m:t:fah
+  local LONGOPTIONS=point:,jvm:,mode:,threads:,flexheap,parallel-h2-allocator,help
 
   # Use getopt to parse the options
   local PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
@@ -315,6 +326,10 @@ function parse_script_arguments() {
       ;;
     -f | --flexheap)
       FLEXHEAP=true
+      shift
+      ;;
+    -a | --parallel-h2-allocator)
+      USE_PARALLEL_H2_ALLOCATOR=true
       shift
       ;;
     -h | --help)
