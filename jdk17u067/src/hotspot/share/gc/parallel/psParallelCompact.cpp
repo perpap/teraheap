@@ -985,7 +985,8 @@ void ParallelCompactData::compact_h2_candidate_objects(HeapWord* source_beg,
 
 void ParallelCompactData::clear_fwd_table(HeapWord* source_beg, HeapWord* source_end, ParMarkBitMap mark_bitmap) {
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_clear_fwd_table_start();
+  Universe::teraHeap()->getTeraTimer()->h2_clear_fwd_table_start();//FIXME TeraTimers
+  //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H2_CLEAR_FWD_TABLE");
 #endif
   // Get the start region the space
   size_t cur_region = addr_to_region_idx(source_beg);
@@ -1003,7 +1004,7 @@ void ParallelCompactData::clear_fwd_table(HeapWord* source_beg, HeapWord* source
     ++cur_region;
   }
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_clear_fwd_table_end();
+  Universe::teraHeap()->getTeraTimer()->h2_clear_fwd_table_end();//FIXME TeraTimers
 #endif
 }
 
@@ -1816,7 +1817,8 @@ PSParallelCompact::compute_dense_prefix(const SpaceId id,
 
 void PSParallelCompact::precompact_h2_candidate_objects() {
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_precompact_start();
+  Universe::teraHeap()->getTeraTimer()->h2_precompact_start();//FIXME TeraTimers
+  //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H2_PRECOMPACT");
 #endif //TERA_TIMERS
 #if 1//perpap
   uint total_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();//.active_workers();
@@ -1847,7 +1849,7 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
 #endif 
   }
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_precompact_end();
+  Universe::teraHeap()->getTeraTimer()->h2_precompact_end();//FIXME TeraTimers
 #endif //TERA_TIMERS
 }
 
@@ -2020,7 +2022,8 @@ void PSParallelCompact::summary_phase(ParCompactionManager* cm,
 {
 #ifdef TERA_TIMERS
   if (EnableTeraHeap)
-    Universe::teraHeap()->getTeraTimer()->h1_summary_phase_start();
+    Universe::teraHeap()->getTeraTimer()->h1_summary_phase_start();//FIXME TeraTimers
+    //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H1_SUMMARY_PHASE");
 #endif //TERA_TIMERS
   GCTraceTime(Info, gc, phases) tm("Summary Phase", &_gc_timer);
 
@@ -2638,7 +2641,8 @@ public:
     // Mark TeraHeap backward references as live
     if (EnableTeraHeap && worker_id == 0 && !Universe::teraHeap()->h2_is_empty()) {
 #ifdef TERA_TIMERS
-      Universe::teraHeap()->getTeraTimer()->h2_mark_bwd_ref_start();
+      Universe::teraHeap()->getTeraTimer()->h2_mark_bwd_ref_start();//FIXME TeraTimers
+      //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H2_MARKING_BWD_REF");
 #endif //TERA_TIMERS
 
       ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
@@ -2653,7 +2657,7 @@ public:
         obj = Universe::teraHeap()->h2_get_next_back_reference();
       }
 #ifdef TERA_TIMERS
-      Universe::teraHeap()->getTeraTimer()->h2_mark_bwd_ref_end();
+      Universe::teraHeap()->getTeraTimer()->h2_mark_bwd_ref_end();//FIXME TeraTimers
 #endif //TERA_TIMERS
     }
 #endif //TERA_MAJOR_GC
@@ -2714,8 +2718,11 @@ void PSParallelCompact::marking_phase(ParCompactionManager* cm,
                                       ParallelOldTracer *gc_tracer) {
 
 #ifdef TERA_TIMERS
+   //CREATE_SCOPED_TIMER_IF(EnableTeraHeap, h1_marking_phase_timer, std::chrono::milliseconds, "H1_MARKING_PHASE");
   if (EnableTeraHeap)
-    Universe::teraHeap()->getTeraTimer()->h1_marking_phase_start();
+    Universe::teraHeap()->getTeraTimer()->h1_marking_phase_start();//FIXME TeraTimers
+    //TeraTimers::createScopedTimer<>("H1_MARKING_PHASE");
+    //Universe::teraHeap()->getTeraTimer()->createScopedTimer<>("H1_MARKING_PHASE");
 #endif //TERA_TIMERS
   // Recursively traverse all live objects and mark them
   GCTraceTime(Info, gc, phases) tm("Marking Phase", &_gc_timer);
@@ -2790,7 +2797,7 @@ void PSParallelCompact::marking_phase(ParCompactionManager* cm,
   _gc_tracer.report_object_count_after_gc(is_alive_closure());
 #ifdef TERA_TIMERS
   if (EnableTeraHeap)
-    Universe::teraHeap()->getTeraTimer()->h1_marking_phase_end();
+    Universe::teraHeap()->getTeraTimer()->h1_marking_phase_end();//FIXME TeraTimers
 #endif //TERA_TIMERS
 }
 
@@ -2875,7 +2882,8 @@ public:
 #ifdef TERA_MAJOR_GC
 void PSParallelCompact::compact_h2_candidate_objects() {
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_compact_start();
+  Universe::teraHeap()->getTeraTimer()->h2_compact_start();//FIXME TeraTimers
+  //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H2_COMPACT_PHASE");
 #endif
 
   for (unsigned int i = 0; i < last_space_id; ++i) {
@@ -2886,13 +2894,14 @@ void PSParallelCompact::compact_h2_candidate_objects() {
   }
 
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_compact_end();
+  Universe::teraHeap()->getTeraTimer()->h2_compact_end();//FIXME TeraTimers
 #endif
 }
 
 void PSParallelCompact::adjust_backward_references() {
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_adjust_bwd_ref_start();
+  Universe::teraHeap()->getTeraTimer()->h2_adjust_bwd_ref_start();//FIXME TeraTimers
+  //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H2_ADJUST_BWD_REF");
 #endif
 
   ParCompactionManager* cm = ParCompactionManager::get_vmthread_cm();
@@ -2906,7 +2915,7 @@ void PSParallelCompact::adjust_backward_references() {
   }
 
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_adjust_bwd_ref_end();
+  Universe::teraHeap()->getTeraTimer()->h2_adjust_bwd_ref_end();//FIXME TeraTimers
 #endif
 }
 #endif //TERA_MAJOR_GC
@@ -2914,7 +2923,8 @@ void PSParallelCompact::adjust_backward_references() {
 void PSParallelCompact::adjust_roots() {
 #ifdef TERA_TIMERS
   if (EnableTeraHeap)
-    Universe::teraHeap()->getTeraTimer()->h1_adjust_roots_start();
+    Universe::teraHeap()->getTeraTimer()->h1_adjust_roots_start();//FIXME TeraTimers
+    //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H1_ADJUST_ROOTS");
 #endif
   // Adjust the pointers to reflect the new locations
   GCTraceTime(Info, gc, phases) tm("Adjust Roots", &_gc_timer);
@@ -2924,7 +2934,7 @@ void PSParallelCompact::adjust_roots() {
 
 #ifdef TERA_TIMERS
   if (EnableTeraHeap)
-    Universe::teraHeap()->getTeraTimer()->h1_adjust_roots_end();
+    Universe::teraHeap()->getTeraTimer()->h1_adjust_roots_end();//FIXME TeraTimers
 #endif
 }
 
@@ -3226,7 +3236,8 @@ public:
 void PSParallelCompact::compact() {
 #ifdef TERA_TIMERS
   if (EnableTeraHeap)
-    Universe::teraHeap()->getTeraTimer()->h1_compact_start();
+    Universe::teraHeap()->getTeraTimer()->h1_compact_start();//FIXME TeraTimers
+    //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H1_COMPACT");
 #endif
   GCTraceTime(Info, gc, phases) tm("Compaction Phase", &_gc_timer);
 
@@ -3274,7 +3285,7 @@ void PSParallelCompact::compact() {
   DEBUG_ONLY(write_block_fill_histogram());
 #ifdef TERA_TIMERS
   if (EnableTeraHeap)
-    Universe::teraHeap()->getTeraTimer()->h1_compact_end();
+    Universe::teraHeap()->getTeraTimer()->h1_compact_end();//FIXME TeraTimers
 #endif
 }
 

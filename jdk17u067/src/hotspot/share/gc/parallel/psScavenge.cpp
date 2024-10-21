@@ -880,7 +880,8 @@ void PSScavenge::h2_scavenge_back_references() {
     return;
 
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_scavenge_start();
+  Universe::teraHeap()->getTeraTimer()->h2_scavenge_start();//FIXME TeraTimers
+  //Universe::teraHeap()->getTeraTimer()->createScopedTimer("H2_SCAVENGE");
 #endif //TERA_TIMERS
 
   const uint active_workers =
@@ -898,7 +899,7 @@ void PSScavenge::h2_scavenge_back_references() {
   //PSPromotionManager::post_scavenge(_gc_tracer);
 
 #ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_scavenge_end();
+  Universe::teraHeap()->getTeraTimer()->h2_scavenge_end();//FIXME TeraTimers
 #endif //TERA_TIMERS
 
 }

@@ -11,7 +11,7 @@
 #ifndef __GNUC__
 # error "Works only on GCC"
 #endif
-
+/*
 #include <stdint.h>
 
 namespace{
@@ -82,4 +82,33 @@ uint64_t get_cycles_per_second() {
   return cpu_frequency;
 }
 }//unamed namespace end
+*/
+#include <stdint.h>
+#include <time.h>
+#include <stdio.h>
+
+namespace {
+
+uint64_t get_cycles() {
+    // Use clock_gettime to get the time in nanoseconds
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+}
+
+uint64_t get_cpu_frequency() {
+    // Fallback to default frequency value of 3 GHz
+    return 3000000000ULL; 
+}
+
+uint64_t get_cycles_per_second() {
+    static uint64_t cpu_frequency = 0;
+    if (cpu_frequency == 0) {
+        // Using a default CPU frequency value of 3 GHz
+        cpu_frequency = get_cpu_frequency();
+    }
+    return cpu_frequency;
+}
+}//unamed namespace end
+
 #endif /* _SHARE_GC_SHARED_CYCLE_COUNTING_HPP_ */
