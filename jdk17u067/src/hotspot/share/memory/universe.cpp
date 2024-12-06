@@ -805,6 +805,14 @@ jint Universe::initialize_heap() {
  
   if (EnableTeraHeap && !EnableFlexHeap) {
     _teraHeap = new TeraHeap();
+    #if 0
+    #ifdef TERA_MAJOR_GC
+    //uint total_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();//.active_workers();
+    _teraHeap = new TeraHeap(ParallelGCThreads);
+    #else
+    _teraHeap = new TeraHeap();
+    #endif
+    #endif
     log_info(gc)("Initialize Teraheap");
   }
   

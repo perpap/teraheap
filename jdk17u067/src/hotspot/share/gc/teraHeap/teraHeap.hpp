@@ -18,6 +18,7 @@
 #include <map>
 #include <tr1/tuple>
 #endif
+class ParCompactionManager;
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
@@ -57,13 +58,14 @@ private:
                                     // partition id for tera-marked
                                     // object to promote this id
                                     // to their reference objects
-
-  HeapWord *obj_h1_addr;            // We need to check this
+  HeapWord **obj_h1_addr_array;
+  HeapWord **obj_h2_addr_array; 
+  //HeapWord *obj_h1_addr;          // We need to check this
                                     // object that will be moved
                                     // to H2 if it has back ptrs
                                     // to H1
 
-  HeapWord *obj_h2_addr;            // We need to check this
+  //HeapWord *obj_h2_addr;          // We need to check this
                                     // object that will be moved
                                     // to H2 if it has back ptrs
                                     // to H1
@@ -133,6 +135,8 @@ public:
   TeraHeap(HeapWord* heap_end = nullptr);
   // Destructor
   ~TeraHeap();
+  
+  uint64_t get_total_h2_regions() const{ return total_h2_regions(); }
 
   // Get object start array for h2
   ObjectStartArray *h2_start_array() { return &_start_array; }
@@ -220,7 +224,7 @@ public:
   void print_h2_active_regions(void);
 
   // Groups the region of obj with the previously enabled region
-  void group_region_enabled(HeapWord *obj, void *obj_field);
+  void group_region_enabled(HeapWord *obj, void *obj_field, ParCompactionManager *cm);
 
   // Frees all unused regions
   void free_unused_regions(void);
@@ -229,14 +233,15 @@ public:
   void print_region_groups(void);
 
   // Check if the collector transfers and adjust H2 candidate objects.
-  bool compact_h2_candidate_obj_enabled();
+  bool compact_h2_candidate_obj_enabled(uint gc_thread_id = 0);
 
   // Enables groupping with region of obj
-  void enable_groups(HeapWord *old_addr, HeapWord *new_addr);
+  //void enable_groups(HeapWord *old_addr, HeapWord *new_addr);
+  void enable_groups(HeapWord *old_addr, HeapWord *new_addr, uint gc_thread_id = 0);
 
   // Disables region groupping
-  void disable_groups(void);
-
+  //void disable_groups(void);
+  void disable_groups(uint gc_thread_id = 0);
   //void print_object_name(HeapWord *obj, const char *name);
 
   // Add a new entry to `obj1` region dependency list that reference
@@ -309,7 +314,7 @@ public:
   void h2_complete_transfers();
 
   // Check if the group of regions in H2 is enabled
-  bool is_h2_group_enabled();
+  bool is_h2_group_enabled(uint gc_thread_id = 0);
 
 #ifdef TERA_TIMERS
   // Tera timers maintains timers for the different phases of the

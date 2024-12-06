@@ -1,4 +1,5 @@
 #include "gc/teraHeap/teraHeap.hpp"
+#include "gc/parallel/psCompactionManager.hpp"
 #include "gc/parallel/psVirtualspace.hpp"
 #include "gc/parallel/psVirtualspace.hpp"
 #include "memory/memRegion.hpp"
@@ -33,9 +34,15 @@ TeraHeap::TeraHeap(HeapWord* heap_end) {
   _stop_addr = stop_addr_mem_pool();
 
   cur_obj_group_id = 0;
+  obj_h1_addr_array = NEW_C_HEAP_ARRAY(HeapWord*, ParallelGCThreads, mtGC); 
+  obj_h2_addr_array = NEW_C_HEAP_ARRAY(HeapWord*, ParallelGCThreads, mtGC);
 
-  obj_h1_addr = NULL;
-  obj_h2_addr = NULL;
+  for(uint i = 0; i < ParallelGCThreads; ++i){
+      obj_h1_addr_array[i] = NULL;
+      obj_h2_addr_array[i] = NULL;
+  }
+  //obj_h1_addr = NULL;
+  //obj_h2_addr = NULL;
 
   tera_policy = create_transfer_policy();
 
@@ -67,6 +74,9 @@ TeraHeap::~TeraHeap() {
 
   if (DynamicHeapResizing)
     delete dynamic_resizing_policy;
+
+  FREE_C_HEAP_ARRAY(HeapWord*, obj_h1_addr_array);
+  FREE_C_HEAP_ARRAY(HeapWord*, obj_h2_addr_array);
 }
 // Return H2 unaligned start address
 char* TeraHeap::h2_start_mmap_addr(void) {
@@ -234,31 +244,30 @@ void TeraHeap::h2_print_back_ref_stats() {
 // Add a new entry to `obj1` region dependency list that reference
 // `obj2` region
 void TeraHeap::group_regions(HeapWord *obj1, HeapWord *obj2){
-	if (is_in_the_same_group((char *) obj1, (char *) obj2)) 
-		return;
-	MutexLocker x(tera_heap_group_lock);
+    if (is_in_the_same_group((char *) obj1, (char *) obj2)) 
+        return;
+    MutexLocker x(tera_heap_group_lock);
     references((char*) obj1, (char*) obj2);
 }
 
 // Update backward reference stacks that we use in marking and pointer
 // adjustment phases of major GC.
 void TeraHeap::h2_push_backward_reference(void *p, oop o) {
-	MutexLocker x(tera_heap_lock);
-	_tc_stack.push((oop *)p);
-	_tc_adjust_stack.push((oop *)p);
-	
-	assert(!_tc_stack.is_empty(), "Sanity Check");
-	assert(!_tc_adjust_stack.is_empty(), "Sanity Check");
+    MutexLocker x(tera_heap_lock);
+    _tc_stack.push((oop *)p);
+    _tc_adjust_stack.push((oop *)p);
+    assert(!_tc_stack.is_empty(), "Sanity Check");
+    assert(!_tc_adjust_stack.is_empty(), "Sanity Check");
 }
 
 // Resets the used field of all regions in H2
 void TeraHeap::h2_reset_used_field(void) {
-  reset_used();
+    reset_used();
 }
 
 // Prints all the region groups
 void TeraHeap::print_region_groups(void){
-  print_groups();
+    print_groups();
 }
 
 void TeraHeap::h2_print_objects_per_region() {
@@ -450,24 +459,31 @@ oop* TeraHeap::h2_adjust_next_back_reference() {
 }
 
 // Check if the collector transfers and adjust H2 candidate objects.
-bool TeraHeap::compact_h2_candidate_obj_enabled() {
-  return obj_h1_addr != NULL;
+bool TeraHeap::compact_h2_candidate_obj_enabled(uint gc_thread_id) {
+   #if 0	
+    return obj_h1_addr != NULL;
+    #else
+    return obj_h1_addr_array[gc_thread_id] != NULL;
+    #endif
 }
 
 // Enables groupping with region of obj
-void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr){
+//void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr){
+void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr, uint gc_thread_id){
     enable_region_groups((char*) new_addr);
-
-	obj_h1_addr = old_addr;
-	obj_h2_addr = new_addr;
+    obj_h1_addr_array[gc_thread_id] = old_addr;
+    obj_h2_addr_array[gc_thread_id] = new_addr;
+    //obj_h1_addr = old_addr;
+    //obj_h2_addr = new_addr;
 }
 
 // Disables region groupping
-void TeraHeap::disable_groups(void){
+void TeraHeap::disable_groups(uint gc_thread_id){
     disable_region_groups();
-
-	obj_h1_addr = NULL;
-	obj_h2_addr = NULL;
+    obj_h1_addr_array[gc_thread_id] = NULL;
+    obj_h2_addr_array[gc_thread_id] = NULL;
+    //obj_h1_addr = NULL;
+    //obj_h2_addr = NULL;
 }
 
 #ifdef PR_BUFFER
@@ -567,35 +583,42 @@ char* TeraHeap::h2_add_object(oop obj, size_t size) {
 
 // If obj is in a different H2 region than the region enabled, they
 // are grouped 
-void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field) {
-	// Object is not going to be moved to TeraHeap
-	if (obj_h2_addr == NULL) 
-		return;
+void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, ParCompactionManager *cm) {
+    // Object is not going to be moved to TeraHeap
+    if (obj_h2_addr_array[cm->gc_thread_id()] == NULL) 
+    //if (obj_h2_addr == NULL) 
+        return;
 
-	if (is_obj_in_h2(cast_to_oop(obj))) {
-		check_for_group((char*) obj);
-		return;
-	}
+    if (is_obj_in_h2(cast_to_oop(obj))) {
+        //check_for_group((char*) obj);
+	group_regions(obj_h2_addr_array[cm->gc_thread_id()], obj);
+	return;
+    }
 
-  // If it is an already backward pointer popped from tc_adjust_stack
-  // then do not mark the card as dirty because it is already marked
-  // from minor gc.
-	if (obj_h1_addr == NULL) 
-		return;
+    // If it is an already backward pointer popped from tc_adjust_stack
+    // then do not mark the card as dirty because it is already marked
+    // from minor gc.
+    if (obj_h1_addr_array[cm->gc_thread_id()] == NULL) 
+    //if (obj_h1_addr == NULL) 
+        return;
 	
-  // Mark the H2 card table as dirty if obj is in H1 (backward
-  // reference)
-	BarrierSet* bs = BarrierSet::barrier_set();
-  CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-  CardTable* ct = ctbs->card_table();
+    // Mark the H2 card table as dirty if obj is in H1 (backward
+    // reference)
+    BarrierSet* bs = BarrierSet::barrier_set();
+    CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
+    CardTable* ct = ctbs->card_table();
+    #if 0
+    size_t diff =  (HeapWord *)obj_field - obj_h1_addr;
+    assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(obj_h1_addr)->size()),"Diff out of range: %lu", diff);
+    HeapWord *h2_obj_field = obj_h2_addr + diff;
+    #else
+    size_t diff =  (HeapWord *)obj_field - obj_h1_addr_array[cm->gc_thread_id()];
+    assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(obj_h1_addr_array[cm->gc_thread_id()])->size()),"Diff out of range: %lu", diff);
+    HeapWord *h2_obj_field = obj_h2_addr_array[cm->gc_thread_id()] + diff;
+    #endif
+    assert(is_field_in_h2((void *) h2_obj_field), "Shoud be in H2");
 
-  size_t diff =  (HeapWord *)obj_field - obj_h1_addr;
-  assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(obj_h1_addr)->size()),
-         "Diff out of range: %lu", diff);
-  HeapWord *h2_obj_field = obj_h2_addr + diff;
-  assert(is_field_in_h2((void *) h2_obj_field), "Shoud be in H2");
-
-  ct->th_write_ref_field(h2_obj_field);
+    ct->th_write_ref_field(h2_obj_field);
 }
   
 // Check if the object `obj` is an instance of the following
@@ -665,8 +688,12 @@ void TeraHeap::h2_complete_transfers() {
 }
   
 // Check if the group of regions in H2 is enabled
-bool TeraHeap::is_h2_group_enabled() {
-  return (obj_h1_addr != NULL  || obj_h2_addr != NULL);
+bool TeraHeap::is_h2_group_enabled(uint gc_thread_id) {
+    #if 0	
+        return (obj_h1_addr != NULL  || obj_h2_addr != NULL);
+    #else
+        return (obj_h1_addr_array[gc_thread_id] != NULL  || obj_h2_addr_array[gc_thread_id] != NULL);
+    #endif 
 }
 
 #ifdef TERA_TIMERS

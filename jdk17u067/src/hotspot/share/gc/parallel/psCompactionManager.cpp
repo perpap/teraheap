@@ -51,7 +51,7 @@ ParMarkBitMap*       ParCompactionManager::_mark_bitmap = NULL;
 GrowableArray<size_t >* ParCompactionManager::_shadow_region_array = NULL;
 Monitor*                ParCompactionManager::_shadow_region_monitor = NULL;
 
-ParCompactionManager::ParCompactionManager() {
+ParCompactionManager::ParCompactionManager(uint gc_thread_id) {
 
   ParallelScavengeHeap* heap = ParallelScavengeHeap::heap();
 
@@ -66,6 +66,7 @@ ParCompactionManager::ParCompactionManager() {
 
 #ifdef TERA_MAJOR_GC
   _fwd_ptrs_h1_h2 = 0;
+  _gc_thread_id = gc_thread_id;
 #endif // TERA_MAJOR_GC
 }
 
@@ -86,7 +87,7 @@ void ParCompactionManager::initialize(ParMarkBitMap* mbm) {
 
   // Create and register the ParCompactionManager(s) for the worker threads.
   for(uint i=0; i<parallel_gc_threads; i++) {
-    _manager_array[i] = new ParCompactionManager();
+    _manager_array[i] = new ParCompactionManager(i);//FIXME perpap
     oop_task_queues()->register_queue(i, _manager_array[i]->marking_stack());
     _objarray_task_queues->register_queue(i, &_manager_array[i]->_objarray_stack);
     region_task_queues()->register_queue(i, _manager_array[i]->region_stack());
@@ -94,7 +95,7 @@ void ParCompactionManager::initialize(ParMarkBitMap* mbm) {
 
   // The VMThread gets its own ParCompactionManager, which is not available
   // for work stealing.
-  _manager_array[parallel_gc_threads] = new ParCompactionManager();
+  _manager_array[parallel_gc_threads] = new ParCompactionManager(parallel_gc_threads);
   assert(ParallelScavengeHeap::heap()->workers().total_workers() != 0,
     "Not initialized?");
 

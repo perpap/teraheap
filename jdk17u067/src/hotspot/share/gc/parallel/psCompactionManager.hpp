@@ -74,6 +74,7 @@ class ParCompactionManager : public CHeapObj<mtGC> {
   uint64_t                      _h2_group_id = 0;
   uint64_t                      _h2_part_id = 0;
   size_t                        _h2_candidate_obj_size = 0;
+  uint                          _gc_thread_id;//FIXME perpap                         
   // Locate the objects that pop from stack and start scanning its
   // references. If this object has no reference fields then we
   // increase the statistics.
@@ -198,7 +199,7 @@ class ParCompactionManager : public CHeapObj<mtGC> {
 
   static ParCompactionManager* get_vmthread_cm() { return _manager_array[ParallelGCThreads]; }
 
-  ParCompactionManager();
+  ParCompactionManager(uint gc_thread_id = 0);
 
   // Pushes onto the region stack at the given index.  If the
   // region stack is full,
@@ -224,7 +225,9 @@ class ParCompactionManager : public CHeapObj<mtGC> {
   inline void follow_klass(Klass* klass);
 
   void follow_class_loader(ClassLoaderData* klass);
-
+#ifdef TERA_MAJOR_GC
+  uint gc_thread_id() const { return _gc_thread_id; }
+#endif
   // Access function for compaction managers
   static ParCompactionManager* gc_thread_compaction_manager(uint index);
 

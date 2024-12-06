@@ -48,7 +48,7 @@ class RefProcTaskExecutor;
 class ParallelOldTracer;
 class STWGCTimer;
 class ParallelPreCompactH2Task;//perpap
-
+class ParallelCompactH2Task;//perpap
 // The SplitInfo class holds the information needed to 'split' a source region
 // so that the live data can be copied to two destination *spaces*.  Normally,
 // all the live data in a region is copied to a single destination space (e.g.,
@@ -211,7 +211,7 @@ class ParallelCompactData
 {
 public:
   friend class ParallelPreCompactH2Task;//perpap
-
+  friend class ParallelCompactH2Task;//perpap
   // Sizes are in HeapWords, unless indicated otherwise.
   static const size_t Log2RegionSize;
   static const size_t RegionSize;
@@ -1050,6 +1050,7 @@ class PSParallelCompact : AllStatic {
   friend class RefProcTaskProxy;
   friend class PSParallelCompactTest;
   friend class ParallelPreCompactH2Task;//perpap
+  friend class ParallelCompactH2Task;//perpap
  private:
   static STWGCTimer           _gc_timer;
   static STWGCTimer           _gc_compact_phase_timer;

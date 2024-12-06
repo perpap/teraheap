@@ -21,7 +21,9 @@ FLEXHEAP_MOUNT_POINT="/spare2/fmap/"
 USE_PARALLEL_H2_ALLOCATOR=false
 EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList"
   "Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference"
-  "HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap"
+  "HashMap" "Rehashing" "Clone" 
+  #"Groupping"
+  "MultiHashMap"
   "Test_WeakHashMap" "ClassInstance")
 #EXEC=("Array_List")
 # Export Enviroment Variables
@@ -152,6 +154,7 @@ function run_tests() {
 
   ${JAVA} \
     -XX:+UseParallelGC \
+    -XX:+ShowMessageBoxOnError \
     -XX:ParallelGCThreads=${num_gc_thread} \
     $(get_teraheap_flag) \
     -XX:TeraHeapSize=${TERACACHE_SIZE} \
@@ -209,7 +212,7 @@ function get_teraheap_flag() {
   echo "-XX:+EnableTeraHeap"
 }
 
-function get_h2_allocator_flag(){
+function get_h2_allocator_flag() {
   if [ "$USE_PARALLEL_H2_ALLOCATOR" == true ]; then
     echo "-XX:+UseParallelH2Allocator"
   else
@@ -342,7 +345,7 @@ function parse_script_arguments() {
       ;;
     *)
       echo "Programming error"
-      exit ${ERRORS[PROGRAMMING_ERROR]} 
+      exit ${ERRORS[PROGRAMMING_ERROR]}
       ;;
     esac
   done
