@@ -64,6 +64,15 @@ void init_regions(){
     region_array[i].pr_buffer->size           = 0;
     region_array[i].pr_buffer->alloc_ptr      = NULL;
     region_array[i].pr_buffer->first_obj_addr = NULL;
+#if 1//perpap
+    if(mtx_init(&region_array[i].mutex, mtx_plain) == thrd_error){
+        #if DEBUG_PRINT
+    	fprintf(allocator_log_fp, "[%s|%s|%d]Mutex initialization failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+        #endif
+	exit(EXIT_FAILURE);
+    }	     
+#endif
+//assertf(mtx_init(&region_array[i].mutex, mtx_plain) == thrd_error, "Mutex initialization failed! error:%d",thrd_error);
 #endif
   }
   for (i = 0; i < rdd_id_size; i++) {
@@ -666,6 +675,15 @@ void flush_buffer(uint64_t seg) {
  */
 void buffer_insert(char* obj, char* new_adr, size_t size) {
 	uint64_t seg = (new_adr - region_array[0].start_address) / (uint64_t)REGION_SIZE;
+#if 1//perpap 
+	if(mtx_lock(&region_array[seg].mutex) == thrd_error){
+            #if DEBUG_PRINT
+	    fprintf(allocator_log_fp, "[%s|%s|%d]Mutex lock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+            #endif
+	    exit(EXIT_FAILURE);
+	} 
+	//assertf(mtx_lock(&region_array[seg].mutex) == thrd_error, "Mutex lock failed! error:%d", thrd_error);	
+#endif
 	struct pr_buffer *buf = region_array[seg].pr_buffer;
 
 	char*  start_adr  = buf->first_obj_addr;
@@ -676,6 +694,15 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 
 	if ((size * HeapWordSize) > THRESHOLD) {
 		r_awrite(obj, new_adr, size);
+#if 1//perpap
+                //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);
+		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
+                    #if DEBUG_PRINT
+	            fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+                    #endif
+	            exit(EXIT_FAILURE);
+	        }
+#endif
 		return;
 	}
 
@@ -694,6 +721,15 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 		buf->first_obj_addr = new_adr;
 		buf->alloc_ptr += size * HeapWordSize;
 		buf->size = size * HeapWordSize;
+#if 1//perpap
+                //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);
+		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
+                    #if DEBUG_PRINT
+	            fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+                    #endif
+	            exit(EXIT_FAILURE);
+	        }
+#endif
 		return;
 	}
 	
@@ -712,7 +748,15 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 		buf->first_obj_addr = new_adr;
 		buf->alloc_ptr += size * HeapWordSize;
 		buf->size = size * HeapWordSize;
-
+#if 1//perpap
+                //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);//perpap
+		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
+                    #if DEBUG_PRINT
+	            fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+                    #endif
+	            exit(EXIT_FAILURE);
+	        }
+#endif
 		return;
 	}
 	
@@ -720,6 +764,15 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 
 	buf->alloc_ptr += size * HeapWordSize;
 	buf->size += size * HeapWordSize;
+#if 1//perpap
+        //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);	
+	if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
+            #if DEBUG_PRINT
+	    fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+            #endif
+	    exit(EXIT_FAILURE);
+	}
+#endif
 }
 
 /*

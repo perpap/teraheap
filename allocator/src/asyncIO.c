@@ -5,12 +5,23 @@
 #include <aio.h>
 #include <unistd.h>
 #include "../include/asyncIO.h"
+#include <threads.h>//perpap
 
+mtx_t device_lock;//perpap
 struct ioRequest request[MAX_REQS];
 
 // Initialize the array of I/O requests for the asynchronous I/O
 void req_init() {
-	int i;
+#if 1//perpap 
+	 if(mtx_init(&device_lock, mtx_plain) == thrd_error){
+             #if DEBUG_PRINT
+	     fprintf(allocator_log_fp, "[%s|%s|%d]Device mutex lock initialization failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+             #endif
+             exit(EXIT_FAILURE);
+	 }	    
+        //assertf(mtx_init(&device_lock, mtx_plain) == thrd_error, "Device mutex lock initialization failed! error:%d",thrd_error);
+#endif
+        int i;
 	
 	for (i = 0; i < MAX_REQS; i++) {
 		request[i].state = 0;
@@ -77,12 +88,20 @@ static int find_slot() {
 //	
 void req_add(int fd, char *data, size_t size, uint64_t offset) {
 	int slot;					// Find available slot for the request
-
+#if 1//perpap 
+        if(mtx_lock(&device_lock) == thrd_error){
+	    #if DEBUG_PRINT
+	    fprintf(allocator_log_fp, "[%s|%s|%d]Device mutex lock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+	    #endif
+	    exit(EXIT_FAILURE);
+        }	     
+	//assertf(mtx_lock(&device_lock) == thrd_error, "Device mutex lock failed! error:%d", thrd_error);	
+#endif
 	slot = find_slot();
 
 	// Wait here until find an available slot for the request
 	while (slot == -1) {
-		slot = find_slot();
+	    slot = find_slot();
 	}
 
 	// Create and initialize the aiocb structure.
@@ -114,6 +133,15 @@ void req_add(int fd, char *data, size_t size, uint64_t offset) {
 	assertf(check == 0, "Write failed");
 #else
 	aio_write(&request[slot].aiocbp);
+#endif
+#if 1//perpap
+	if(mtx_unlock(&device_lock) == thrd_error){
+	    #if DEBUG_PRINT
+	    fprintf(allocator_log_fp, "[%s|%s|%d]Device mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
+	    #endif
+	    exit(EXIT_FAILURE);
+        } 
+	//assertf(mtx_unlock(&device_lock) == thrd_error, "Device mutex lock failed! error:%d", thrd_error);	
 #endif
 }
 

@@ -44,6 +44,10 @@ static void calculate_h2_region_array_size(){
           "calculated to be smaller than MAX_PARTITIONS!");
 }
 
+uint64_t total_h2_regions(){
+    return region_array_size; 
+}
+
 // Function to check if the address is already mapped
 int is_address_mapped(pid_t pid, uintptr_t target_addr) {
     char maps_file[256];

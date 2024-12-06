@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
+#include <threads.h>
 #define PR_BUFFER 1						
 #define PR_BUFFER_SIZE (2*1024LU*1024) /* Promotion buffer size */
 #define HeapWordSize 8				   /* Java heap allignment */
@@ -53,6 +53,7 @@ struct region{
     int8_t used;
     uint32_t rdd_id;
     uint32_t part_id;
+    mtx_t mutex;//perpap
 };
 
 /*

@@ -10,7 +10,7 @@
 extern char dev[150];
 extern uint64_t dev_size;
 
-//#define ASSERT
+//define ASSERT
 
 #ifdef ASSERT
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))

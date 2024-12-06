@@ -4,11 +4,9 @@
 #include <aio.h>
 #include <stdint.h>
 #include "../include/sharedDefines.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 	// Application-defined structure for tracking I/O requests
 	struct ioRequest {    
 		int            state;	// Status of request
