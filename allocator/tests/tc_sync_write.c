@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	char *tmp, *tmp2, *tmp3, *tmp4;
 	
 	initialize_h1(H1_ALIGNMENT, NULL, h1_size * GB, 0);
-  initialize_h2(H2_ALIGNMENT, argv[1], h2_size * GB, (void *)(h1.start_address + h1_size * GB));
+  initialize_h2(16, H2_ALIGNMENT, argv[1], h2_size * GB, (void *)(h1.start_address + h1_size * GB));
   print_heap_statistics();
 	
   tmp = malloc(SIZE_80B * sizeof(char));

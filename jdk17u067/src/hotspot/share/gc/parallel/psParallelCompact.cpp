@@ -147,6 +147,7 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 		      fprintf(stderr, "[ParallelCompactH2Task::%s|LINE:%d][task_name:%s] worker_id:%u total_regions:%zu no assigned regions\n", __func__, __LINE__,name(), worker_id, total_regions);
 		  }else{
 		      fprintf(stderr, "[ParallelCompactH2Task::%s|LINE:%d][task_name:%s] worker_id:%u total_regions:%zu regions:[%zu-%zu]\n", __func__, __LINE__,name(), worker_id, total_regions, regions.first, regions.second);	   
+                      		      
 		      for (size_t cur_region_index = regions.first; cur_region_index < regions.second; ++cur_region_index) {
 			  process_region(worker_id, cur_region_index);
 		      }
@@ -180,11 +181,23 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 				Universe::teraHeap()->enable_groups(h1_addr, h2_addr, worker_id);
 				//{
                                 //MutexLocker x(h2_allocator_lock);
+                                #ifdef TERA_TIMERS
+		                Universe::teraHeap()->getTeraTimer()->h2_compact_group_region_lock_start(worker_id);
+                                #endif //TERA_TIMERS
 				cm->update_contents(obj);
+                                #ifdef TERA_TIMERS
+		                Universe::teraHeap()->getTeraTimer()->h2_compact_group_region_lock_end(worker_id);
+                                #endif //TERA_TIMERS
 				//}
 				Universe::teraHeap()->disable_groups(worker_id);
+                                #ifdef TERA_TIMERS
+		                Universe::teraHeap()->getTeraTimer()->h2_compact_region_lock_start(worker_id);
+                                #endif //TERA_TIMERS
 				// Move objects to H2
-				Universe::teraHeap()->h2_move_obj(h1_addr, h2_addr, size);
+				Universe::teraHeap()->h2_move_obj(h1_addr, h2_addr, size, worker_id);
+                                #ifdef TERA_TIMERS
+		                Universe::teraHeap()->getTeraTimer()->h2_compact_region_lock_end(worker_id);
+                                #endif //TERA_TIMERS
 			  //}  
 			  if (tmp_end >= range_end)
 				  break;
@@ -1908,7 +1921,7 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
     //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
-#ifdef TERA_PARALLEL_H2_SUMMARY_PHASE
+/*#ifdef TERA_PARALLEL_H2_SUMMARY_PHASE
     if(UseParallelH2Allocator){
       //tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
       fprintf(stderr, "[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
@@ -1922,7 +1935,8 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
     }
 #else
     _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
-#endif 
+#endif */
+    _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
   }
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_end();//FIXME TeraTimers
@@ -2996,6 +3010,9 @@ void PSParallelCompact::compact_h2_candidate_objects() {
       //tty->print("[compact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
       fprintf(stderr, "[compact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
       ParallelScavengeHeap::heap()->workers().run_task(&task);
+      #ifdef TERA_TIMERS
+      Universe::teraHeap()->getTeraTimer()->print_h2_compact_lock_time();
+      #endif //TERA_TIMERS
     }else{
       _summary_data.compact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, cm);
     }

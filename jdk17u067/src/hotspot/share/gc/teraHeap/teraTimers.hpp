@@ -126,6 +126,13 @@ private:
   
   struct timespec h2_compact_start_time;
   struct timespec h2_compact_end_time;
+ 
+  struct timespec *h2_compact_group_region_lock_start_time;
+  struct timespec *h2_compact_group_region_lock_end_time;
+  double *h2_compact_group_region_lock_total_time;
+  struct timespec *h2_compact_region_lock_start_time;
+  struct timespec *h2_compact_region_lock_end_time;
+  double *h2_compact_region_lock_total_time;
   
   struct timespec h2_adjust_bwd_ref_start_time;
   struct timespec h2_adjust_bwd_ref_end_time;
@@ -175,6 +182,15 @@ public:
 
   void h2_compact_start();
   void h2_compact_end();
+
+  void h2_compact_group_region_lock_start(unsigned int worker_id);
+  void h2_compact_group_region_lock_end(unsigned int worker_id);
+  //void h2_compact_group_region_lock_add_total(unsigned int worker_id);
+  void h2_compact_region_lock_start(unsigned int worker_id);
+  void h2_compact_region_lock_end(unsigned int worker_id);
+  //void h2_compact_region_lock_add_total(unsigned int worker_id);
+
+  void print_h2_compact_lock_time();
 
   void h2_adjust_bwd_ref_start();
   void h2_adjust_bwd_ref_end();

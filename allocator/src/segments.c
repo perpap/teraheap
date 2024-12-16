@@ -17,17 +17,22 @@ struct offset *offset_list;
 int32_t		 region_enabled;
 int32_t		 _next_region;
 
+uint32_t _GC_THREADS;//perpap
+
 #if STATISTICS
 uint32_t    total_deps = 0;
 double		  alloc_elapsedtime = 0.0;
 double		  free_elapsedtime = 0.0;
 #endif
 
+static void (*write_functions[])(char *data, char *offset, size_t size) = { r_write, r_awrite };
+
 /*
  * Initialize region array, group array and their fields
  */
-void init_regions(){
+void init_regions(uint32_t gc_threads){
   int32_t i;
+  _GC_THREADS = gc_threads;
 
   region_enabled = -1;
   offset_list = NULL;
@@ -59,12 +64,37 @@ void init_regions(){
     region_array[i].rdd_id                    = rdd_id_size;
     region_array[i].part_id                   = rdd_id_size;
 #if PR_BUFFER
-    region_array[i].pr_buffer                 = malloc(sizeof(struct pr_buffer));
+    //region_array[i].pr_buffer                 = malloc(sizeof(struct pr_buffer));
+    /*if (!pr_buffers) {
+        perror("[Error] - Failed to allocate memory for pr_buffers array\n");
+        exit(EXIT_FAILURE);
+    }*/
+    region_array[i].pr_buffers                 = malloc(sizeof(struct pr_buffer *));
+    if (!region_array[i].pr_buffers) {
+        fprintf(stderr, "[Error] - Failed to allocate contiguous pr_buffer block for region %d\n", i);
+        //free(region_array[i].pr_buffers);
+        exit(EXIT_FAILURE);
+    }
+#if 1//perpap
+    for(uint32_t tid = 0; tid < gc_threads; ++tid){
+	region_array[i].pr_buffers[tid]        = malloc(sizeof(struct pr_buffer));
+	if(!region_array[i].pr_buffers[tid]){
+	    fprintf(stderr, "pr_buffer is NULL for the region:%d handled by gc_thread:%u!\n", i, tid);
+	    exit(EXIT_FAILURE);
+	}
+	region_array[i].pr_buffers[tid]->buffer         = NULL;
+	region_array[i].pr_buffers[tid]->size           = 0;
+	region_array[i].pr_buffers[tid]->alloc_ptr      = NULL;
+	region_array[i].pr_buffers[tid]->first_obj_addr = NULL;
+    }
+#endif
+#if 0
     region_array[i].pr_buffer->buffer         = NULL;
     region_array[i].pr_buffer->size           = 0;
     region_array[i].pr_buffer->alloc_ptr      = NULL;
     region_array[i].pr_buffer->first_obj_addr = NULL;
-#if 1//perpap
+#endif
+#if 0//perpap
     if(mtx_init(&region_array[i].mutex, mtx_plain) == thrd_error){
         #if DEBUG_PRINT
     	fprintf(allocator_log_fp, "[%s|%s|%d]Mutex initialization failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
@@ -73,7 +103,7 @@ void init_regions(){
     }	     
 #endif
 //assertf(mtx_init(&region_array[i].mutex, mtx_plain) == thrd_error, "Mutex initialization failed! error:%d",thrd_error);
-#endif
+#endif //#if PR_BUFFER
   }
   for (i = 0; i < rdd_id_size; i++) {
     id_array[i]                               = NULL;
@@ -648,34 +678,50 @@ long total_used_regions() {
  * seg: Index of the region in region array
  *
  */
-void flush_buffer(uint64_t seg) {
-	struct pr_buffer *buf = region_array[seg].pr_buffer;
+void flush_buffer(uint64_t seg, uint32_t gc_thread_id, uint8_t io_flag/*0: sync_write, 1: async_write*/) {
+    #if 1//perpap
+    struct pr_buffer *buf = region_array[seg].pr_buffers[gc_thread_id];
 
-	if (buf->size == 0)
-		return;
+    if (buf->size == 0){
+	return;
+    }
 
-	assertf(buf->size <= PR_BUFFER_SIZE, "Sanity check");
+    assertf(buf->size <= PR_BUFFER_SIZE, "Sanity check");
 
-	// Write the buffer to TeraCache
-	r_awrite(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize);
-
-	buf->alloc_ptr = buf->buffer;
-	buf->first_obj_addr = NULL;
-	buf->size = 0;
+    // Write the buffer to TeraCache
+    //r_awrite(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize);
+    //r_write(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize);
+    write_functions[io_flag](buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize); 
+    buf->alloc_ptr = buf->buffer;
+    buf->first_obj_addr = NULL;
+    buf->size = 0;
+    #endif
+    #if 0
+    struct pr_buffer *buf = region_array[seg].pr_buffer;
+    if (buf->size == 0){
+	return;
+    }
+    assertf(buf->size <= PR_BUFFER_SIZE, "Sanity check");
+    // Write the buffer to TeraCache
+    r_awrite(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize);
+    buf->alloc_ptr = buf->buffer;
+    buf->first_obj_addr = NULL;
+    buf->size = 0;
+    #endif
 }
 
 /*
  * Add an obect to the promotion buffer. We use promotion buffer to avoid write
  * system calls for small sized objects.
  *
- * obj: Object that will be writter in the promotion buffer
+ * obj: Object that will be written in the promotion buffer
  * new_adr: Is used to know where the first object in the promotion buffer will
  *			be move to H2
  * size: Size of the object
  */
-void buffer_insert(char* obj, char* new_adr, size_t size) {
-	uint64_t seg = (new_adr - region_array[0].start_address) / (uint64_t)REGION_SIZE;
-#if 1//perpap 
+void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id, uint8_t io_flag) {
+    uint64_t seg = (new_adr - region_array[0].start_address) / (uint64_t)REGION_SIZE;
+#if 0//perpap 
 	if(mtx_lock(&region_array[seg].mutex) == thrd_error){
             #if DEBUG_PRINT
 	    fprintf(allocator_log_fp, "[%s|%s|%d]Mutex lock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
@@ -684,17 +730,20 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 	} 
 	//assertf(mtx_lock(&region_array[seg].mutex) == thrd_error, "Mutex lock failed! error:%d", thrd_error);	
 #endif
-	struct pr_buffer *buf = region_array[seg].pr_buffer;
+    struct pr_buffer *buf = region_array[seg].pr_buffers[gc_thread_id];
+    //struct pr_buffer *buf = region_array[seg].pr_buffer;
 
-	char*  start_adr  = buf->first_obj_addr;
-	size_t cur_size   = buf->size;
-	size_t free_space = PR_BUFFER_SIZE - cur_size;
+    char*  start_adr  = buf->first_obj_addr;
+    size_t cur_size   = buf->size;
+    size_t free_space = PR_BUFFER_SIZE - cur_size;
 
-	assertf(THRESHOLD < PR_BUFFER_SIZE, "Threshold should be less that promotion buffer size");
+    assertf(THRESHOLD < PR_BUFFER_SIZE, "Threshold should be less that promotion buffer size");
 
-	if ((size * HeapWordSize) > THRESHOLD) {
-		r_awrite(obj, new_adr, size);
-#if 1//perpap
+    if ((size * HeapWordSize) > THRESHOLD) {
+	//r_awrite(obj, new_adr, size);
+        //r_write(obj, new_adr, size);//perpap
+        write_functions[io_flag](obj, new_adr, size);
+#if 0//perpap
                 //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);
 		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
                     #if DEBUG_PRINT
@@ -703,25 +752,23 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 	            exit(EXIT_FAILURE);
 	        }
 #endif
-		return;
-	}
+	return;
+    }
 
-	/* Allocate a buffer for the region and set buffer allocation ptr */
-	if (buf->buffer == NULL) {
-		buf->buffer = malloc(PR_BUFFER_SIZE * sizeof(char));
-		buf->alloc_ptr = buf->buffer;
-	}
+    /* Allocate a buffer for the region and set buffer allocation ptr */
+    if (buf->buffer == NULL) {
+	buf->buffer = malloc(PR_BUFFER_SIZE * sizeof(char));
+	buf->alloc_ptr = buf->buffer;
+    }
 
-	/* Case1: Buffer is empty */
-	if (cur_size == 0) {
-		assertf(start_adr == NULL, "Sanity check");
-
-		memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
-
-		buf->first_obj_addr = new_adr;
-		buf->alloc_ptr += size * HeapWordSize;
-		buf->size = size * HeapWordSize;
-#if 1//perpap
+    /* Case1: Buffer is empty */
+    if (cur_size == 0) {
+        assertf(start_adr == NULL, "Sanity check");
+	memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
+	buf->first_obj_addr = new_adr;
+	buf->alloc_ptr += size * HeapWordSize;
+	buf->size = size * HeapWordSize;
+#if 0//perpap
                 //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);
 		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
                     #if DEBUG_PRINT
@@ -730,25 +777,23 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 	            exit(EXIT_FAILURE);
 	        }
 #endif
-		return;
-	}
+	return;
+    }
 	
-	/* 
-	 * Case2: Object size is grater than the available free space in buffer
-	 * Case3: Object's new address is not contignious with the other objects - 
-	 * object belongs to next addresses in the region
-	 * In both cases we flush the buffer and allocate the object in a new
-	 * buffer.
-	 */
-	if (((size * HeapWordSize) > free_space) || ((start_adr + cur_size) != new_adr)) {
-		flush_buffer(seg);
-		
-		memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
-
-		buf->first_obj_addr = new_adr;
-		buf->alloc_ptr += size * HeapWordSize;
-		buf->size = size * HeapWordSize;
-#if 1//perpap
+    /* 
+     * Case2: Object size is grater than the available free space in buffer
+     * Case3: Object's new address is not contignious with the other objects - 
+     * object belongs to next addresses in the region
+     * In both cases we flush the buffer and allocate the object in a new
+     * buffer.
+     */
+    if (((size * HeapWordSize) > free_space) || ((start_adr + cur_size) != new_adr)) {
+	flush_buffer(seg, gc_thread_id, io_flag);
+	memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
+	buf->first_obj_addr = new_adr;
+	buf->alloc_ptr += size * HeapWordSize;
+	buf->size = size * HeapWordSize;
+#if 0//perpap
                 //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);//perpap
 		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
                     #if DEBUG_PRINT
@@ -757,14 +802,13 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 	            exit(EXIT_FAILURE);
 	        }
 #endif
-		return;
-	}
+	return;
+    }
 	
-	memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
-
-	buf->alloc_ptr += size * HeapWordSize;
-	buf->size += size * HeapWordSize;
-#if 1//perpap
+    memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
+    buf->alloc_ptr += size * HeapWordSize;
+    buf->size += size * HeapWordSize;
+#if 0//perpap
         //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);	
 	if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
             #if DEBUG_PRINT
@@ -779,28 +823,56 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
  * Flush all active buffers and free each buffer memory. We need to free their
  * memory to limit waste space.
  */
-void free_all_buffers() {
-	//uint64_t i;
-	struct pr_buffer *buf;
+void free_all_buffers(uint8_t io_flag/*0: sync_write, 1: async_write*/) {
+#if 1//perpap
+    struct pr_buffer **buf;
 
-  for (uint64_t i = 0; i < region_array_size; i++) {
-    buf = region_array[i].pr_buffer;
-    #ifdef ASSERT
-    assertf(buf != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
-    #endif
-    /* Buffer is not empty, so flush it*/
-    if (buf->size != 0)
-      flush_buffer(i);
+    for (uint64_t i = 0; i < region_array_size; i++) {
+        buf = region_array[i].pr_buffers;
+	for(uint32_t tid; tid < _GC_THREADS; ++tid){
+            #ifdef ASSERT
+            assertf(buf[tid] != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
+            #endif
+            /* Buffer is not empty, so flush it*/
+            if (buf[tid]->size != 0)
+               flush_buffer(i, tid, io_flag);
 
-    /* If the buffer is already flushed, just free bufffer's memory */
-    if (buf->buffer != NULL) {
-      free(buf->buffer);
-      buf->buffer = NULL;
-      buf->alloc_ptr = NULL;
-      buf->first_obj_addr = NULL;
-      buf->size = 0;
+            /* If the buffer is already flushed, just free bufffer's memory */
+            if (buf[tid]->buffer != NULL) {
+               free(buf[tid]->buffer);
+               buf[tid]->buffer = NULL;
+               buf[tid]->alloc_ptr = NULL;
+               buf[tid]->first_obj_addr = NULL;
+               buf[tid]->size = 0;
+            }
+	}
+	free(buf);
+	buf = NULL;
     }
-  }
+#endif
+#if 0
+    //uint64_t i;
+    struct pr_buffer *buf;
+
+    for (uint64_t i = 0; i < region_array_size; i++) {
+        buf = region_array[i].pr_buffer;
+        #ifdef ASSERT
+        assertf(buf != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
+        #endif
+        /* Buffer is not empty, so flush it*/
+        if (buf->size != 0)
+           flush_buffer(i);
+
+        /* If the buffer is already flushed, just free bufffer's memory */
+        if (buf->buffer != NULL) {
+            free(buf->buffer);
+            buf->buffer = NULL;
+            buf->alloc_ptr = NULL;
+            buf->first_obj_addr = NULL;
+            buf->size = 0;
+        }
+    }
+#endif
 }
 
 bool object_starts_from_region(char *obj) {

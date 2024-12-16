@@ -25,6 +25,15 @@ TeraTimers::TeraTimers(){
 	h2_card_table_start_time = NEW_C_HEAP_ARRAY(/*uint64_t*/struct timespec, ParallelGCThreads, mtGC);
 	h2_card_table_end_time = NEW_C_HEAP_ARRAY(/*uint64_t*/struct timespec, ParallelGCThreads, mtGC);
 
+	h2_compact_group_region_lock_start_time = NEW_C_HEAP_ARRAY(struct timespec, ParallelGCThreads, mtGC);
+	h2_compact_group_region_lock_end_time = NEW_C_HEAP_ARRAY(struct timespec, ParallelGCThreads, mtGC);
+	h2_compact_group_region_lock_total_time = NEW_C_HEAP_ARRAY(double, ParallelGCThreads, mtGC);
+	h2_compact_region_lock_start_time = NEW_C_HEAP_ARRAY(struct timespec, ParallelGCThreads, mtGC);
+	h2_compact_region_lock_end_time = NEW_C_HEAP_ARRAY(struct timespec, ParallelGCThreads, mtGC);
+        h2_compact_region_lock_total_time = NEW_C_HEAP_ARRAY(double, ParallelGCThreads, mtGC);
+        memset(h2_compact_group_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
+        memset(h2_compact_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
+
 	malloc_time_per_gc = 0;
 };
 
@@ -33,6 +42,13 @@ TeraTimers::~TeraTimers() {
 	FREE_C_HEAP_ARRAY(/*uint64_t*/struct timespec, h1_card_table_end_time);
 	FREE_C_HEAP_ARRAY(/*uint64_t*/struct timespec, h2_card_table_start_time);
 	FREE_C_HEAP_ARRAY(/*uint64_t*/struct timespec, h2_card_table_end_time);
+
+        FREE_C_HEAP_ARRAY(struct timespec, h2_compact_group_region_lock_start_time);
+	FREE_C_HEAP_ARRAY(struct timespec, h2_compact_group_region_lock_end_time);
+	FREE_C_HEAP_ARRAY(double, h2_compact_group_region_lock_total_time);
+	FREE_C_HEAP_ARRAY(struct timespec, h2_compact_region_lock_start_time);
+	FREE_C_HEAP_ARRAY(struct timespec, h2_compact_region_lock_end_time);
+        FREE_C_HEAP_ARRAY(double, h2_compact_region_lock_total_time);
 }
 
 void TeraTimers::h2_scavenge_start() {
@@ -112,6 +128,62 @@ void TeraTimers::h2_compact_end() {
 	clock_gettime(CLOCK_MONOTONIC_RAW, &h2_compact_end_time);
 	print_ellapsed_time(h2_compact_start_time, h2_compact_end_time, msg);
 }
+
+void TeraTimers::h2_compact_group_region_lock_start(unsigned int worker_id) {
+	//h2_compact_start_time = get_cycles();
+        clock_gettime(CLOCK_MONOTONIC_RAW, &h2_compact_group_region_lock_start_time[worker_id]);
+}
+
+void TeraTimers::h2_compact_group_region_lock_end(unsigned int worker_id) {
+	//char msg[] = "H2_COMPACT_GROUP_REGION_LOCK_PHASE";
+
+	//h2_compact_end_time = get_cycles();
+	clock_gettime(CLOCK_MONOTONIC_RAW, &h2_compact_group_region_lock_end_time[worker_id]);
+	//print_ellapsed_time(h2_compact_group_region_lock_start_time, h2_compact_group_region_lock_end_time, msg);
+	h2_compact_group_region_lock_total_time[worker_id] += (double)((h2_compact_group_region_lock_end_time[worker_id].tv_sec - h2_compact_group_region_lock_start_time[worker_id].tv_sec) * 1000000000L + (h2_compact_group_region_lock_end_time[worker_id].tv_nsec - h2_compact_group_region_lock_start_time[worker_id].tv_nsec)) / 1000000L;
+}
+
+void TeraTimers::h2_compact_region_lock_start(unsigned int worker_id) {
+	//h2_compact_start_time = get_cycles();
+        clock_gettime(CLOCK_MONOTONIC_RAW, &h2_compact_region_lock_start_time[worker_id]);
+}
+
+void TeraTimers::h2_compact_region_lock_end(unsigned int worker_id) {
+	//char msg[] = "H2_COMPACT_REGION_LOCK_PHASE";
+
+	//h2_compact_end_time = get_cycles();
+	clock_gettime(CLOCK_MONOTONIC_RAW, &h2_compact_region_lock_end_time[worker_id]);
+	//print_ellapsed_time(h2_compact_region_lock_start_time, h2_compact_region_lock_end_time, msg);
+        h2_compact_region_lock_total_time[worker_id] += (double)((h2_compact_region_lock_end_time[worker_id].tv_sec - h2_compact_region_lock_start_time[worker_id].tv_sec) * 1000000000L + (h2_compact_region_lock_end_time[worker_id].tv_nsec - h2_compact_region_lock_start_time[worker_id].tv_nsec)) / 1000000L;
+}
+
+void TeraTimers::print_h2_compact_lock_time(){
+        double h2_compact_group_region_lock_max_time = 0;
+	double h2_compact_region_lock_max_time = 0;
+
+	for (unsigned int i = 0; i < ParallelGCThreads; i++) {
+		//double elapsed_time_ms = (double)((h2_compact_group_region_lock_end_time[i].tv_sec - h2_compact_group_region_lock_start_time[i].tv_sec) * 1000000000L + (h2_compact_group_region_lock_end_time[i].tv_nsec - h2_compact_group_region_lock_start_time[i].tv_nsec)) / 1000000L;
+		if (h2_compact_group_region_lock_max_time < /*elapsed_time_ms*/h2_compact_group_region_lock_total_time[i])
+			h2_compact_group_region_lock_max_time = /*elapsed_time_ms*/h2_compact_group_region_lock_total_time[i];
+
+		
+                //elapsed_time_ms = (double)((h2_compact_region_lock_end_time[i].tv_sec - h2_compact_region_lock_start_time[i].tv_sec) * 1000000000L + (h2_compact_region_lock_end_time[i].tv_nsec - h2_compact_region_lock_start_time[i].tv_nsec)) / 1000000L;
+		if (h2_compact_region_lock_max_time < /*elapsed_time_ms*/h2_compact_region_lock_total_time[i])
+			h2_compact_region_lock_max_time = /*elapsed_time_ms*/h2_compact_region_lock_total_time[i];
+	}
+
+	thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_GROUP_REGION_LOCK_TIME = %f\n", h2_compact_group_region_lock_max_time);
+	thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_REGION_LOCK_TIME = %f\n", h2_compact_region_lock_max_time);
+
+	// Initialize arrays for the next minor collection
+	memset(h2_compact_group_region_lock_start_time, 0, ParallelGCThreads * sizeof(struct timespec));
+	memset(h2_compact_group_region_lock_end_time, 0, ParallelGCThreads * sizeof(struct timespec));
+	memset(h2_compact_region_lock_start_time, 0, ParallelGCThreads * sizeof(struct timespec));
+	memset(h2_compact_region_lock_end_time, 0, ParallelGCThreads * sizeof(struct timespec));
+        memset(h2_compact_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
+        memset(h2_compact_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
+}
+
 
 void TeraTimers::h2_adjust_bwd_ref_start() {
 	//h2_adjust_bwd_ref_start_time = get_cycles();

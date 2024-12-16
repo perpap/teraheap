@@ -128,7 +128,7 @@ void create_file(const char* path, uint64_t size) {
 }
 
 // Initialize allocator
-void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
+void init(uint64_t gc_threads, uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fd = -1;
     assertf((allocator_log_fp = fopen("allocator_log", "w")) != NULL, "Allocator logger failed!");
 
@@ -146,7 +146,7 @@ void init(uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fprintf(allocator_log_fp, "%s\n[%s|%s|%d]Use memory-mapped IO for H2 using a file of %zd GB...\n%-30s = %p\n%-30s = %p\n%-30s = %p\n%s\n", border, __FILE__, __func__, __LINE__, CONVERT_TO_GB(size), "tc_mem_pool.mmap_start", tc_mem_pool.mmap_start, "tc_mem_pool.start_address", tc_mem_pool.start_address, "tc_mem_pool.stop_address", tc_mem_pool.stop_address, border);
 #endif
     calculate_h2_region_array_size();
-    init_regions();
+    init_regions(gc_threads);//perpap
     req_init();
 #ifdef ASSERT
     fclose(allocator_log_fp);

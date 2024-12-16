@@ -27,7 +27,7 @@ TeraHeap::TeraHeap(HeapWord* heap_end) {
     ShouldNotReachHere();
   }
 
-  init(align, AllocateH2At, H2FileSize, (char *)heap_end);
+  init(ParallelGCThreads, align, AllocateH2At, H2FileSize, (char *)heap_end);
 
   _start_mmap = start_mmap_region();
   _start_addr = start_addr_mem_pool();
@@ -491,13 +491,23 @@ void TeraHeap::disable_groups(uint gc_thread_id){
 // Add an object 'obj' with size 'size' to the promotion buffer. 'New_adr' is
 // used to know where the object will move to H2. We use promotion buffer to
 // reduce the number of system calls for small sized objects.
-void  TeraHeap::h2_promotion_buffer_insert(char* obj, char* new_adr, size_t size) {
-	buffer_insert(obj, new_adr, size);
+void  TeraHeap::h2_promotion_buffer_insert(char* obj, char* new_adr, size_t size, uint gc_thread_id) {
+#if defined(SYNC)
+    buffer_insert(obj, new_adr, size, gc_thread_id, 0);
+#elif defined(ASYNC)
+    buffer_insert(obj, new_adr, size, gc_thread_id, 1);
+#endif
+    //buffer_insert(obj, new_adr, size, gc_thread_id);
 }
 
 // At the end of the major GC flush and free all the promotion buffers.
 void TeraHeap::h2_free_promotion_buffers() {
-	free_all_buffers();
+#if defined(SYNC)
+    free_all_buffers(0);
+#elif defined(ASYNC)
+    free_all_buffers(1);
+#endif
+    //free_all_buffers();
 }
 #endif
 
@@ -655,17 +665,19 @@ bool TeraHeap::h2_object_starts_in_region(HeapWord *obj) {
 
 // Move object with size 'size' from source address 'src' to the h2
 // destination address 'dst' 
-void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size) {
+void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, uint gc_thread_id) {
   assert(src != NULL, "Src address should not be null");
   assert(dst != NULL, "Dst address should not be null");
   assert(size > 0, "Size should not be zero");
 
 #if defined(SYNC)
   h2_write((char *)src, (char *)dst, size);
+#elif defined(SYNC) && defined(PR_BUFFER)
+  h2_promotion_buffer_insert((char *)src, (char *)dst, size, gc_thread_id);
 #elif defined(FMAP)
   h2_write((char *)src, (char *)dst, size);
 #elif defined(ASYNC) && defined(PR_BUFFER)
-  h2_promotion_buffer_insert((char *)src, (char *)dst, size);
+  h2_promotion_buffer_insert((char *)src, (char *)dst, size, gc_thread_id);
 #elif defined(ASYNC) && !defined(PR_BUFFER)
   h2_awrite((char *)src, (char *)dst, size);
 #else

@@ -10,7 +10,7 @@
 #include <limits.h>
 
 void initialize_h1(uint64_t alignment, const char *mount_point, uint64_t size, char *address);
-void initialize_h2(uint64_t alignment, const char *mount_point, uint64_t size, char *address);
+void initialize_h2(uint64_t gc_threads, uint64_t alignment, const char *mount_point, uint64_t size, char *address);
 void print_heap_statistics();
 unsigned long long convert_string_to_number(const char *str);
 
@@ -51,11 +51,11 @@ void initialize_h1(uint64_t alignment, const char *mount_point, uint64_t size, c
   h1.end_address = (char *)((uintptr_t)h1.start_address + size);
 }
 
-void initialize_h2(uint64_t alignment, const char *mount_point, uint64_t size, char *address){
+void initialize_h2(uint64_t gc_threads, uint64_t alignment, const char *mount_point, uint64_t size, char *address){
   h2.alignment = alignment;
   h2.size = size;
   h2.mount_point = mount_point;
-  init(alignment, mount_point, size, address);
+  init(gc_threads, alignment, mount_point, size, address);
   h2.start_address = start_addr_mem_pool();
   h2.end_address = stop_addr_mem_pool();
 }

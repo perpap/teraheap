@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
     printf("%-20s %-20p %-20llu %-20p %-20llu %-20td\n", "H1", h1, (long long unsigned int)h1, (void *)h1_end, (long long unsigned int)h1_end,CONVERT_TO_GB((ptrdiff_t)((char *)h1_end-(char*)h1)));
     printf("%-20s %-20p %-20llu %-20p %-20llu %-20td\n", "H2", start_addr_mem_pool(), (long long unsigned int)start_addr_mem_pool(), stop_addr_mem_pool(), (long long unsigned int)stop_addr_mem_pool(),(ptrdiff_t)CONVERT_TO_GB((stop_addr_mem_pool()-start_addr_mem_pool())));
 #endif
-    initialize_h2(H2_ALIGNMENT, argv[1], h2_size * GB, (void *)(h1.start_address + h1_size * GB));
+    initialize_h2(16, H2_ALIGNMENT, argv[1], h2_size * GB, (void *)(h1.start_address + h1_size * GB));
     print_heap_statistics();
     //obj1 should be in region 0
     obj1 = allocate(1, 0, 0);

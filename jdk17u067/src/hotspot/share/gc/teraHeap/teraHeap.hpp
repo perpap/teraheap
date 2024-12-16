@@ -123,7 +123,7 @@ private:
   // Add an object 'obj' with size 'size' to the promotion buffer. 'New_adr' is
   // used to know where the object will move to H2. We use promotion buffer to
   // reduce the number of system calls for small sized objects.
-  void h2_promotion_buffer_insert(char *obj, char *new_adr, size_t size);
+  void h2_promotion_buffer_insert(char *obj, char *new_adr, size_t size, uint gc_thread_id);
 
   // At the end of the major GC flush and free all the promotion
   // buffers.
@@ -308,7 +308,7 @@ public:
 
   // Move object with size 'size' from source address 'src' to the h2
   // destination address 'dst' 
-  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size);
+  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, uint gc_thread_id = 1);
 
   // Complete the transfer of the objects in H2
   void h2_complete_transfers();

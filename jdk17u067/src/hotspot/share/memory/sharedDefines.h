@@ -82,10 +82,10 @@
 /**********************************
  * Write Mode to H2
  **********************************/
-//#define SYNC				            //< Enable explicit I/O path for the writes
+#define SYNC				            //< Enable explicit I/O path for the writes
                                   // in TeraHeap during major GC
 
-#define ASYNC				              //< Asynchronous I/O path for the writes in
+//#define ASYNC				              //< Asynchronous I/O path for the writes in
                                   // TeraHeap
 
 #define PR_BUFFER			            //< Enable promotion buffer for async I/O to

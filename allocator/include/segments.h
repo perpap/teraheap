@@ -38,6 +38,7 @@ struct group{
     struct group *next;
 };
 
+
 /*
  * The struct for regions
  */
@@ -47,19 +48,22 @@ struct region{
     char *last_allocated_start;
     char *first_allocated_start;
     struct group *dependency_list;
-#if PR_BUFFER
-    struct pr_buffer *pr_buffer;
-#endif
+//#if PR_BUFFER
+//    struct pr_buffer *pr_buffer;
+//#endif
     int8_t used;
     uint32_t rdd_id;
     uint32_t part_id;
-    mtx_t mutex;//perpap
+    //mtx_t mutex;//perpap
+#if PR_BUFFER
+    struct pr_buffer **pr_buffers;
+#endif
 };
 
 /*
  * Initialize region array, group array and their fields
  */
-void init_regions();
+void init_regions(uint32_t gc_threads);//perpap
 
 /*
  * Finds an empty regions and returns its starting address
@@ -248,13 +252,13 @@ bool object_starts_from_region(char *obj);
  *			be move to H2
  * size: Size of the object
  */
-void buffer_insert(char* obj, char* new_adr, size_t size);
+void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id, uint8_t io_flag/*0: sync_write, 1: async_write*/);
 
 /*
  * Flush all active buffers and free each buffer memory. We need to free their
  * memory to limit waste space.
  */
-void free_all_buffers();
+void free_all_buffers(uint8_t io_flag/*0: sync_write, 1: async_write*/);
 
 #endif
 
