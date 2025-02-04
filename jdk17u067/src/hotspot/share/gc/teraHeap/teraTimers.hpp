@@ -107,7 +107,7 @@ public:
   }
 #endif
 private:
-  static const uint64_t CYCLES_PER_SECOND;
+  //static const uint64_t CYCLES_PER_SECOND;
 
   struct timespec h2_scavenge_start_time;
   struct timespec h2_scavenge_end_time;

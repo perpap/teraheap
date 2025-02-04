@@ -518,10 +518,10 @@ public:
   HeapWord* partial_obj_end(size_t region_idx) const;
 
   // Return the location of the object after compaction.
-  HeapWord* calc_new_pointer(HeapWord* addr, ParCompactionManager* cm) const;
+  HeapWord* calc_new_pointer(HeapWord* addr, ParCompactionManager* cm, uint gc_thread_id) const;//FIXME added: gc_thread_id
 
-  HeapWord* calc_new_pointer(oop p, ParCompactionManager* cm) const {
-    return calc_new_pointer(cast_from_oop<HeapWord*>(p), cm);
+  HeapWord* calc_new_pointer(oop p, ParCompactionManager* cm, uint gc_thread_id) const {//FIXME added: gc_thread_id
+    return calc_new_pointer(cast_from_oop<HeapWord*>(p), cm, gc_thread_id);
   }
 
 #ifdef  ASSERT
@@ -1221,7 +1221,7 @@ class PSParallelCompact : AllStatic {
 #endif // TERA_MAJOR_GC
   static inline bool is_marked(oop obj);
 
-  template <class T> static inline void adjust_pointer(T* p, ParCompactionManager* cm);
+  template <class T> static inline void adjust_pointer(T* p, ParCompactionManager* cm, uint gc_thread_id);//FIXME added: gc_thread_id
 
   // Compaction support.
   // Return true if p is in the range [beg_addr, end_addr).
@@ -1230,10 +1230,10 @@ class PSParallelCompact : AllStatic {
 
   // Convenience wrappers for per-space data kept in _space_info.
   static inline MutableSpace*     space(SpaceId space_id);
-  static inline HeapWord*         new_top(SpaceId space_id);
+  static inline HeapWord*         new_top(SpaceId space_id); 
   static inline HeapWord*         dense_prefix(SpaceId space_id);
   static inline ObjectStartArray* start_array(SpaceId space_id);
-
+   
   // Process the end of the given region range in the dense prefix.
   // This includes saving any object not updated.
   static void dense_prefix_regions_epilogue(ParCompactionManager* cm,

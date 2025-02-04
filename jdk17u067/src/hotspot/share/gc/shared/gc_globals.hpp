@@ -691,6 +691,16 @@
           "during parallel gc")                                             \
           range(0, max_juint)                                               \
                                                                             \
+  product(ccstr, TeraHeapWritePolicy, "AsyncWritePolicy",                              \
+          "TeraHeapWritePolicy for writing objects to H2 device if their size exceeds the predefined threshold. The possible values "   \
+          "are: AsyncWritePolicy, SyncWritePolicy, FmapWritePolicy, DefaultWritePolicy")                       \
+                                                                            \
+  product(bool, EnableParallelH2PreCompact, false,                             \
+          "Use multiple threads for allocating addresses into H2 heap during H2_PRECOMPACT_PHASE")     \
+                                                                            \
+  product(bool, EnableParallelH2Compact, false,                             \
+          "Use multiple threads for H2_COMPACT phase")     \
+	                                                                    \
   product(bool, EnableTeraHeap, false,                                      \
             "Enable TeraHeap. Works only with ParallelScavenge Collector")  \
                                                                             \

@@ -173,7 +173,7 @@ function build_all() {
 
 function run_make() {
   if [[ $1 == "all" ]]; then
-    local variants=("release" "fastdebug" "slowdebug")
+    local variants=("release" "fastdebug" "slowdebug" "optimized")
     for variant in "${variants[@]}"; do
       intercept-build make CONF=linux-$TARGET_PLATFORM-server-$variant
       cd ../
@@ -197,7 +197,7 @@ function run_make() {
 
 function run_clean_make() {
   if [[ $1 == "all" ]]; then
-    local variants=("release" "fastdebug" "slowdebug")
+    local variants=("release" "fastdebug" "slowdebug" "optimized")
     for variant in "${variants[@]}"; do
       make CONF=linux-$TARGET_PLATFORM-server-$variant clean && make CONF=linux-$TARGET_PLATFORM-server-$variant dist-clean && make CONF=linux-$TARGET_PLATFORM-server-$variant images
     done

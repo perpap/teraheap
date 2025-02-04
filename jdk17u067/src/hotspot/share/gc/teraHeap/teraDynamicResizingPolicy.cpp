@@ -68,6 +68,8 @@ void TeraDynamicResizingPolicy::dram_repartition(bool *need_full_gc,
 		bool *eager_move) {
 	double avg_gc_time_ms, avg_io_time_ms;
 	uint64_t device_active_time_ms = 0;
+	//struct timespec device_active_time_ms;
+
 	TeraHeap *th = Universe::teraHeap();
 
 	calculate_gc_io_costs(&avg_gc_time_ms, &avg_io_time_ms, &device_active_time_ms);
@@ -130,9 +132,10 @@ void TeraDynamicResizingPolicy::init_state_actions_names() {
 // We use these values to determine the next actions.
 void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
                                                       double *avg_io_time_ms,
-                                                      uint64_t *device_active_time_ms) {
+                                                      uint64_t /*struct timespec*/ *device_active_time_ms) {
   double iowait_time_ms = 0;
   uint64_t dev_time_end = 0;
+  //struct timespec dev_time_end;
   *device_active_time_ms = 0; 
 	// Check if we are inside the window
 	if (!is_window_limit_exeed()) {
@@ -169,6 +172,7 @@ TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
   cpu_usage = init_cpu_usage_stats();
 
   window_start_time = get_cycles();
+  //clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_iowait_time_ms = 0;
   gc_time = 0;
@@ -191,16 +195,20 @@ TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
 }
 
 // Calculate ellapsed time
-double TeraDynamicResizingPolicy::ellapsed_time(uint64_t start_time,
-		uint64_t end_time) {
-
+double TeraDynamicResizingPolicy::ellapsed_time(uint64_t /*struct timespec*/ start_time,
+		uint64_t /*struct timespec*/ end_time) {
+        
 	double elapsed_time = (double)(end_time - start_time) / CYCLES_PER_SECOND;
-	return (elapsed_time * 1000.0);
+        return (elapsed_time * 1000.0);
+	//double elapsed_time_ms = (double)((end_time.tv_sec - start_time.tv_sec) * 1000000000L + (end_time.tv_nsec - start_time.tv_nsec)) / 1000000L;
+	//return elapsed_time_ms;
 }
 
 // Set current time since last window
 void TeraDynamicResizingPolicy::reset_counters() {
   window_start_time = get_cycles();
+  //clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
+
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_time = 0;
   gc_dev_time = 0;
@@ -213,9 +221,10 @@ void TeraDynamicResizingPolicy::reset_counters() {
 
 // Check if the window limit exceed time
 bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
-	uint64_t window_end_time;
+	uint64_t /*struct timespec*/ window_end_time;
 	static int i = 0;
 	window_end_time = get_cycles();
+	//clock_gettime(CLOCK_MONOTONIC_RAW, &window_end_time);
 	interval = ellapsed_time(window_start_time, window_end_time);
 
 #ifdef PER_MINOR_GC

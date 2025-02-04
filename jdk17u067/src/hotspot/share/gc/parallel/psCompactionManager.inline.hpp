@@ -228,9 +228,9 @@ inline void ParCompactionManager::follow_array(objArrayOop obj, int index) {
   }
 }
 
-inline void ParCompactionManager::update_contents(oop obj) {
+inline void ParCompactionManager::update_contents(oop obj/*, uint gc_thread_id*/) {//FIXME added: gc_thread_id
   if (!obj->klass()->is_typeArray_klass()) {
-    PCAdjustPointerClosure apc(this);
+    PCAdjustPointerClosure apc(this, /*gc_thread_id*/_gc_thread_id);
     obj->oop_iterate(&apc);
   }
 }

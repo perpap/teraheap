@@ -139,71 +139,67 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 	 }
 	  
 	  virtual void work(uint worker_id){
-		  internal_work(worker_id);
-	  }
-	  void internal_work(uint worker_id) { 
-		  auto regions = calculate_regions(total_regions, active_workers, cur_region, static_cast<int>(worker_id));
-		  if(regions.first == regions.second){
-		      fprintf(stderr, "[ParallelCompactH2Task::%s|LINE:%d][task_name:%s] worker_id:%u total_regions:%zu no assigned regions\n", __func__, __LINE__,name(), worker_id, total_regions);
-		  }else{
-		      fprintf(stderr, "[ParallelCompactH2Task::%s|LINE:%d][task_name:%s] worker_id:%u total_regions:%zu regions:[%zu-%zu]\n", __func__, __LINE__,name(), worker_id, total_regions, regions.first, regions.second);	   
-                      		      
-		      for (size_t cur_region_index = regions.first; cur_region_index < regions.second; ++cur_region_index) {
-			  process_region(worker_id, cur_region_index);
-		      }
-		  } 
-	  }
-
-  private:
-	  void process_region(uint worker_id, size_t region_idx) {
-		  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
-		  HeapWord *beg_addr = PSParallelCompact::_summary_data.region_to_addr(region_idx);
-		  size_t end_bit = PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr + ParallelCompactData::RegionSize);
-		  // The bitmap routines require the right boundary to be word-aligned.
-		  size_t range_end = PSParallelCompact::_mark_bitmap.align_range_end(end_bit);
-		  size_t beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr), range_end);
-		  DEBUG_ONLY(size_t region_size = PSParallelCompact::_summary_data._region_data[region_idx].data_size();)
-
-		  // Get the forwarding table of the region
-		  TeraForwardingTable *fd_table = PSParallelCompact::_summary_data._region_data[region_idx].get_forwarding_table(); 
-                  assert(fd_table != NULL, "Should be not null");
-		 
-		  while (beg_bit < range_end) {
-			  HeapWord *h1_addr = PSParallelCompact::_mark_bitmap.bit_to_addr(beg_bit);
-			  oop obj = cast_to_oop(h1_addr);
-			  HeapWord *h2_addr = (HeapWord *) obj->get_h2_dst_addr();
-                          assert(h2_addr != NULL, "fd_table->find(h1_addr)->literal()");
-                          size_t size = obj->size();
-                          size_t tmp_end = PSParallelCompact::_mark_bitmap.addr_to_bit(h1_addr + size - 1); 
-			  
-                          //if (Universe::teraHeap()->is_in_h2(h2_addr)) {
-				// Enable grouping of objects
-				Universe::teraHeap()->enable_groups(h1_addr, h2_addr, worker_id);
-				//{
-                                //MutexLocker x(h2_allocator_lock);
-                                #ifdef TERA_TIMERS
-		                Universe::teraHeap()->getTeraTimer()->h2_compact_group_region_lock_start(worker_id);
-                                #endif //TERA_TIMERS
-				cm->update_contents(obj);
-                                #ifdef TERA_TIMERS
-		                Universe::teraHeap()->getTeraTimer()->h2_compact_group_region_lock_end(worker_id);
-                                #endif //TERA_TIMERS
-				//}
-				Universe::teraHeap()->disable_groups(worker_id);
-                                #ifdef TERA_TIMERS
-		                Universe::teraHeap()->getTeraTimer()->h2_compact_region_lock_start(worker_id);
-                                #endif //TERA_TIMERS
-				// Move objects to H2
-				Universe::teraHeap()->h2_move_obj(h1_addr, h2_addr, size, worker_id);
-                                #ifdef TERA_TIMERS
-		                Universe::teraHeap()->getTeraTimer()->h2_compact_region_lock_end(worker_id);
-                                #endif //TERA_TIMERS
-			  //}  
-			  if (tmp_end >= range_end)
-				  break;
-
-			  beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(tmp_end + 1, range_end);
+		  //internal_work(worker_id);
+                  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
+		  #if 0
+		  assert(cm->gc_thread_id() == worker_id, "cm->gc_thread_id:%u is out of range[0-%u)", cm->gc_thread_id(), ParallelGCThreads-1);
+		  if(cm->gc_thread_id() != worker_id && cm->gc_thread_id() >= ParallelGCThreads){
+	              fprintf(stderr, "cm->gc_thread_id:%u is out of range[0-%u)", cm->gc_thread_id(), ParallelGCThreads-1);
+	              exit(EXIT_FAILURE); 
 		  }
+                  #endif
+                  auto regions = calculate_regions(total_regions, active_workers, cur_region, static_cast<int>(worker_id));
+		  if(regions.first != regions.second){
+		      for (size_t region_idx = regions.first; region_idx < regions.second; ++region_idx) {
+			  HeapWord *beg_addr = PSParallelCompact::_summary_data.region_to_addr(region_idx);
+			  size_t end_bit = PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr + ParallelCompactData::RegionSize);
+			  // The bitmap routines require the right boundary to be word-aligned.
+			  size_t range_end = PSParallelCompact::_mark_bitmap.align_range_end(end_bit);
+			  size_t beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr), range_end);
+			  DEBUG_ONLY(size_t region_size = PSParallelCompact::_summary_data._region_data[region_idx].data_size();)
+
+			  // Get the forwarding table of the region
+			  TeraForwardingTable *fd_table = PSParallelCompact::_summary_data._region_data[region_idx].get_forwarding_table(); 
+			  assert(fd_table != NULL, "Should be not null");
+			 
+			  while (beg_bit < range_end) {
+				  HeapWord *h1_addr = PSParallelCompact::_mark_bitmap.bit_to_addr(beg_bit);
+				  oop obj = cast_to_oop(h1_addr);
+				  HeapWord *h2_addr = (HeapWord *) obj->get_h2_dst_addr();
+				  assert(h2_addr != NULL, "fd_table->find(h1_addr)->literal()");
+				  size_t size = obj->size();
+				  size_t tmp_end = PSParallelCompact::_mark_bitmap.addr_to_bit(h1_addr + size - 1); 
+				  
+				  //if (Universe::teraHeap()->is_in_h2(h2_addr)) {
+					// Enable grouping of objects
+					Universe::teraHeap()->enable_groups(h1_addr, h2_addr, worker_id);
+					//{
+					//MutexLocker x(h2_allocator_lock);
+					//#ifdef TERA_TIMERS
+					//Universe::teraHeap()->getTeraTimer()->h2_compact_group_region_lock_start(worker_id);
+					//#endif //TERA_TIMERS
+					cm->update_contents(obj/*, worker_id*/);
+					//#ifdef TERA_TIMERS
+					//Universe::teraHeap()->getTeraTimer()->h2_compact_group_region_lock_end(worker_id);
+					//#endif //TERA_TIMERS
+					//}
+					Universe::teraHeap()->disable_groups(worker_id);
+					//#ifdef TERA_TIMERS
+					//Universe::teraHeap()->getTeraTimer()->h2_compact_region_lock_start(worker_id);
+					//#endif //TERA_TIMERS
+					// Move objects to H2
+					Universe::teraHeap()->h2_move_obj(h1_addr, h2_addr, size, worker_id);
+					//#ifdef TERA_TIMERS
+					//Universe::teraHeap()->getTeraTimer()->h2_compact_region_lock_end(worker_id);
+					//#endif //TERA_TIMERS
+				  //}  
+				  if (tmp_end >= range_end)
+					  break;
+
+				  beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(tmp_end + 1, range_end);
+			  }//while
+		      }//for
+		  }//if
 	  }
   };
 
@@ -228,94 +224,85 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 	 }
 	  
 	  virtual void work(uint worker_id){
-		  internal_work(worker_id);
-	  }
-	  void internal_work(uint worker_id) { 
+		  //internal_work(worker_id);
+                  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
 		  auto regions = calculate_regions(total_regions, active_workers, cur_region, static_cast<int>(worker_id));
-		  if(regions.first == regions.second){
-		      fprintf(stderr, "[ParallelPreCompactH2Task::%s|LINE:%d][task_name:%s] worker_id:%u total_regions:%zu no assigned regions\n", __func__, __LINE__,name(), worker_id, total_regions);
-		  }else{
-		      fprintf(stderr, "[ParallelPreCompactH2Task::%s|LINE:%d][task_name:%s] worker_id:%u total_regions:%zu regions:[%zu-%zu]\n", __func__, __LINE__,name(), worker_id, total_regions, regions.first, regions.second);	   
-		      for (size_t cur_region_index = regions.first; cur_region_index < regions.second; ++cur_region_index) {
-			  process_region(worker_id, cur_region_index);
-		      }
-		  } 
-	  }
+		  if(regions.first != regions.second){
+		      for (size_t region_idx = regions.first; region_idx < regions.second; ++region_idx) {
+			  // Implement the logic specific to each region as shown in `precompact_h2_candidate_objects`
+			  HeapWord *beg_addr = PSParallelCompact::_summary_data.region_to_addr(region_idx);
+			  size_t end_bit = PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr + ParallelCompactData::RegionSize);
+			  // The bitmap routines require the right boundary to be word-aligned.
+			  size_t range_end = PSParallelCompact::_mark_bitmap.align_range_end(end_bit);
+			  size_t beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr), range_end);
+			  DEBUG_ONLY(size_t region_size = PSParallelCompact::_summary_data._region_data[region_idx].data_size();)
 
-  private:
-	  void process_region(uint worker_id, size_t region_idx) {
-		  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
-		  // Implement the logic specific to each region as shown in `precompact_h2_candidate_objects`
-		  HeapWord *beg_addr = PSParallelCompact::_summary_data.region_to_addr(region_idx);
-		  size_t end_bit = PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr + ParallelCompactData::RegionSize);
-		  // The bitmap routines require the right boundary to be word-aligned.
-		  size_t range_end = PSParallelCompact::_mark_bitmap.align_range_end(end_bit);
-		  size_t beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr), range_end);
-		  DEBUG_ONLY(size_t region_size = PSParallelCompact::_summary_data._region_data[region_idx].data_size();)
+			  // Get the forwarding table of the region
+			  TeraForwardingTable *fd_table = PSParallelCompact::_summary_data._region_data[region_idx].get_forwarding_table();
 
-		  // Get the forwarding table of the region
-		  TeraForwardingTable *fd_table = PSParallelCompact::_summary_data._region_data[region_idx].get_forwarding_table();
-
-		  // Create a forwarding table only for the regions that have H2
-		  // candidate objects. Reduce the number of metadata.
-		  if (beg_bit < range_end) {
-			  assert(fd_table == NULL, "Sanity check");
-			  MutexLocker x(h2_allocator_lock);
-			  fd_table = new TeraForwardingTable();
-#ifdef TERA_STATS
-			  Universe::teraHeap()->get_tera_stats()->add_fwd_tables();
-#endif
-		  }
-
-
-		  while (beg_bit < range_end) {
-			  HeapWord *h1_addr = PSParallelCompact::_mark_bitmap.bit_to_addr(beg_bit);
-			  oop obj = cast_to_oop(h1_addr);
-			  assert(obj->is_marked_move_h2(), "H1: %p | TF = %lu\n", h1_addr, obj->get_obj_state());
-			  size_t size = obj->size();
-			  // Get the last bit where the object ends
-			  size_t tmp_end = PSParallelCompact::_mark_bitmap.addr_to_bit(h1_addr + size - 1);
-                          
-			  if (Universe::teraHeap()->get_policy()->h2_transfer_policy(obj)) {
+			  // Create a forwarding table only for the regions that have H2
+			  // candidate objects. Reduce the number of metadata.
+			  if (beg_bit < range_end) {
+				  assert(fd_table == NULL, "Sanity check");
 				  MutexLocker x(h2_allocator_lock);
-				  // Get the new object location in H2 and create an entry in the forwarding table
-				  HeapWord* h2_addr = (HeapWord*) Universe::teraHeap()->h2_add_object(obj, size);
-				  fd_table->add(h1_addr, h2_addr);
-				  obj->set_h2_dst_addr((uint64_t) h2_addr);
-				  assert(h2_addr == fd_table->find(h1_addr)->literal(), "Sanity check");
-
-				  // Clear the bits from obj_beg and obj_end bitmaps. We mark the
-				  // H2 candidate objects as dead to exclude them from the summary
-				  // phase calculations of H1.
-				  PSParallelCompact::_mark_bitmap.unmark_obj(obj, size);
-				  #ifdef TERA_PARALLEL_H2_SUMMARY_PHASE
-                                  if(UseParallelH2Allocator){
-	                              //MutexLocker x(h2_allocator_lock);
-				      PSParallelCompact::_summary_data.remove_obj(obj, size);
-				  }
-                                  #else
-                                      PSParallelCompact::_summary_data.remove_obj(obj, size);
-				  #endif
-			  } else {
-				
-				  // If the candidate objects is a non-primitive type then we
-				  // change its state. In that way, we avoid to handle this
-				  // object as an 'h2 candidate objects' in the next major GC.
-				  if (obj->is_non_primitive())
-					  obj->init_obj_state();
-
-				  PSParallelCompact::_mark_bitmap.unmark_h2_candidate_obj(obj);
+				  fd_table = new TeraForwardingTable();
+#ifdef TERA_STATS
+				  Universe::teraHeap()->get_tera_stats()->add_fwd_tables();
+#endif
 			  }
 
-			  if (tmp_end >= range_end)
-				  break;
 
-			  beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(tmp_end + 1, range_end);
-		  }
+			  while (beg_bit < range_end) {
+				  HeapWord *h1_addr = PSParallelCompact::_mark_bitmap.bit_to_addr(beg_bit);
+				  oop obj = cast_to_oop(h1_addr);
+				  assert(obj->is_marked_move_h2(), "H1: %p | TF = %lu\n", h1_addr, obj->get_obj_state());
+				  size_t size = obj->size();
+				  // Get the last bit where the object ends
+				  size_t tmp_end = PSParallelCompact::_mark_bitmap.addr_to_bit(h1_addr + size - 1);
+				  
+				  if (Universe::teraHeap()->get_policy()->h2_transfer_policy(obj)) {
+					  MutexLocker x(h2_allocator_lock);
+					  // Get the new object location in H2 and create an entry in the forwarding table
+					  HeapWord* h2_addr = (HeapWord*) Universe::teraHeap()->h2_add_object(obj, size);
+					  fd_table->add(h1_addr, h2_addr);
+					  obj->set_h2_dst_addr((uint64_t) h2_addr);
+					  assert(h2_addr == fd_table->find(h1_addr)->literal(), "Sanity check");
 
-		  PSParallelCompact::_summary_data._region_data[region_idx].set_forwarding_table(fd_table);
-		  assert(PSParallelCompact::_summary_data._region_data[region_idx].data_size() <= region_size,
-				  "Region size differ, size before = %lu and size after = %lu", region_size, PSParallelCompact::_summary_data._region_data[region_idx].data_size());
+					  // Clear the bits from obj_beg and obj_end bitmaps. We mark the
+					  // H2 candidate objects as dead to exclude them from the summary
+					  // phase calculations of H1.
+					  PSParallelCompact::_mark_bitmap.unmark_obj(obj, size);
+					  #ifdef TERA_PARALLEL_H2_SUMMARY_PHASE
+					  if(EnableParallelH2PreCompact){
+					      //MutexLocker x(h2_allocator_lock);
+					      PSParallelCompact::_summary_data.remove_obj(obj, size);
+					  }
+					  #else
+					      PSParallelCompact::_summary_data.remove_obj(obj, size);
+					  #endif
+				  } else {
+					
+					  // If the candidate objects is a non-primitive type then we
+					  // change its state. In that way, we avoid to handle this
+					  // object as an 'h2 candidate objects' in the next major GC.
+					  if (obj->is_non_primitive())
+						  obj->init_obj_state();
+
+					  PSParallelCompact::_mark_bitmap.unmark_h2_candidate_obj(obj);
+				  }
+
+				  if (tmp_end >= range_end)
+					  break;
+
+				  beg_bit = PSParallelCompact::_mark_bitmap.find_h2_candidate(tmp_end + 1, range_end);
+			  }
+
+			  PSParallelCompact::_summary_data._region_data[region_idx].set_forwarding_table(fd_table);
+			  assert(PSParallelCompact::_summary_data._region_data[region_idx].data_size() <= region_size,
+					  "Region size differ, size before = %lu and size after = %lu", region_size, PSParallelCompact::_summary_data._region_data[region_idx].data_size());
+
+		      }//for
+		  }//while
 	  }
   };
 #endif //TERA_MAJOR_GC
@@ -1054,12 +1041,13 @@ void ParallelCompactData::compact_h2_candidate_objects(HeapWord* source_beg,
 
       //if (Universe::teraHeap()->is_in_h2(h2_addr)) {
         // Enable grouping of objects
-        Universe::teraHeap()->enable_groups(h1_addr, h2_addr);
+        Universe::teraHeap()->enable_groups(h1_addr, h2_addr, 0);//FIXME added: 0 for single thread
         cm->update_contents(obj);
-        Universe::teraHeap()->disable_groups();
+        Universe::teraHeap()->disable_groups(0);//FIXME added: 0 for single thread
 
         // Move objects to H2
-        Universe::teraHeap()->h2_move_obj(h1_addr, h2_addr, size);
+        Universe::teraHeap()->h2_move_obj(h1_addr, h2_addr, size, 0);//FIXME added: 0 for single thread
+
       //}
 
       if (tmp_end >= range_end)
@@ -1193,7 +1181,7 @@ bool ParallelCompactData::summarize(SplitInfo& split_info,
   return true;
 }
 
-HeapWord* ParallelCompactData::calc_new_pointer(HeapWord* addr, ParCompactionManager* cm) const {
+HeapWord* ParallelCompactData::calc_new_pointer(HeapWord* addr, ParCompactionManager* cm, uint gc_thread_id) const {//FIXME added: gc_thread_id
   assert(addr != NULL, "Should detect NULL oop earlier");
   assert(ParallelScavengeHeap::heap()->is_in(addr), "not in heap");
   assert(PSParallelCompact::mark_bitmap()->is_marked(addr)
@@ -1921,22 +1909,22 @@ void PSParallelCompact::precompact_h2_candidate_objects() {
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
     //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
-/*#ifdef TERA_PARALLEL_H2_SUMMARY_PHASE
-    if(UseParallelH2Allocator){
+#ifdef TERA_PARALLEL_H2_SUMMARY_PHASE
+    if(EnableParallelH2PreCompact){
       //tty->print("[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
-      fprintf(stderr, "[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
+      //fprintf(stderr, "[precompact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
       //ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), &_mark_bitmap, _summary_data);
       ParallelPreCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
       //tty->print("[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
-      fprintf(stderr, "[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
+      //fprintf(stderr, "[precompact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
       ParallelScavengeHeap::heap()->workers().run_task(&task);
     }else{
       _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
     }
 #else
     _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
-#endif */
-    _summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
+#endif
+    //_summary_data.precompact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, _summary_data);
   }
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_precompact_end();//FIXME TeraTimers
@@ -2937,7 +2925,7 @@ public:
 
   void work(uint worker_id) {
     ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
-    PCAdjustPointerClosure adjust(cm);
+    PCAdjustPointerClosure adjust(cm, worker_id);//FIXME added: worker_id
     {
       ResourceMark rm;
       Threads::possibly_parallel_oops_do(_nworkers > 1, &adjust, nullptr);
@@ -3001,22 +2989,24 @@ void PSParallelCompact::compact_h2_candidate_objects() {
 #endif
   for (unsigned int i = 0; i < last_space_id; ++i) {
     const MutableSpace* space = _space_info[i].space();
-    ParCompactionManager* cm = ParCompactionManager::get_vmthread_cm();
-#ifdef TERA_PARALLEL_H2_SUMMARY_PHASE
-    if(UseParallelH2Allocator){
+    
+#ifdef TERA_PARALLEL_H2_COMPACT
+    if(EnableParallelH2Compact){
       //tty->print("[compact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
-      fprintf(stderr, "[compact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
+      //fprintf(stderr, "[compact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
       ParallelCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
       //tty->print("[compact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
-      fprintf(stderr, "[compact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
+      //fprintf(stderr, "[compact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
       ParallelScavengeHeap::heap()->workers().run_task(&task);
       #ifdef TERA_TIMERS
-      Universe::teraHeap()->getTeraTimer()->print_h2_compact_lock_time();
+      //Universe::teraHeap()->getTeraTimer()->print_h2_compact_lock_time();
       #endif //TERA_TIMERS
     }else{
+      ParCompactionManager* cm = ParCompactionManager::get_vmthread_cm();
       _summary_data.compact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, cm);
     }
 #else
+    ParCompactionManager* cm = ParCompactionManager::get_vmthread_cm();
     _summary_data.compact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, cm);
 #endif 
   }
@@ -3033,11 +3023,11 @@ void PSParallelCompact::adjust_backward_references() {
 
   ParCompactionManager* cm = ParCompactionManager::get_vmthread_cm();
   oop *obj = Universe::teraHeap()->h2_adjust_next_back_reference();
-
+  uint gc_id = EnableParallelH2Compact ? ParallelGCThreads : 0;//FIXME
   while (obj != NULL) {
-    Universe::teraHeap()->enable_groups(NULL, (HeapWord*) obj);
-    adjust_pointer(obj, cm);
-    Universe::teraHeap()->disable_groups();
+    Universe::teraHeap()->enable_groups(NULL, (HeapWord*) obj, gc_id);//FIXME added: ParallelGCThreads
+    adjust_pointer(obj, cm, gc_id);//FIXME added: ParallelGCThreads
+    Universe::teraHeap()->disable_groups(gc_id);//FIXME added: ParallelGCThreads
     obj = Universe::teraHeap()->h2_adjust_next_back_reference();
   }
 
@@ -4066,7 +4056,7 @@ MoveAndUpdateClosure::do_addr(HeapWord* addr, size_t words) {
 
   _source = addr;
   assert(!Universe::teraHeap()->is_obj_in_h2(cast_to_oop(_source)), "Error");
-  assert(PSParallelCompact::summary_data().calc_new_pointer(source(), compaction_manager()) ==
+  assert(PSParallelCompact::summary_data().calc_new_pointer(source(), compaction_manager(), compaction_manager()->gc_thread_id() ) ==
          destination(), "wrong destination");
 
   if (words > words_remaining()) {

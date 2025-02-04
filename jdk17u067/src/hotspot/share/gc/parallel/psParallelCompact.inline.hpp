@@ -118,7 +118,7 @@ inline bool PSParallelCompact::mark_h2_candidate_obj(oop obj) {
 
 #ifdef TERA_MAJOR_GC
 template <class T>
-inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm) {
+inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm, uint gc_thread_id) {//FIXME added:gc_thread_id
   T heap_oop = RawAccess<>::oop_load(p);
   if (!CompressedOops::is_null(heap_oop)) {
     oop obj = CompressedOops::decode_not_null(heap_oop);
@@ -129,10 +129,10 @@ inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm) {
                assert(ParallelScavengeHeap::heap()->is_in(obj), "should be in heap");
                });
 
-    oop new_obj = (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) ? obj : cast_to_oop(summary_data().calc_new_pointer(obj, cm));
+    oop new_obj = (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) ? obj : cast_to_oop(summary_data().calc_new_pointer(obj, cm, gc_thread_id));
 		
     if (EnableTeraHeap)
-			Universe::teraHeap()->group_region_enabled(cast_from_oop<HeapWord *>(new_obj), (void *) p, cm);
+			Universe::teraHeap()->group_region_enabled(cast_from_oop<HeapWord *>(new_obj), (void *) p, gc_thread_id);
 
     assert(new_obj != NULL, "non-null address for live objects");
     // Is it actually relocated at all?
@@ -151,13 +151,13 @@ inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm) {
 
 #else
 template <class T>
-inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm) {
+inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm, uint gc_thread_id) {//FIXME added: gc_thread_id
   T heap_oop = RawAccess<>::oop_load(p);
   if (!CompressedOops::is_null(heap_oop)) {
     oop obj = CompressedOops::decode_not_null(heap_oop);
     assert(ParallelScavengeHeap::heap()->is_in(obj), "should be in heap");
 
-    oop new_obj = cast_to_oop(summary_data().calc_new_pointer(obj, cm));
+    oop new_obj = cast_to_oop(summary_data().calc_new_pointer(obj, cm, gc_thread_id));
     assert(new_obj != NULL, "non-null address for live objects");
     // Is it actually relocated at all?
     if (new_obj != obj) {
@@ -171,17 +171,19 @@ inline void PSParallelCompact::adjust_pointer(T* p, ParCompactionManager* cm) {
 
 class PCAdjustPointerClosure: public BasicOopIterateClosure {
 public:
-  PCAdjustPointerClosure(ParCompactionManager* cm) {
+  PCAdjustPointerClosure(ParCompactionManager* cm, uint gc_thread_id) {//FIXME added:gc_thread_id
     verify_cm(cm);
     _cm = cm;
+    _gc_thread_id = gc_thread_id;
   }
-  template <typename T> void do_oop_nv(T* p) { PSParallelCompact::adjust_pointer(p, _cm); }
+  template <typename T> void do_oop_nv(T* p) { PSParallelCompact::adjust_pointer(p, _cm, _gc_thread_id); }
   virtual void do_oop(oop* p)                { do_oop_nv(p); }
   virtual void do_oop(narrowOop* p)          { do_oop_nv(p); }
 
   virtual ReferenceIterationMode reference_iteration_mode() { return DO_FIELDS; }
 private:
   ParCompactionManager* _cm;
+  uint _gc_thread_id;//FIXME added
   static void verify_cm(ParCompactionManager* cm) NOT_DEBUG_RETURN;
 };
 

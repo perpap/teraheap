@@ -7,6 +7,7 @@
 #include "gc/teraHeap/teraTimers.hpp"
 #include "gc/teraHeap/teraTraceDirtyPages.hpp"
 #include "gc/teraHeap/teraTransferPolicy.hpp"
+#include "gc/teraHeap/teraWritePolicy.hpp"
 #include "gc/teraHeap/teraStatistics.hpp"
 #include "utilities/stack.inline.hpp"
 #include "memory/sharedDefines.h"
@@ -18,7 +19,7 @@
 #include <map>
 #include <tr1/tuple>
 #endif
-class ParCompactionManager;
+//#define PARALLEL_H2_COMPACT
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
@@ -58,20 +59,22 @@ private:
                                     // partition id for tera-marked
                                     // object to promote this id
                                     // to their reference objects
+#ifdef H2_PARALLEL_COMPACT
   HeapWord **obj_h1_addr_array;
-  HeapWord **obj_h2_addr_array; 
-  //HeapWord *obj_h1_addr;          // We need to check this
+  HeapWord **obj_h2_addr_array;
+#else 
+  HeapWord *obj_h1_addr;          // We need to check this
                                     // object that will be moved
                                     // to H2 if it has back ptrs
                                     // to H1
 
-  //HeapWord *obj_h2_addr;          // We need to check this
+  HeapWord *obj_h2_addr;          // We need to check this
                                     // object that will be moved
                                     // to H2 if it has back ptrs
                                     // to H1
-
+#endif
   TransferPolicy *tera_policy;      //< Transfer policy for H2
-
+  WritePolicy *tera_write_policy;   // Write policy for H2
   bool shrink_h1 = false;           //< This flag indicate that H1
                                     // should be shrinked
   bool grow_h1 = false;             //< This flag indicate that H1
@@ -102,6 +105,8 @@ private:
 
   // Create a transfer policy for moving ojects from H1 to H2
   TransferPolicy* create_transfer_policy();
+  // Create a write policy for writing ojects to H2
+  WritePolicy* create_write_policy();
 
   // Explicit (using systemcall) write 'data' with 'size' to the specific
   // 'offset' in the file.
@@ -224,7 +229,7 @@ public:
   void print_h2_active_regions(void);
 
   // Groups the region of obj with the previously enabled region
-  void group_region_enabled(HeapWord *obj, void *obj_field, ParCompactionManager *cm);
+  void group_region_enabled(HeapWord *obj, void *obj_field, uint gc_thread_id);//FIXME added: gc_thread_id
 
   // Frees all unused regions
   void free_unused_regions(void);
@@ -233,15 +238,15 @@ public:
   void print_region_groups(void);
 
   // Check if the collector transfers and adjust H2 candidate objects.
-  bool compact_h2_candidate_obj_enabled(uint gc_thread_id = 0);
+  bool compact_h2_candidate_obj_enabled(uint gc_thread_id);
 
   // Enables groupping with region of obj
   //void enable_groups(HeapWord *old_addr, HeapWord *new_addr);
-  void enable_groups(HeapWord *old_addr, HeapWord *new_addr, uint gc_thread_id = 0);
+  void enable_groups(HeapWord *old_addr, HeapWord *new_addr, uint gc_thread_id);
 
   // Disables region groupping
   //void disable_groups(void);
-  void disable_groups(uint gc_thread_id = 0);
+  void disable_groups(uint gc_thread_id);
   //void print_object_name(HeapWord *obj, const char *name);
 
   // Add a new entry to `obj1` region dependency list that reference
@@ -291,6 +296,7 @@ public:
 #endif
 
   TransferPolicy* get_policy() { return tera_policy; }
+  WritePolicy* get_write_policy() { return tera_write_policy; }
 
   // Check if the object `obj` is an instance of the following
   // metadata class:
@@ -308,13 +314,13 @@ public:
 
   // Move object with size 'size' from source address 'src' to the h2
   // destination address 'dst' 
-  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, uint gc_thread_id = 1);
+  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, uint gc_thread_id);
 
   // Complete the transfer of the objects in H2
   void h2_complete_transfers();
 
   // Check if the group of regions in H2 is enabled
-  bool is_h2_group_enabled(uint gc_thread_id = 0);
+  bool is_h2_group_enabled(uint gc_thread_id);
 
 #ifdef TERA_TIMERS
   // Tera timers maintains timers for the different phases of the

@@ -1,9 +1,9 @@
 #include "gc/teraHeap/teraTimers.hpp"
 #include "gc/shared/gc_globals.hpp"
-#include "gc/shared/cycleCounting.hpp"
+//#include "gc/shared/cycleCounting.hpp"
 #include "runtime/java.hpp"
 
-const uint64_t TeraTimers::CYCLES_PER_SECOND{get_cycles_per_second()};
+//const uint64_t TeraTimers::CYCLES_PER_SECOND{get_cycles_per_second()};
 
 void TeraTimers::print_ellapsed_time(struct timespec start_time,
 		struct timespec end_time, const char *msg) {

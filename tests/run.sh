@@ -15,17 +15,20 @@ PARALLEL_GC_THREADS=()
 STRIPE_SIZE=32768
 jvm_build=""
 cpu_arch=$(uname -p)
+WRITE_POLICY="AsyncWritePolicy"
 FLEXHEAP=false
 FLEXHEAP_DEVICE="nvme0n1p1"
 FLEXHEAP_MOUNT_POINT="/spare2/fmap/"
-USE_PARALLEL_H2_ALLOCATOR=false
-EXEC=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList"
+H2_ALLOCATOR_MODE=0 #0:Serial, 1:Parallel_H2PreCompact, 2:Paralell_H2Compact, 3:Parallel_H2PreCompact + Parallel_H2Compact
+EXEC=("Array" 
+	"Array_List" "Array_List_Int" 
+	"List_Large" "MultiList"
   "Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference"
   "HashMap" "Rehashing" "Clone" 
-  #"Groupping"
+  "Groupping"
   "MultiHashMap"
   "Test_WeakHashMap" "ClassInstance")
-#EXEC=("Array_List")
+#EXEC=("Array")
 # Export Enviroment Variables
 export_env_vars() {
   PROJECT_DIR="$(pwd)/../.."
@@ -64,7 +67,8 @@ function interpreter_mode() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    $(get_h2_allocator_flag) \
+    $(get_h2_allocator_mode) \
+    $(get_h2_write_policy) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -90,7 +94,8 @@ function c1_mode() {
     -XX:+TeraHeapStatistics \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    $(get_h2_allocator_flag) \
+    $(get_h2_allocator_mode) \
+    $(get_h2_write_policy) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -117,7 +122,8 @@ function c2_mode() {
     -XX:+TeraCacheStatistics \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    $(get_h2_allocator_flag) \
+    $(get_h2_allocator_mode) \
+    $(get_h2_write_policy) \
     -XX:H2FileSize=1288490188800 \
     -Xlogtc:llarge_teraCache.txt "${class_file}" >err 2>&1 >run_tests.out
 }
@@ -142,7 +148,8 @@ function run_tests_msg_box() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    $(get_h2_allocator_flag) \
+    $(get_h2_allocator_mode) \
+    $(get_h2_write_policy) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -166,7 +173,8 @@ function run_tests() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    $(get_h2_allocator_flag) \
+    $(get_h2_allocator_mode) \
+    $(get_h2_write_policy) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}" >err 2>&1 >out
 }
@@ -191,9 +199,14 @@ function run_tests_debug() {
     -XX:TeraStripeSize=${STRIPE_SIZE} \
     $(get_teraheap_mount_point) \
     $(get_flexheap_device) \
-    $(get_h2_allocator_flag) \
+    $(get_h2_allocator_mode) \
+    $(get_h2_write_policy) \
     -XX:H2FileSize=1288490188800 \
     -Xlogth:llarge_teraCache.txt "${class_file}"
+}
+
+function get_h2_write_policy(){
+  echo "-XX:TeraHeapWritePolicy=$WRITE_POLICY"
 }
 
 function get_flexheap_device() {
@@ -212,11 +225,25 @@ function get_teraheap_flag() {
   echo "-XX:+EnableTeraHeap"
 }
 
-function get_h2_allocator_flag() {
-  if [ "$USE_PARALLEL_H2_ALLOCATOR" == true ]; then
-    echo "-XX:+UseParallelH2Allocator"
-  else
-    echo " "
+function get_h2_allocator_mode() {
+  if [[ ! $H2_ALLOCATOR_MODE =~ ^[0-9]+$ ]]; then
+    #echo "H2_ALLOCATOR_MODE:$H2_ALLOCATOR_MODE is not an integer."
+    echo "Invalid H2_ALLOCATOR_MODE; Please provide 0:Serial, 1:Parallel_H2PreCompact, 2:Paralell_H2Compact, 3:Parallel_H2PreCompact + Parallel_H2Compact"
+    exit ${ERRORS[NOT_AN_INTEGER]}
+  elif [[ $H2_ALLOCATOR_MODE -lt 0 || $H2_ALLOCATOR_MODE -gt 3 ]]; then
+    #echo "H2_ALLOCATOR_MODE:$H2_ALLOCATOR_MODE is not within the range 0 to 3."
+    echo "Invalid H2_ALLOCATOR_MODE; Please provide 0:Serial, 1:Parallel_H2PreCompact, 2:Paralell_H2Compact, 3:Parallel_H2PreCompact + Parallel_H2Compact"
+    exit ${ERRORS[OUT_OF_RANGE]}
+  fi
+
+  if [[ "$H2_ALLOCATOR_MODE" -eq 0 ]]; then
+    echo "-XX:-EnableParallelH2PreCompact -XX:-EnableParallelH2Compact"
+  elif [[ "$H2_ALLOCATOR_MODE" -eq 1 ]]; then
+    echo "-XX:+EnableParallelH2PreCompact -XX:-EnableParallelH2Compact"
+  elif [[ "$H2_ALLOCATOR_MODE" -eq 2 ]]; then
+    echo "-XX:-EnableParallelH2PreCompact -XX:+EnableParallelH2Compact"
+  elif [[ "$H2_ALLOCATOR_MODE" -eq 3 ]]; then
+    echo "-XX:+EnableParallelH2PreCompact -XX:+EnableParallelH2Compact" 
   fi
 }
 
@@ -228,11 +255,12 @@ usage() {
   echo
   echo "Options:"
   echo "      -p, --point    <mount_point>        The mount point used for the H2 file(eg. /mnt/fmap/)"
-  echo "      -j, --jvm      <jvm_build>          The jvm build([release|r], [fastdebug|f], Default: release)"
+  echo "      -j, --jvm      <jvm_build>          The jvm build([release|r], [optimized|o], [fastdebug|f], Default: release)"
   echo "      -m, --mode     <execution_mode>     The jvm execution mode(0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)"
   echo "      -t, --threads  <threads>            The number of GC threads (2, 4, 8, 16, 32)"
+  echo "      -w, --write-to-t2-policy <policy>   The available policies are: 'AsyncWritePolicy', 'SyncWritePolicy', 'FmapWritePolicy', 'DefaultWritePolicy'"
+  echo "      -a, --h2-allocator <mode>           The available modes are: [0:Serial, 1:Parallel_H2PreCompact, 2:Paralell_H2Compact, 3:Parallel_H2PreCompact + Parallel_H2Compact]"
   echo "      -f, --flexheap                      Enable flexheap"
-  echo "      -a, --parallel-h2-allocator         Use parallel H2 allocator"
   echo "      -h  Show usage"
   echo
 
@@ -251,16 +279,24 @@ check_args() {
 
 check_jvm_build() {
   # Validate jvm_build value
-  if [[ "$jvm_build" != "" && "$jvm_build" != "fastdebug" && "$jvm_build" != "f" && "$jvm_build" != "release" && "$jvm_build" != "r" ]]; then
-    echo "Error: jvm_build should be empty(for vanilla) or one of: fastdebug, f, release, r"
+  if [[ "$jvm_build" != "" && "$jvm_build" != "fastdebug" && "$jvm_build" != "f" && "$jvm_build" != "optimized" && "$jvm_build" != "o" && "$jvm_build" != "release" && "$jvm_build" != "r" ]]; then
+    echo "Error: jvm_build should be empty(for vanilla) or one of: [fastdebug|f], [optimized|o], [release|r]"
     usage
     exit 1
   fi
   # Use the appropriate java binary based on jvm_build
   if [[ "$jvm_build" == "fastdebug" || "$jvm_build" == "f" ]]; then
     JAVA="$(pwd)/../jdk17u067/build/linux-$cpu_arch-server-fastdebug/jdk/bin/java"
-  elif [[ "$jvm_build" == "release" || "$jvm_build" == "r" ]]; then
+  elif [[ "$jvm_build" == "optimized" || "$jvm_build" == "o" || "$jvm_build" == "release" || "$jvm_build" == "r" ]]; then
     JAVA="$(pwd)/../jdk17u067/build/linux-$cpu_arch-server-release/jdk/bin/java"
+  fi
+}
+
+check_h2_write_policy(){
+  if [[ "$WRITE_POLICY" != "AsyncWritePolicy" && "$WRITE_POLICY" != "SyncWritePolicy" && "$WRITE_POLICY" != "FmapWritePolicy" && "$WRITE_POLICY" != "DefaultWritePolicy" ]]; then
+    echo "Error: The available policies are 'AsyncWritePolicy', 'SyncWritePolicy', 'FmapWritePolicy', 'DefaultWritePolicy'"
+    usage
+    exit 1
   fi
 }
 
@@ -293,8 +329,8 @@ print_msg() {
 }
 
 function parse_script_arguments() {
-  local OPTIONS=p:j:m:t:fah
-  local LONGOPTIONS=point:,jvm:,mode:,threads:,flexheap,parallel-h2-allocator,help
+  local OPTIONS=p:j:m:t:w:a:fh
+  local LONGOPTIONS=point:,jvm:,mode:,threads:,write-to-h2-policy:,h2-allocator:,flexheap,help
 
   # Use getopt to parse the options
   local PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
@@ -327,14 +363,18 @@ function parse_script_arguments() {
       IFS=',' read -r -a PARALLEL_GC_THREADS <<<"$2"
       shift 2
       ;;
+    -w | --write-to-h2-policy)
+     WRITE_POLICY="$2"
+     shift 2
+     ;;
+    -a | --h2-allocator)
+      H2_ALLOCATOR_MODE="$2"
+      shift 2
+      ;;
     -f | --flexheap)
       FLEXHEAP=true
       shift
-      ;;
-    -a | --parallel-h2-allocator)
-      USE_PARALLEL_H2_ALLOCATOR=true
-      shift
-      ;;
+      ;; 
     -h | --help)
       usage
       exit 0
@@ -353,6 +393,7 @@ function parse_script_arguments() {
 
 parse_script_arguments "$@"
 check_args
+check_h2_write_policy
 check_jvm_build
 
 cd java || exit

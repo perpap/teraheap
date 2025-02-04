@@ -8,7 +8,7 @@
 #include "memory/sharedDefines.h"
 #include <stdlib.h>
 #include <string.h>
-
+//#include <sys/time.h>//perpap
 #define HIST_SIZE 5
 #define GC_HIST_SIZE 1
 #define NUM_ACTIONS 8
@@ -21,13 +21,13 @@ private:
   char state_name[NUM_STATES][NAME_LEN]; //< Define state names
   char action_name[NUM_ACTIONS][NAME_LEN]; //< Define state names
   uint64_t window_start_time;         //< Window start time
-
+  //struct timespec window_start_time;
   double gc_iowait_time_ms;           //< Total IO wait time generated
-  uint64_t gc_dev_time;               //< Total time that the device
+  uint64_t /*struct timespec*/ gc_dev_time;               //< Total time that the device
                                       // was active during GC
-  uint64_t gc_dev_start;              //< Start counting the H2 device
+  uint64_t /*struct timespec*/ gc_dev_start;              //< Start counting the H2 device
                                       // utilization at the start of GC
-  uint64_t dev_time_start;            //< Start to count the active
+  uint64_t /*struct timespec*/ dev_time_start;            //< Start to count the active
                                       // device time
   double gc_time;                     //< Total gc time for the
                                       // interval of the window
@@ -76,7 +76,7 @@ private:
   bool is_window_limit_exeed();
 
   // Calculate ellapsed time
-  double ellapsed_time(uint64_t start_time, uint64_t end_time);
+  double ellapsed_time(uint64_t /*struct timespec*/ start_time, uint64_t /*struct timespec*/ end_time);
 
   // Count timer. We avoid to use os::elapsed_time() because internally
   // uses the clock_get_time which adds extra overhead. This function
@@ -118,7 +118,7 @@ private:
   // Calculate the average of gc and io costs and return their values.
   // We use these values to determine the next actions.
   void calculate_gc_io_costs(double *avg_gc_time_ms, double *avg_io_time_ms,
-                             uint64_t *device_active_time_ms);
+                             uint64_t /*struct timespec*/ *device_active_time_ms);
   
   // Print counters for debugging purposes
   void debug_print(double avg_iowait_time, double avg_gc_time, double interval,

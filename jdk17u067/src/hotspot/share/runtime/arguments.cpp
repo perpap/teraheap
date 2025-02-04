@@ -2483,7 +2483,7 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
          return JNI_EINVAL;
       }
       NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] DEVICE_H2:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, DEVICE_H2);)
-    }else if(match_option(option, "-XX:+UseParallelH2Allocator", &tail)){
+    }/*else if(match_option(option, "-XX:+UseParallelH2Allocator", &tail)){
         FLAG_SET_DEFAULT(UseParallelH2Allocator, true);
         NOT_PRODUCT(tty->print("[%s|%s|LINE:%d] UseParallelH2Allocator:%s\n", strstr(__FILE__, "runtime"), __func__, __LINE__, "true");)
         if (FLAG_SET_CMDLINE(UseParallelH2Allocator, true) != JVMFlag::SUCCESS) {
@@ -2497,7 +2497,7 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
           return JNI_EINVAL;
         }
     // --enable_preview
-    } else if (match_option(option, "--enable-preview")) {
+    } */else if (match_option(option, "--enable-preview")) {
       set_enable_preview();
     // -Xnoclassgc
     } else if (match_option(option, "-Xnoclassgc")) {

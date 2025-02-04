@@ -164,8 +164,6 @@ const intx ObjectAlignmentInBytes = 8;
           "Max partitions for big data.")                                   \
           range(16, max_jlong)                                              \
                                                                             \
-  product(bool, UseParallelH2Allocator, false,                              \
-          "Use multiple threads for allocating addresses into H2 heap")     \
                                                                             \
   notproduct(bool, CheckCompressedOops, true,                               \
           "Generate checks in encoding/decoding code in debug VM")          \

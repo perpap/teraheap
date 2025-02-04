@@ -42,7 +42,7 @@ uint64_t total_h2_regions();
 // Initialize allocator with start address 'heap_end + 1'. The end of the
 // heap. The path indicates the path to create the file for H2 and its size.
 //void       init(uint64_t alignment, const char* path, uint64_t size);
-void       init(uint64_t gc_threads, uint64_t alignment, const char* path, uint64_t size, char* heap_end);
+void       init(uint64_t gc_threads, const char *h2_write_policy, uint64_t alignment, const char* path, uint64_t size, char* heap_end);
 // Return the unaligned address of the mmaped region
 char*      start_mmap_region(void);
 // Return the start address of the memory allocation pool

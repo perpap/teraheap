@@ -225,9 +225,11 @@ class ParCompactionManager : public CHeapObj<mtGC> {
   inline void follow_klass(Klass* klass);
 
   void follow_class_loader(ClassLoaderData* klass);
+
 #ifdef TERA_MAJOR_GC
   uint gc_thread_id() const { return _gc_thread_id; }
 #endif
+
   // Access function for compaction managers
   static ParCompactionManager* gc_thread_compaction_manager(uint index);
 
