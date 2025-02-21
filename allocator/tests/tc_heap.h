@@ -55,7 +55,7 @@ void initialize_h2(uint64_t gc_threads, uint64_t alignment, const char *mount_po
   h2.alignment = alignment;
   h2.size = size;
   h2.mount_point = mount_point;
-  init(gc_threads, "AsyncWritePolicy", alignment, mount_point, size, address);
+  init(true, gc_threads, "AsyncWritePolicy", alignment, mount_point, size, address);
   h2.start_address = start_addr_mem_pool();
   h2.end_address = stop_addr_mem_pool();
 }

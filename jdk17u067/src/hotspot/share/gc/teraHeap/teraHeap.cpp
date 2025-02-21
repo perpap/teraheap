@@ -7,7 +7,6 @@
 #include "runtime/globals.hpp"
 #include "runtime/mutexLocker.hpp"
 #include <tera_allocator.h>
-//#include "gc/parallel/psCompactionManager.hpp"
 
 char *TeraHeap::_start_mmap = NULL;
 char *TeraHeap::_start_addr = NULL;
@@ -28,16 +27,16 @@ TeraHeap::TeraHeap(HeapWord* heap_end) {
   }
   
   if(EnableParallelH2Compact){
-    init(ParallelGCThreads+1, TeraHeapWritePolicy, align, AllocateH2At, H2FileSize, (char *)heap_end);
+    init(true, ParallelGCThreads+1, TeraHeapWritePolicy, align, AllocateH2At, H2FileSize, (char *)heap_end);
   }else{
-    init(1, TeraHeapWritePolicy, align, AllocateH2At, H2FileSize, (char *)heap_end);
+    init(false, 1, TeraHeapWritePolicy, align, AllocateH2At, H2FileSize, (char *)heap_end);
   }
   _start_mmap = start_mmap_region();
   _start_addr = start_addr_mem_pool();
   _stop_addr = stop_addr_mem_pool();
 
   cur_obj_group_id = 0;
-#ifdef PARALLEL_H2_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
   if(EnableParallelH2Compact){
     obj_h1_addr_array = NEW_C_HEAP_ARRAY(HeapWord*, ParallelGCThreads+1, mtGC); 
     obj_h2_addr_array = NEW_C_HEAP_ARRAY(HeapWord*, ParallelGCThreads+1, mtGC);
@@ -86,7 +85,7 @@ TeraHeap::~TeraHeap() {
 
   if (DynamicHeapResizing)
     delete dynamic_resizing_policy;
-#ifdef PARALLEL_H2_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
   FREE_C_HEAP_ARRAY(HeapWord*, obj_h1_addr_array);
   FREE_C_HEAP_ARRAY(HeapWord*, obj_h2_addr_array);
 #endif
@@ -488,7 +487,7 @@ oop* TeraHeap::h2_adjust_next_back_reference() {
 
 // Check if the collector transfers and adjust H2 candidate objects.
 bool TeraHeap::compact_h2_candidate_obj_enabled(uint gc_thread_id) {
-    #ifndef PARALLEL_H2_COMPACT	
+    #ifndef TERA_PARALLEL_H2_COMPACT	
     return obj_h1_addr != NULL;
     #else
     return obj_h1_addr_array[gc_thread_id] != NULL;
@@ -499,7 +498,7 @@ bool TeraHeap::compact_h2_candidate_obj_enabled(uint gc_thread_id) {
 //void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr){
 void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr, uint gc_thread_id){
     enable_region_groups((char*) new_addr);
-#ifdef PARALLEL_H2_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
     obj_h1_addr_array[gc_thread_id] = old_addr;
     obj_h2_addr_array[gc_thread_id] = new_addr;
 #else
@@ -511,7 +510,7 @@ void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr, uint gc_thr
 // Disables region groupping
 void TeraHeap::disable_groups(uint gc_thread_id){
     disable_region_groups();
-#ifdef PARALLEL_H2_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
     obj_h1_addr_array[gc_thread_id] = NULL;
     obj_h2_addr_array[gc_thread_id] = NULL;
 #else
@@ -535,16 +534,58 @@ void TeraHeap::h2_free_promotion_buffers() {
 }
 #endif
 
+#if defined(H2_COMPACT_STATISTICS)
+double TeraHeap::h2_total_buffer_insert_elapsed_time() {
+    return total_buffer_insert_elapsed_time();
+}
+
+double TeraHeap::h2_total_flush_buffer_elapsed_time(){ 
+    return total_flush_buffer_elapsed_time();
+}
+/*
+double TeraHeap::h2_total_flush_buffer_fragmentation_elapsed_time(){
+    return total_flush_buffer_fragmentation_elapsed_time();
+}
+
+double TeraHeap::h2_total_flush_buffer_nofreespace_elapsed_time() {
+    return total_flush_buffer_nofreespace_elapsed_time();
+}
+
+double TeraHeap::h2_total_async_request_elapsed_time() {
+    return total_async_request_elapsed_time();
+}
+*/
+size_t TeraHeap::h2_total_buffer_insert_operations() {
+    return total_buffer_insert_operations();
+}
+
+size_t TeraHeap::h2_total_flush_buffer_operations() {
+    return total_flush_buffer_operations();
+}
+/*
+size_t TeraHeap::h2_total_flush_buffer_fragmentation_operations() {
+    return total_flush_buffer_fragmentation_operations();
+}
+
+size_t TeraHeap::h2_total_flush_buffer_nofreespace_operations() {
+    return total_flush_buffer_nofreespace_operations();
+}
+
+size_t TeraHeap::h2_total_async_request_operations() {
+    return total_async_request_operations();
+}*/
+#endif
+
 // Explicit (using systemcall) write 'data' with 'size' to the specific
 // 'offset' in the file.
-void TeraHeap::h2_write(char *data, char *offset, size_t size) {
-    r_write(data, offset, size);
+void TeraHeap::h2_write(char *data, char *offset, size_t size, uint64_t worker_id) {
+    r_write(data, offset, size, worker_id);
 }
 
 // Explicit (using systemcall) asynchronous write 'data' with 'size' to
 // the specific 'offset' in the file.
-void TeraHeap::h2_awrite(char *data, char *offset, size_t size) {
-    r_awrite(data, offset, size);
+void TeraHeap::h2_awrite(char *data, char *offset, size_t size, uint64_t worker_id) {
+    r_awrite(data, offset, size, worker_id);
 }
 		
 // We need to ensure that all the writes in TeraHeap using asynchronous
@@ -613,7 +654,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, uint gc_thre
 	   fprintf(stderr, "ParallelGCThreads: %u\ngc_thread_id :%u is out of range[0-%u):%s|%s|%d\n", ParallelGCThreads, gc_thread_id, ParallelGCThreads, __FILE__, __func__, __LINE__);
     }*/
     // Object is not going to be moved to TeraHeap
-#ifdef PARALLEL_H2_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
     if (obj_h2_addr_array[gc_thread_id] == NULL) {
         return;
     } 
@@ -625,7 +666,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, uint gc_thre
 
     if (is_obj_in_h2(cast_to_oop(obj))) {
         //check_for_group((char*) obj);
-#ifdef PARALLEL_H2_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
         group_regions(obj_h2_addr_array[gc_thread_id], obj);
 #else
         group_regions(obj_h2_addr, obj);
@@ -636,7 +677,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, uint gc_thre
     // If it is an already backward pointer popped from tc_adjust_stack
     // then do not mark the card as dirty because it is already marked
     // from minor gc.
-#ifdef PARALLEL_H2_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
     if (obj_h1_addr_array[gc_thread_id] == NULL) {
         return;
     }
@@ -651,7 +692,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, uint gc_thre
     BarrierSet* bs = BarrierSet::barrier_set();
     CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
     CardTable* ct = ctbs->card_table();
-    #ifdef PARALLEL_H2_COMPACT
+    #ifdef TERA_PARALLEL_H2_COMPACT
     size_t diff =  (HeapWord *)obj_field - obj_h1_addr_array[gc_thread_id];
     assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(obj_h1_addr_array[gc_thread_id])->size()),"Diff out of range: %lu", diff);
     HeapWord *h2_obj_field = obj_h2_addr_array[gc_thread_id] + diff;
@@ -704,6 +745,9 @@ void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, uint gc_th
   assert(size > 0, "Size should not be zero");
   #if defined(PR_BUFFER)
   h2_promotion_buffer_insert((char *)src, (char *)dst, size, gc_thread_id);
+  #if defined(H2_COMPACT_STATISTICS)
+  tera_stats->move_object(size, gc_thread_id);
+  #endif
   #else
   tera_write_policy->h2_write((char *)src, (char *)dst, size); 
   #endif
@@ -744,10 +788,16 @@ void TeraHeap::h2_complete_transfers() {
   h2_fsync();
 #endif*/
 }
-  
+void TeraHeap::h2_complete_transfers(uint worker_id) {
+#if defined(PR_BUFFER)
+  free_all_buffers_parallel(worker_id);
+#endif
+  tera_write_policy->h2_complete_transfers(worker_id);
+} 
+
 // Check if the group of regions in H2 is enabled
 bool TeraHeap::is_h2_group_enabled(uint gc_thread_id) {
-    #ifndef PARALLEL_H2_COMPACT	
+    #ifndef TERA_PARALLEL_H2_COMPACT	
         return (obj_h1_addr != NULL  || obj_h2_addr != NULL);
     #else
         return (obj_h1_addr_array[gc_thread_id] != NULL  || obj_h2_addr_array[gc_thread_id] != NULL);

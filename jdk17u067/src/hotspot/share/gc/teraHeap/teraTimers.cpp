@@ -1,6 +1,7 @@
+#include "gc/teraHeap/teraHeap.hpp"
 #include "gc/teraHeap/teraTimers.hpp"
 #include "gc/shared/gc_globals.hpp"
-//#include "gc/shared/cycleCounting.hpp"
+#include "memory/universe.hpp"
 #include "runtime/java.hpp"
 
 //const uint64_t TeraTimers::CYCLES_PER_SECOND{get_cycles_per_second()};
@@ -15,6 +16,10 @@ void TeraTimers::print_ellapsed_time(struct timespec start_time,
 	thlog_or_tty->print_cr("[STATISTICS] | %s %f\n", msg, elapsed_time_ms);
 }
 
+void TeraTimers::print_ellapsed_time(double elapsed_time, const char *msg) {
+	thlog_or_tty->print_cr("[STATISTICS] | %s %f\n", msg, elapsed_time);
+}
+
 TeraTimers::TeraTimers(){
 
   if (!TeraHeapStatistics)
@@ -24,7 +29,7 @@ TeraTimers::TeraTimers(){
 	h1_card_table_end_time = NEW_C_HEAP_ARRAY(/*uint64_t*/struct timespec, ParallelGCThreads, mtGC);
 	h2_card_table_start_time = NEW_C_HEAP_ARRAY(/*uint64_t*/struct timespec, ParallelGCThreads, mtGC);
 	h2_card_table_end_time = NEW_C_HEAP_ARRAY(/*uint64_t*/struct timespec, ParallelGCThreads, mtGC);
-
+/*
 	h2_compact_group_region_lock_start_time = NEW_C_HEAP_ARRAY(struct timespec, ParallelGCThreads, mtGC);
 	h2_compact_group_region_lock_end_time = NEW_C_HEAP_ARRAY(struct timespec, ParallelGCThreads, mtGC);
 	h2_compact_group_region_lock_total_time = NEW_C_HEAP_ARRAY(double, ParallelGCThreads, mtGC);
@@ -33,7 +38,7 @@ TeraTimers::TeraTimers(){
         h2_compact_region_lock_total_time = NEW_C_HEAP_ARRAY(double, ParallelGCThreads, mtGC);
         memset(h2_compact_group_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
         memset(h2_compact_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
-
+*/
 	malloc_time_per_gc = 0;
 };
 
@@ -42,13 +47,14 @@ TeraTimers::~TeraTimers() {
 	FREE_C_HEAP_ARRAY(/*uint64_t*/struct timespec, h1_card_table_end_time);
 	FREE_C_HEAP_ARRAY(/*uint64_t*/struct timespec, h2_card_table_start_time);
 	FREE_C_HEAP_ARRAY(/*uint64_t*/struct timespec, h2_card_table_end_time);
-
+/*
         FREE_C_HEAP_ARRAY(struct timespec, h2_compact_group_region_lock_start_time);
 	FREE_C_HEAP_ARRAY(struct timespec, h2_compact_group_region_lock_end_time);
 	FREE_C_HEAP_ARRAY(double, h2_compact_group_region_lock_total_time);
 	FREE_C_HEAP_ARRAY(struct timespec, h2_compact_region_lock_start_time);
 	FREE_C_HEAP_ARRAY(struct timespec, h2_compact_region_lock_end_time);
         FREE_C_HEAP_ARRAY(double, h2_compact_region_lock_total_time);
+	*/
 }
 
 void TeraTimers::h2_scavenge_start() {
@@ -57,7 +63,7 @@ void TeraTimers::h2_scavenge_start() {
 }
 
 void TeraTimers::h2_scavenge_end() {
-	char msg[12] = "H2_SCAVENGE";
+	static const char *msg = "H2_SCAVENGE";
 
 	//h2_scavenge_end_time = get_cycles();
 	clock_gettime(CLOCK_MONOTONIC_RAW, &h2_scavenge_end_time);
@@ -70,7 +76,7 @@ void TeraTimers::h1_marking_phase_start() {
 }
 
 void TeraTimers::h1_marking_phase_end() {
-	char msg[17] = "H1_MARKING_PHASE";
+	static const char *msg = "H1_MARKING_PHASE";
 
 	//h1_marking_phase_end_time = get_cycles();
 	clock_gettime(CLOCK_MONOTONIC_RAW, &h1_marking_phase_end_time);
@@ -83,7 +89,7 @@ void TeraTimers::h2_mark_bwd_ref_start() {
 }
 
 void TeraTimers::h2_mark_bwd_ref_end() {
-	char msg[19] = "H2_MARKING_BWD_REF";
+	static const char *msg = "H2_MARKING_BWD_REF";
 
 	//h2_mark_bwd_ref_end_time = get_cycles();
 	clock_gettime(CLOCK_MONOTONIC_RAW, &h2_mark_bwd_ref_end_time);
@@ -96,7 +102,7 @@ void TeraTimers::h2_precompact_start() {
 }
 
 void TeraTimers::h2_precompact_end() {
-	char msg[14] = "H2_PRECOMPACT";
+	static const char *msg = "H2_PRECOMPACT";
 
 	//h2_precompact_end_time = get_cycles();
 	clock_gettime(CLOCK_MONOTONIC_RAW, &h2_precompact_end_time);
@@ -109,7 +115,7 @@ void TeraTimers::h1_summary_phase_start() {
 }
 
 void TeraTimers::h1_summary_phase_end() {
-	char msg[17] = "H1_SUMMARY_PHASE";
+	static const char *msg = "H1_SUMMARY_PHASE";
 
 	//h1_summary_phase_end_time = get_cycles();
 	clock_gettime(CLOCK_MONOTONIC_RAW, &h1_summary_phase_end_time);
@@ -122,13 +128,36 @@ void TeraTimers::h2_compact_start() {
 }
 
 void TeraTimers::h2_compact_end() {
-	char msg[17] = "H2_COMPACT_PHASE";
+	static const char *msg = "H2_COMPACT_PHASE";
 
 	//h2_compact_end_time = get_cycles();
 	clock_gettime(CLOCK_MONOTONIC_RAW, &h2_compact_end_time);
 	print_ellapsed_time(h2_compact_start_time, h2_compact_end_time, msg);
 }
 
+#if defined(H2_COMPACT_STATISTICS)
+void TeraTimers::h2_total_buffer_insert_elapsed_time() {
+    print_ellapsed_time(TeraHeap::h2_total_buffer_insert_elapsed_time(), "H2_COMPACT_BUFFER_INSERT_ELAPSED_TIME");
+}
+
+void TeraTimers::h2_total_flush_buffer_elapsed_time() { 
+    print_ellapsed_time(TeraHeap::h2_total_flush_buffer_elapsed_time(), "H2_COMPACT_FLUSH_BUFFER_ELAPSED_TIME");
+}
+/*
+void TeraTimers::h2_total_flush_buffer_fragmentation_elapsed_time() {
+    print_ellapsed_time(TeraHeap::h2_total_flush_buffer_fragmentation_elapsed_time(), "H2_COMPACT_FLUSH_BUFFER_FRAGMENTATION_ELAPSED_TIME");
+}
+
+void TeraTimers::h2_total_flush_buffer_nofreespace_elapsed_time() {
+    print_ellapsed_time(TeraHeap::h2_total_flush_buffer_nofreespace_elapsed_time(), "H2_COMPACT_FLUSH_BUFFER_NOFREESPACE_ELAPSED_TIME");
+}
+
+void TeraTimers::h2_total_async_request_elapsed_time() {
+    print_ellapsed_time(TeraHeap::h2_total_async_request_elapsed_time(), "H2_COMPACT_ASYNC_REQUEST_ELAPSED_TIME");
+}*/
+#endif
+
+/*
 void TeraTimers::h2_compact_group_region_lock_start(unsigned int worker_id) {
 	//h2_compact_start_time = get_cycles();
         clock_gettime(CLOCK_MONOTONIC_RAW, &h2_compact_group_region_lock_start_time[worker_id]);
@@ -163,13 +192,13 @@ void TeraTimers::print_h2_compact_lock_time(){
 
 	for (unsigned int i = 0; i < ParallelGCThreads; i++) {
 		//double elapsed_time_ms = (double)((h2_compact_group_region_lock_end_time[i].tv_sec - h2_compact_group_region_lock_start_time[i].tv_sec) * 1000000000L + (h2_compact_group_region_lock_end_time[i].tv_nsec - h2_compact_group_region_lock_start_time[i].tv_nsec)) / 1000000L;
-		if (h2_compact_group_region_lock_max_time < /*elapsed_time_ms*/h2_compact_group_region_lock_total_time[i])
-			h2_compact_group_region_lock_max_time = /*elapsed_time_ms*/h2_compact_group_region_lock_total_time[i];
+		if (h2_compact_group_region_lock_max_time < h2_compact_group_region_lock_total_time[i])
+			h2_compact_group_region_lock_max_time = h2_compact_group_region_lock_total_time[i];
 
 		
                 //elapsed_time_ms = (double)((h2_compact_region_lock_end_time[i].tv_sec - h2_compact_region_lock_start_time[i].tv_sec) * 1000000000L + (h2_compact_region_lock_end_time[i].tv_nsec - h2_compact_region_lock_start_time[i].tv_nsec)) / 1000000L;
-		if (h2_compact_region_lock_max_time < /*elapsed_time_ms*/h2_compact_region_lock_total_time[i])
-			h2_compact_region_lock_max_time = /*elapsed_time_ms*/h2_compact_region_lock_total_time[i];
+		if (h2_compact_region_lock_max_time < h2_compact_region_lock_total_time[i])
+			h2_compact_region_lock_max_time = h2_compact_region_lock_total_time[i];
 	}
 
 	thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_GROUP_REGION_LOCK_TIME = %f\n", h2_compact_group_region_lock_max_time);
@@ -183,7 +212,7 @@ void TeraTimers::print_h2_compact_lock_time(){
         memset(h2_compact_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
         memset(h2_compact_region_lock_total_time, 0, ParallelGCThreads * sizeof(double));
 }
-
+*/
 
 void TeraTimers::h2_adjust_bwd_ref_start() {
 	//h2_adjust_bwd_ref_start_time = get_cycles();

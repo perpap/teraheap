@@ -74,7 +74,8 @@ class ParCompactionManager : public CHeapObj<mtGC> {
   uint64_t                      _h2_group_id = 0;
   uint64_t                      _h2_part_id = 0;
   size_t                        _h2_candidate_obj_size = 0;
-  uint                          _gc_thread_id;//FIXME perpap                         
+  uint                          _gc_thread_id;//FIXME perpap      
+  static GrowableArray<size_t> **_h1_regions_array;//FIXME perpap                 
   // Locate the objects that pop from stack and start scanning its
   // references. If this object has no reference fields then we
   // increase the statistics.
@@ -228,6 +229,7 @@ class ParCompactionManager : public CHeapObj<mtGC> {
 
 #ifdef TERA_MAJOR_GC
   uint gc_thread_id() const { return _gc_thread_id; }
+  static GrowableArray<size_t> * gc_thread_h1_regions_array(uint worker_id) { return _h1_regions_array[worker_id]; }
 #endif
 
   // Access function for compaction managers
@@ -271,4 +273,4 @@ bool ParCompactionManager::marking_stacks_empty() const {
   return _marking_stack.is_empty() && _objarray_stack.is_empty();
 }
 
-#endif // SHARE_GC_PARALLEL_PSCOMPACTIONMANAGER_HPP
+#endif //SHARE_GC_PARALLEL_PSCOMPACTIONMANAGER_HPP

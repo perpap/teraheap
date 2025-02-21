@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>//perpap 
+#include <string.h> 
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/mman.h>
@@ -10,7 +10,22 @@
 #include "../include/segments.h"
 #include "../include/regions.h"
 #include "../include/sharedDefines.h"
-
+#include <stdbool.h>
+/*
+#if PR_BUFFER
+struct pr_buffer *pr_buffers = NULL;
+#endif
+*/
+#if defined(H2_COMPACT_STATISTICS)
+static inline double _get_total_elapsed_time(double *elapsed_times);
+static inline size_t _get_total_operations(size_t *operations);
+#endif
+static inline double _get_elapsed_time_ms(struct timespec start_time, struct timespec end_time) {
+    return  (double)((end_time.tv_sec - start_time.tv_sec) * 1000000000L + (end_time.tv_nsec - start_time.tv_nsec)) / 1000000L;
+}
+static inline double _get_elapsed_time_sec(struct timespec start_time, struct timespec end_time) {
+    return  (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_nsec - start_time.tv_nsec) / 1e9;
+}
 struct region *region_array = NULL;
 struct region **id_array = NULL;
 struct offset *offset_list;
@@ -19,50 +34,186 @@ int32_t		 region_enabled;
 int32_t		 _next_region;
 
 uint32_t _GC_THREADS;//perpap
+static bool _ASYNC_IS_ENABLED = true;//perpap
+
+//static void (*write_to_h2[])(char *data, char *offset, size_t size) = { r_write, r_awrite };
+static void (*write_to_h2)(char *data, char *offset, size_t size, uint64_t worker_id) = NULL;
 
 #if STATISTICS
 uint32_t    total_deps = 0;
-double		  alloc_elapsedtime = 0.0;
-double		  free_elapsedtime = 0.0;
+double	alloc_elapsedtime = 0.0;
+double  free_elapsedtime = 0.0;		
 #endif
 
-//static void (*write_to_h2[])(char *data, char *offset, size_t size) = { r_write, r_awrite };
-static void (*write_to_h2)(char *data, char *offset, size_t size) = NULL;
+#if defined(H2_COMPACT_STATISTICS)
+static double *_buffer_insert_elapsed_times = NULL;
+static double *_flush_buffer_elapsed_times  = NULL;
+//static double *_flush_buffer_fragmentation_elapsed_times = NULL;
+//static double *_flush_buffer_nofreespace_elapsed_times = NULL;
+//static double *_async_request_elapsed_times  = NULL;
+static size_t *_buffer_insert_operations = NULL; 
+static size_t *_flush_buffer_operations = NULL; 
+//static size_t *_flush_buffer_nofreespace_operations = NULL; 
+//static size_t *_flush_buffer_fragmentation_operations = NULL; 
+//static size_t *_async_request_operations = NULL; 
+#endif
 
+#if defined(H2_COMPACT_STATISTICS)
+double _get_total_elapsed_time(double *elapsed_times){
+    double total_elapsed_time = 0.0;
+    for (uint8_t i = 0; i < _GC_THREADS; ++i) { 
+    	total_elapsed_time += elapsed_times[i];
+    }
+    memset(elapsed_times, 0, _GC_THREADS * sizeof(double));
+    return total_elapsed_time;
+}
+
+size_t _get_total_operations(size_t *operations) {
+    size_t total_operations = 0;
+    for (uint8_t i = 0; i < _GC_THREADS; ++i) { 
+    	total_operations += operations[i];
+    }
+    memset(operations, 0, _GC_THREADS * sizeof(size_t));
+    return total_operations;
+}
+
+double total_buffer_insert_elapsed_time() {
+    return _get_total_elapsed_time(_buffer_insert_elapsed_times);
+}
+
+double total_flush_buffer_elapsed_time() {
+    return _get_total_elapsed_time(_flush_buffer_elapsed_times);
+}
+/*
+double total_flush_buffer_fragmentation_elapsed_time() {
+    return _get_total_elapsed_time(_flush_buffer_fragmentation_elapsed_times);
+}
+
+double total_flush_buffer_nofreespace_elapsed_time() {
+    return _get_total_elapsed_time(_flush_buffer_nofreespace_elapsed_times);
+}
+
+double total_async_request_elapsed_time() {
+    return _get_total_elapsed_time(_async_request_elapsed_times);
+}
+*/
+size_t total_buffer_insert_operations() {
+    return _get_total_operations(_buffer_insert_operations);
+}
+
+size_t total_flush_buffer_operations() {
+    return _get_total_operations(_flush_buffer_operations);
+}
+/*
+size_t total_flush_buffer_fragmentation_operations() {
+    return _get_total_operations(_flush_buffer_fragmentation_operations);
+}
+
+size_t total_flush_buffer_nofreespace_operations() {
+    return _get_total_operations(_flush_buffer_nofreespace_operations);
+}
+
+size_t total_async_request_operations() {
+    return _get_total_operations(_async_request_operations);
+}*/
+#endif
+
+static inline void check_allocation_failure(void *ptr, const char *msg) {
+    if (!ptr) {
+        perror(msg);
+        exit(EXIT_FAILURE);
+    }
+}
+
+/*
+ * Function to calculate the pr_buffer index
+ */
+static inline size_t get_pr_buffer_index(size_t region_index, size_t thread_id, size_t number_of_threads) {
+    return (region_index * number_of_threads) + thread_id;
+}
+/*
+static inline void measure_execution_time(void (*func)(void*, void*, size_t), void *obj, void *new_adr, size_t size, double *elapsed_time, uint32_t *total_operations_counter) {
+    struct timeval request_start_time, request_end_time;
+    gettimeofday(&request_start_time, NULL);
+    
+    func(obj, new_adr, size);
+    
+    gettimeofday(&request_end_time, NULL);
+    
+    *elapsed_time += (request_end_time.tv_sec - request_start_time.tv_sec) * 1000.0;
+    *elapsed_time += (request_end_time.tv_usec - request_start_time.tv_usec) / 1000.0;
+    
+    ++total_operations_counter;    
+}*/
 /*
  * Initialize region array, group array and their fields
  */
 void init_regions(uint32_t gc_threads, const char *h2_write_policy){
-  int32_t i;
   _GC_THREADS = gc_threads;
+  
+  #if defined(H2_COMPACT_STATISTICS)
+  _buffer_insert_elapsed_times = calloc(0, _GC_THREADS * sizeof(double));
+  check_allocation_failure(_buffer_insert_elapsed_times, "[Error] - Failed to allocate memory for _buffer_insert_elapsed_times\n");
+  
+  _flush_buffer_elapsed_times = calloc(0, _GC_THREADS * sizeof(double));
+  check_allocation_failure(_flush_buffer_elapsed_times, "[Error] - Failed to allocate memory for _flush_buffer_elapsed_times\n");
+  /*
+  _flush_buffer_fragmentation_elapsed_times = calloc(0, _GC_THREADS * sizeof(double));
+  check_allocation_failure(_flush_buffer_fragmentation_elapsed_times, "[Error] - Failed to allocate memory for _flush_buffer_fragmentation_elapsed_times\n");
+  
+  _flush_buffer_nofreespace_elapsed_times = calloc(0, _GC_THREADS * sizeof(double));
+  check_allocation_failure(_flush_buffer_nofreespace_elapsed_times, "[Error] - Failed to allocate memory for _flush_buffer_nofreespace_elapsed_times\n");
+
+  _async_request_elapsed_times = calloc(0, _GC_THREADS * sizeof(double));
+  check_allocation_failure(_async_request_elapsed_times, "[Error] - Failed to allocate memory for _async_request_elapsed_times\n");
+*/
+  _buffer_insert_operations = calloc(0, _GC_THREADS * sizeof(size_t));
+  check_allocation_failure(_buffer_insert_operations, "[Error] - Failed to allocate memory for _buffer_insert_operations\n");
+/*
+  _flush_buffer_fragmentation_operations = calloc(0, _GC_THREADS * sizeof(size_t));
+  check_allocation_failure(_flush_buffer_fragmentation_operations, "[Error] - Failed to allocate memory for _flush_buffer_fragmentation_operations\n");
+
+  _flush_buffer_nofreespace_operations = calloc(0, _GC_THREADS * sizeof(size_t));
+  check_allocation_failure(_flush_buffer_nofreespace_operations, "[Error] - Failed to allocate memory for _flush_buffer_nofreespace_operations\n");
+*/
+  _flush_buffer_operations = calloc(0, _GC_THREADS * sizeof(size_t)); 
+  check_allocation_failure(_flush_buffer_operations, "[Error] - Failed to allocate memory for _flush_buffer_operations\n");
+/*
+  _async_request_operations = calloc(0, _GC_THREADS * sizeof(size_t));  
+  check_allocation_failure(_async_request_operations, "[Error] - Failed to allocate memory for _async_request_operations\n");
+  */
+  #endif
+
 
   if(strcmp(h2_write_policy, "AsyncWritePolicy") == 0){
       write_to_h2 = r_awrite;
   }else{
       write_to_h2 = r_write;
+      _ASYNC_IS_ENABLED = false;
   }
 
   region_enabled = -1;
   offset_list = NULL;
   int32_t rdd_id_size = MAX_PARTITIONS * max_rdd_id;
 
-  region_array=(struct region*) malloc(region_array_size* sizeof(struct region));
-  if (region_array == NULL) {
-    perror("[Error] - Failed to allocate memory for region_array\n");
-    exit(EXIT_FAILURE);
-  }
+  region_array=(struct region*) malloc(region_array_size * sizeof(struct region));
+  //region_array=(struct region*) malloc(region_array_size * (sizeof(struct region) + _GC_THREADS * sizeof(struct pr_buffer *)));
+  check_allocation_failure(region_array, "[Error] - Failed to allocate memory for region_array\n"); 
 
   id_array=(struct region**) malloc(( MAX_PARTITIONS * max_rdd_id) * sizeof(struct region*));
-  if (id_array == NULL) {
-    perror("[Error] - Failed to allocate memory for id_array\n");
-    exit(EXIT_FAILURE);
-  }
+  check_allocation_failure(id_array, "[Error] - Failed to allocate memory for id_array\n"); 
 
 #if DEBUG_PRINT 
   fprintf(allocator_log_fp, "[%s|%s|%d]Total num of regions:%" PRIu64 "\nrdd_id_size:%d\n", __FILE__, __func__, __LINE__, region_array_size, rdd_id_size);
 #endif
-
-  for (i = 0; i < region_array_size ; i++) {
+/*
+#if PR_BUFFER
+  pr_buffers =(struct pr_buffer *) malloc(region_array_size * _GC_THREADS * sizeof(struct pr_buffer));
+  check_allocation_failure(pr_buffers, "[Error] - Failed to allocate memory for pr_buffers\n"); 
+  //struct pr_buffer *buf = pr_buffers;
+#endif 
+*/
+  for (size_t i = 0; i < region_array_size ; i++) {
     region_array[i].start_address             = (i == 0) ? start_addr_mem_pool() : (region_array[i - 1].start_address + (uint64_t) REGION_SIZE);
     region_array[i].used                      = 0;
     region_array[i].last_allocated_end        = region_array[i].start_address;
@@ -71,45 +222,47 @@ void init_regions(uint32_t gc_threads, const char *h2_write_policy){
     region_array[i].dependency_list           = NULL;
     region_array[i].rdd_id                    = rdd_id_size;
     region_array[i].part_id                   = rdd_id_size;
+    
 #if PR_BUFFER
-    region_array[i].pr_buffer                 = malloc(sizeof(struct pr_buffer));
-    /*region_array[i].pr_buffers                 = malloc(_GC_THREADS * sizeof(struct pr_buffer *));
+    
+    //region_array[i].pr_buffer                 = malloc(sizeof(struct pr_buffer));
+    region_array[i].pr_buffers                 = malloc(_GC_THREADS * sizeof(struct pr_buffer *));
     if (!region_array[i].pr_buffers) {
-        fprintf(stderr, "[Error] - Failed to allocate contiguous pr_buffer block for region %d\n", i);
+        fprintf(stderr, "[Error] - Failed to allocate contiguous pr_buffer block for region %zd\n", i);
         //free(region_array[i].pr_buffers);
         exit(EXIT_FAILURE);
     }
 #if 1//perpap
-    for(uint32_t tid = 0; tid < _GC_THREADS; ++tid){
+    for(size_t tid = 0; tid < _GC_THREADS; ++tid){
+	    //size_t _index = get_pr_buffer_index(i, tid, _GC_THREADS);
+	    
 	region_array[i].pr_buffers[tid]        = malloc(sizeof(struct pr_buffer));
 	if(!region_array[i].pr_buffers[tid]){
-	    fprintf(stderr, "pr_buffer is NULL for the region:%d handled by gc_thread:%u!\n", i, tid);
+	    fprintf(stderr, "pr_buffer is NULL for the region:%zd handled by gc_thread:%zd!\n", i, tid);
 	    exit(EXIT_FAILURE);
 	}
 	region_array[i].pr_buffers[tid]->buffer         = NULL;
 	region_array[i].pr_buffers[tid]->size           = 0;
 	region_array[i].pr_buffers[tid]->alloc_ptr      = NULL;
 	region_array[i].pr_buffers[tid]->first_obj_addr = NULL;
+	/*
+	pr_buffers[_index].buffer = NULL;
+	pr_buffers[_index].size = 0;
+	pr_buffers[_index].alloc_ptr = NULL;
+	pr_buffers[_index].first_obj_addr = NULL;
+	*/
     }
-#endif*/
-#if 1
+#endif
+#if 0
     region_array[i].pr_buffer->buffer         = NULL;
     region_array[i].pr_buffer->size           = 0;
     region_array[i].pr_buffer->alloc_ptr      = NULL;
     region_array[i].pr_buffer->first_obj_addr = NULL;
 #endif
-#if 0//perpap
-    if(mtx_init(&region_array[i].mutex, mtx_plain) == thrd_error){
-        #if DEBUG_PRINT
-    	fprintf(allocator_log_fp, "[%s|%s|%d]Mutex initialization failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
-        #endif
-	exit(EXIT_FAILURE);
-    }	     
-#endif
-//assertf(mtx_init(&region_array[i].mutex, mtx_plain) == thrd_error, "Mutex initialization failed! error:%d",thrd_error);
+
 #endif //#if PR_BUFFER
   }
-  for (i = 0; i < rdd_id_size; i++) {
+  for (int32_t i = 0; i < rdd_id_size; i++) {
     id_array[i]                               = NULL;
   }
 }
@@ -682,9 +835,10 @@ long total_used_regions() {
  * seg: Index of the region in region array
  *
  */
-void flush_buffer(uint64_t seg, uint32_t gc_thread_id) {
-    #if 0//perpap
-    struct pr_buffer *buf = region_array[seg].pr_buffers[gc_thread_id];
+void flush_buffer(struct pr_buffer *buf, uint32_t worker_id) {
+//void flush_buffer(uint64_t seg, uint32_t worker_id) {
+    #if 1//perpap
+    //struct pr_buffer *buf = region_array[seg].pr_buffers[worker_id];
 
     if (buf->size == 0){
 	return;
@@ -693,14 +847,12 @@ void flush_buffer(uint64_t seg, uint32_t gc_thread_id) {
     assertf(buf->size <= PR_BUFFER_SIZE, "Sanity check");
 
     // Write the buffer to TeraCache
-    //r_awrite(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize);
-    //r_write(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize);
-    write_to_h2(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize); 
+    write_to_h2(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize, worker_id); 
     buf->alloc_ptr = buf->buffer;
     buf->first_obj_addr = NULL;
     buf->size = 0;
     #endif
-    #if 1
+    #if 0
     struct pr_buffer *buf = region_array[seg].pr_buffer;
     if (buf->size == 0){
 	return;
@@ -724,19 +876,16 @@ void flush_buffer(uint64_t seg, uint32_t gc_thread_id) {
  *			be move to H2
  * size: Size of the object
  */
-void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id) {
+void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t worker_id) {
+    #if defined(H2_COMPACT_STATISTICS)
+    struct timespec buffer_insert_start_time, buffer_insert_end_time;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &buffer_insert_start_time);    
+    #endif
     uint64_t seg = (new_adr - region_array[0].start_address) / (uint64_t)REGION_SIZE;
-#if 0//perpap 
-	if(mtx_lock(&region_array[seg].mutex) == thrd_error){
-            #if DEBUG_PRINT
-	    fprintf(allocator_log_fp, "[%s|%s|%d]Mutex lock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
-            #endif
-	    exit(EXIT_FAILURE);
-	} 
-	//assertf(mtx_lock(&region_array[seg].mutex) == thrd_error, "Mutex lock failed! error:%d", thrd_error);	
-#endif
-    //struct pr_buffer *buf = region_array[seg].pr_buffers[gc_thread_id];
-    struct pr_buffer *buf = region_array[seg].pr_buffer;
+    //uint64_t buf_index = (seg * _GC_THREADS + worker_id);
+    //struct pr_buffer *buf = pr_buffers + buf_index;
+    struct pr_buffer *buf = region_array[seg].pr_buffers[worker_id];
+    //struct pr_buffer *buf = region_array[seg].pr_buffer;
 
     char*  start_adr  = buf->first_obj_addr;
     size_t cur_size   = buf->size;
@@ -745,17 +894,20 @@ void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id)
     assertf(THRESHOLD < PR_BUFFER_SIZE, "Threshold should be less that promotion buffer size");
 
     if ((size * HeapWordSize) > THRESHOLD) {
-	//r_awrite(obj, new_adr, size);
-        write_to_h2(obj, new_adr, size);
-#if 0//perpap
-                //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);
-		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
-                    #if DEBUG_PRINT
-	            fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
-                    #endif
-	            exit(EXIT_FAILURE);
-	        }
-#endif
+        #if defined(H2_COMPACT_STATISTICS)
+	    struct timespec flush_buffer_start_time, flush_buffer_end_time;
+	    clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_start_time);     
+
+	    write_to_h2(obj, new_adr, size, worker_id);
+
+	    clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_end_time);     
+	    
+	    _flush_buffer_elapsed_times[worker_id] += _get_elapsed_time_sec(flush_buffer_start_time, flush_buffer_end_time); 
+	    ++_flush_buffer_operations[worker_id];
+        #else
+            write_to_h2(obj, new_adr, size, worker_id);
+        #endif
+	
 	return;
     }
 
@@ -766,21 +918,18 @@ void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id)
     }
 
     /* Case1: Buffer is empty */
-    if (cur_size == 0) {
+    if (cur_size == 0) { 
         assertf(start_adr == NULL, "Sanity check");
 	memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
 	buf->first_obj_addr = new_adr;
 	buf->alloc_ptr += size * HeapWordSize;
 	buf->size = size * HeapWordSize;
-#if 0//perpap
-                //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);
-		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
-                    #if DEBUG_PRINT
-	            fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
-                    #endif
-	            exit(EXIT_FAILURE);
-	        }
-#endif
+
+	#if defined(H2_COMPACT_STATISTICS)	
+	clock_gettime(CLOCK_MONOTONIC_RAW, &buffer_insert_end_time);
+        _buffer_insert_elapsed_times[worker_id] += _get_elapsed_time_sec(buffer_insert_start_time, buffer_insert_end_time);
+        ++_buffer_insert_operations[worker_id];
+        #endif	
 	return;
     }
 	
@@ -792,36 +941,31 @@ void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id)
      * buffer.
      */
     if (((size * HeapWordSize) > free_space) || ((start_adr + cur_size) != new_adr)) {
-	flush_buffer(seg, gc_thread_id);
+	#if defined(H2_COMPACT_STATISTICS)
+	struct timespec flush_buffer_start_time, flush_buffer_end_time;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_start_time);        
+        #endif
+        flush_buffer(buf, worker_id);
+        #if defined(H2_COMPACT_STATISTICS)
+        clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_end_time);        
+	_flush_buffer_elapsed_times[worker_id] += _get_elapsed_time_sec(flush_buffer_start_time, flush_buffer_end_time);
+	++_flush_buffer_operations[worker_id];
+        #endif
 	assertf(buf != NULL, "pr buffer is NULL");
 	memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
 	buf->first_obj_addr = new_adr;
 	buf->alloc_ptr += size * HeapWordSize;
 	buf->size = size * HeapWordSize;
-#if 0//perpap
-                //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);//perpap
-		if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
-                    #if DEBUG_PRINT
-	            fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
-                    #endif
-	            exit(EXIT_FAILURE);
-	        }
-#endif
 	return;
-    }
-	
+    }	
     memcpy(buf->alloc_ptr, obj, size * HeapWordSize);
     buf->alloc_ptr += size * HeapWordSize;
     buf->size += size * HeapWordSize;
-#if 0//perpap
-        //assertf(mtx_unlock(&region_array[seg].mutex) == thrd_error, "Mutex unlock failed! error:%d", thrd_error);	
-	if(mtx_unlock(&region_array[seg].mutex) == thrd_error){
-            #if DEBUG_PRINT
-	    fprintf(allocator_log_fp, "[%s|%s|%d]Mutex unlock failed! error:%d\n", __FILE__, __func__, __LINE__, thrd_error);
-            #endif
-	    exit(EXIT_FAILURE);
-	}
-#endif
+    #if defined(H2_COMPACT_STATISTICS) 
+    clock_gettime(CLOCK_MONOTONIC_RAW, &buffer_insert_end_time);   
+    _buffer_insert_elapsed_times[worker_id] += _get_elapsed_time_sec(buffer_insert_start_time, buffer_insert_end_time);
+    ++_buffer_insert_operations[worker_id];
+    #endif
 }
 
 /*
@@ -829,35 +973,79 @@ void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id)
  * memory to limit waste space.
  */
 void free_all_buffers() {
-#if 0//perpap
-    struct pr_buffer **buf;
-
-    for (uint64_t i = 0; i < region_array_size; i++) {
-        buf = region_array[i].pr_buffers;
-	for(uint32_t tid = 0; tid < _GC_THREADS; tid++){
-            #ifdef ASSERT
-            assertf(buf[tid] != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
-            #endif
-	    if(buf[tid] != NULL){
-		    /* Buffer is not empty, so flush it*/
-		    if (buf[tid]->size != 0)
-		       flush_buffer(i, tid);
-
-		    /* If the buffer is already flushed, just free bufffer's memory */
-		    if (buf[tid]->buffer != NULL) {
-		       free(buf[tid]->buffer);
-		       buf[tid]->buffer = NULL;
-		       buf[tid]->alloc_ptr = NULL;
-		       buf[tid]->first_obj_addr = NULL;
-		       buf[tid]->size = 0;
-		    }
+    struct pr_buffer *buf;
+    //struct pr_buffer **buf;
+    //struct pr_buffer *buf = pr_buffers;
+#if 0
+    for (uint64_t i = 0, tid = 0, total_buffers = region_array_size * _GC_THREADS; i < total_buffers; i++, tid++, buf++) {
+    #ifdef ASSERT
+    assertf(buf != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
+    #endif
+    if(tid == _GC_THREADS){
+        tid = 0;
+    }
+        if(buf != NULL){
+	    /* Buffer is not empty, so flush it*/
+	    if (buf->size != 0) { 
+	       #if defined(H2_COMPACT_STATISTICS)
+	       struct timespec flush_buffer_start_time, flush_buffer_end_time;
+	       clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_start_time);        
+	       #endif
+	       flush_buffer(buf, tid);
+	       #if defined(H2_COMPACT_STATISTICS)
+	       clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_end_time);        
+	       _flush_buffer_elapsed_times[tid] += _get_elapsed_time_sec(flush_buffer_start_time, flush_buffer_end_time);
+	       ++_flush_buffer_operations[tid];
+	       #endif
 	    }
-	}
-	//free(buf);
-	//buf = NULL;
+
+	    /* If the buffer is already flushed, just free buffer's memory */
+	    if (buf->buffer != NULL) {
+	       free(buf->buffer);
+	       buf->buffer = NULL;
+	       buf->alloc_ptr = NULL;
+	       buf->first_obj_addr = NULL;
+	       buf->size = 0;
+	    }
+        }
     }
 #endif
 #if 1
+    for (uint64_t i = 0; i < region_array_size; i++) {
+	//buf = region_array[i].pr_buffers;
+	for(uint32_t tid = 0; tid < _GC_THREADS; tid++) {
+            buf = region_array[i].pr_buffers[tid];
+            #ifdef ASSERT
+            assertf(buf/*[tid]*/ != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
+            #endif
+	    if(buf/*[tid]*/ != NULL){
+		    /* Buffer is not empty, so flush it*/
+		    if (/*buf[tid]*/buf->size != 0) { 
+                       #if defined(H2_COMPACT_STATISTICS)
+                       struct timespec flush_buffer_start_time, flush_buffer_end_time;
+                       clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_start_time);        
+                       #endif
+		       flush_buffer(buf/*[tid]*/, tid);
+                       #if defined(H2_COMPACT_STATISTICS)
+                       clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_end_time);        
+		       _flush_buffer_elapsed_times[tid] += _get_elapsed_time_sec(flush_buffer_start_time, flush_buffer_end_time);
+		       ++_flush_buffer_operations[tid];
+                       #endif
+		    }
+
+		    /* If the buffer is already flushed, just free buffer's memory */
+		    if (/*buf[tid]*/buf->buffer != NULL) {
+		       free(/*buf[tid]*/buf->buffer);
+		       /*buf[tid]*/buf->buffer = NULL;
+		       /*buf[tid]*/buf->alloc_ptr = NULL;
+		       /*buf[tid]*/buf->first_obj_addr = NULL;
+		       /*buf[tid]*/buf->size = 0;
+		    }
+	    }
+	}
+    }
+#endif
+#if 0
     //uint64_t i;
     struct pr_buffer *buf;
 
@@ -880,6 +1068,40 @@ void free_all_buffers() {
         }
     }
 #endif
+}
+
+void free_all_buffers_parallel(uint32_t worker_id) {
+    struct pr_buffer *buf;
+    for (uint64_t i = 0; i < region_array_size; i++) {
+        buf = region_array[i].pr_buffers[worker_id];
+        #ifdef ASSERT
+        assertf(buf != NULL, "pr_buffer is NULL! buffer_index = %" PRIu64 " region_array_size = %" PRIu64 "\n", i, region_array_size);
+        #endif
+        if(buf != NULL){
+	    /* Buffer is not empty, so flush it*/
+	    if (buf->size != 0) { 
+	       #if defined(H2_COMPACT_STATISTICS)
+	       struct timespec flush_buffer_start_time, flush_buffer_end_time;
+	       clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_start_time);        
+	       #endif
+	       flush_buffer(buf, worker_id);
+	       #if defined(H2_COMPACT_STATISTICS)
+	       clock_gettime(CLOCK_MONOTONIC_RAW, &flush_buffer_end_time);        
+	       _flush_buffer_elapsed_times[worker_id] += _get_elapsed_time_sec(flush_buffer_start_time, flush_buffer_end_time);
+	       ++_flush_buffer_operations[worker_id];
+	       #endif
+	    }
+
+	    /* If the buffer is already flushed, just free buffer's memory */
+	    if (buf->buffer != NULL) {
+	       free(buf->buffer);
+	       buf->buffer = NULL;
+	       buf->alloc_ptr = NULL;
+	       buf->first_obj_addr = NULL;
+	       buf->size = 0;
+	    }
+        }
+    }
 }
 
 bool object_starts_from_region(char *obj) {

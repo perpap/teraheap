@@ -1,12 +1,12 @@
 #include "gc/shared/collectedHeap.hpp"
-#include "gc/shared/cycleCounting.hpp"
+//#include "gc/shared/cycleCounting.hpp"
 #include "gc/parallel/parallelScavengeHeap.hpp"
 #include "gc/flexHeap/flexHeap.hpp"
 #include "memory/universe.hpp"
 
 #define BUFFER_SIZE 1024
 #define REGULAR_INTERVAL ((2LL * 1000)) 
-const uint64_t FlexHeap::CYCLES_PER_SECOND{get_cycles_per_second()};
+//const uint64_t FlexHeap::CYCLES_PER_SECOND{get_cycles_per_second()};
 
 // Intitilize the cpu usage statistics
 FlexCPUUsage* FlexHeap::init_cpu_usage_stats() {
@@ -121,7 +121,8 @@ void FlexHeap::calculate_gc_io_costs(double *avg_gc_time_ms,
 FlexHeap::FlexHeap() {
   cpu_usage = init_cpu_usage_stats();
 
-  window_start_time = get_cycles();
+  //window_start_time = get_cycles();
+  clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
   cpu_usage->read_cpu_usage(STAT_START);
   gc_time = 0;
   cur_action = FH_NO_ACTION;
@@ -139,16 +140,19 @@ FlexHeap::FlexHeap() {
 }
   
 // Calculate ellapsed time
-double FlexHeap::ellapsed_time(uint64_t start_time,
-                                                uint64_t end_time) {
-
+/*double FlexHeap::ellapsed_time(uint64_t start_time, uint64_t end_time) {
   double elapsed_time = (double)(end_time - start_time) / CYCLES_PER_SECOND;
   return (elapsed_time * 1000.0);
+}*/
+double FlexHeap::ellapsed_time(struct timespec start_time, struct timespec end_time) {
+    //double elapsed_time_ms = (double)((end_time.tv_sec - start_time.tv_sec) * 1000000000L + (end_time.tv_nsec - start_time.tv_nsec)) / 1000000L;
+    return (double)((end_time.tv_sec - start_time.tv_sec) * 1000000000L + (end_time.tv_nsec - start_time.tv_nsec)) / 1000000L;
 }
 
 // Set current time since last window
 void FlexHeap::reset_counters() {
-  window_start_time = get_cycles();
+  //window_start_time = get_cycles();
+  clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
   cpu_usage->read_cpu_usage(STAT_START);
   gc_time = 0;
   window_interval = REGULAR_INTERVAL;
@@ -156,9 +160,10 @@ void FlexHeap::reset_counters() {
 
 // Check if the window limit exceed time
 bool FlexHeap::is_window_limit_exeed() {
-  uint64_t window_end_time;
-  static int i = 0;
-  window_end_time = get_cycles();
+  //uint64_t window_end_time;
+  //window_end_time = get_cycles();
+  struct timespec window_end_time;
+  clock_gettime(CLOCK_MONOTONIC_RAW, &window_end_time);
   interval = ellapsed_time(window_start_time, window_end_time);
 
 #ifdef PER_MINOR_GC

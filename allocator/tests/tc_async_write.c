@@ -57,16 +57,16 @@ int main(int argc, char **argv) {
 	tmp4[SIZE_4M - 1] = '\0';
 	
 	obj1 = allocate(SIZE_TO_WORD(SIZE_80B), 0, 0);
-	r_awrite(tmp, obj1, SIZE_TO_WORD(SIZE_80B));
+	r_awrite(tmp, obj1, SIZE_TO_WORD(SIZE_80B), 0);
 	
 	obj2 = allocate(SIZE_TO_WORD(SIZE_160B), 1, 0);
-	r_awrite(tmp2, obj2, SIZE_TO_WORD(SIZE_160B));
+	r_awrite(tmp2, obj2, SIZE_TO_WORD(SIZE_160B), 0);
 	
 	obj3 = allocate(SIZE_TO_WORD(SIZE_1M), 0, 0);
-	r_awrite(tmp3, obj3, SIZE_TO_WORD(SIZE_1M));
+	r_awrite(tmp3, obj3, SIZE_TO_WORD(SIZE_1M), 0);
 	
 	obj4 = allocate(SIZE_TO_WORD(SIZE_4M), 1, 0);
-	r_awrite(tmp4, obj4, SIZE_TO_WORD(SIZE_4M));
+	r_awrite(tmp4, obj4, SIZE_TO_WORD(SIZE_4M), 0);
 
 	while (!r_areq_completed());
 

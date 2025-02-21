@@ -1,4 +1,5 @@
 #include "gc/shared/gc_globals.hpp"
+#include "gc/teraHeap/teraHeap.hpp"
 #include "gc/teraHeap/teraStatistics.hpp"
 #include "runtime/arguments.hpp"
 
@@ -9,7 +10,13 @@ TeraStatistics::TeraStatistics() {
 
   forward_ref = NEW_C_HEAP_ARRAY(size_t, ParallelGCThreads, mtGC);
   memset(forward_ref, 0, ParallelGCThreads * sizeof(size_t));
-
+  #if defined(H2_COMPACT_STATISTICS)
+  moved_objects_per_gc_thread = NEW_C_HEAP_ARRAY(size_t, ParallelGCThreads, mtGC);
+  memset(moved_objects_per_gc_thread, 0, ParallelGCThreads * sizeof(size_t));
+  moved_bytes_per_gc_thread = NEW_C_HEAP_ARRAY(size_t, ParallelGCThreads, mtGC);
+  memset(moved_bytes_per_gc_thread, 0, ParallelGCThreads * sizeof(size_t));
+  #endif
+  
   backward_ref = 0;
   moved_objects_per_gc = 0;
 
@@ -26,6 +33,10 @@ TeraStatistics::TeraStatistics() {
 
 TeraStatistics::~TeraStatistics() {
   FREE_C_HEAP_ARRAY(size_t, forward_ref);
+  #if defined(H2_COMPACT_STATISTICS)
+  FREE_C_HEAP_ARRAY(size_t, moved_objects_per_gc_thread);
+  FREE_C_HEAP_ARRAY(size_t, moved_bytes_per_gc_thread);
+   #endif
 }
 
 // Increase by one the counter that shows the total number of
@@ -37,6 +48,14 @@ void TeraStatistics::add_object(size_t size) {
   total_objects_size += size;
   moved_objects_per_gc++;
 }
+
+#if defined(H2_COMPACT_STATISTICS)
+void TeraStatistics::move_object(size_t size, unsigned int worker_id) {
+  assert(worker_id < ParallelGCThreads, "Out-of-bound access");
+  ++moved_objects_per_gc_thread[worker_id];
+  moved_bytes_per_gc_thread[worker_id] += size;
+}
+#endif
 
 // Per GC thread we count the number of forwarding references from
 // objects in H1 to objects in H2 during the marking phase.
@@ -83,31 +102,45 @@ void TeraStatistics::add_fwd_tables() {
 //	- the current total objects that are moved in H2
 void TeraStatistics::print_major_gc_stats() {
   size_t total_fwd_ref = 0; 
+  for (unsigned int i = 0; i < ParallelGCThreads; i++){
+        total_fwd_ref += forward_ref[i];
+  }
 
-  for (unsigned int i = 0; i < ParallelGCThreads; i++)
-    total_fwd_ref += forward_ref[i];
+  #if defined(H2_COMPACT_STATISTICS)
+  for (unsigned int i = 0; i < ParallelGCThreads; i++) {
+      thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_MOVED_OBJECTS_PER_GC_THREAD(%u) = %lu\n", i, moved_objects_per_gc_thread[i]);
+      thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_MOVED_BYTES_PER_GC_THREAD(%u) = %lu\n", i, moved_bytes_per_gc_thread[i]);
+  }
+  thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_TOTAL_BUFFER_INSERT_OPERATIONS = %lu\n", TeraHeap::h2_total_buffer_insert_operations());
+  thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_TOTAL_FLUSH_BUFFER_OPERATIONS = %lu\n", TeraHeap::h2_total_flush_buffer_operations());
+  //thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_TOTAL_FLUSH_BUFFER_FRAGMENTATION_OPERATIONS = %lu\n", TeraHeap::h2_total_flush_buffer_fragmentation_operations());
+  //thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_TOTAL_FLUSH_BUFFER_NOFREESPACE_OPERATIONS = %lu\n", TeraHeap::h2_total_flush_buffer_nofreespace_operations());
+  //thlog_or_tty->print_cr("[STATISTICS] | H2_COMPACT_TOTAL_ASYNC_REQUEST_OPERATIONS = %lu\n", TeraHeap::h2_total_async_request_operations());
+  #endif
+  thlog_or_tty->print_cr("[STATISTICS] | TOTAL_FORWARD_TABLES = %lu\n", num_fwd_tables);
+  thlog_or_tty->print_cr("[STATISTICS] | TOTAL_FORWARD_PTRS = %lu\n", total_fwd_ref);
+  thlog_or_tty->print_cr("[STATISTICS] | TOTAL_BACK_PTRS = %lu\n", backward_ref);
+  thlog_or_tty->print_cr("[STATISTICS] | TOTAL_TRANS_OBJ = %lu\n", moved_objects_per_gc);
 
-	thlog_or_tty->print_cr("[STATISTICS] | TOTAL_FORWARD_TABLES = %lu\n", num_fwd_tables);
-	thlog_or_tty->print_cr("[STATISTICS] | TOTAL_FORWARD_PTRS = %lu\n", total_fwd_ref);
-	thlog_or_tty->print_cr("[STATISTICS] | TOTAL_BACK_PTRS = %lu\n", backward_ref);
-	thlog_or_tty->print_cr("[STATISTICS] | TOTAL_TRANS_OBJ = %lu\n", moved_objects_per_gc);
+  thlog_or_tty->print_cr("[STATISTICS] | TOTAL_OBJECTS  = %lu\n", total_objects);
+  thlog_or_tty->print_cr("[STATISTICS] | TOTAL_OBJECTS_SIZE = %lu\n", total_objects_size);
+  thlog_or_tty->print_cr("[STATISTICS] | DISTRIBUTION | B = %lu | KB = %lu | MB = %lu\n",	obj_distr_size[0], obj_distr_size[1], obj_distr_size[2]);
 
-	thlog_or_tty->print_cr("[STATISTICS] | TOTAL_OBJECTS  = %lu\n", total_objects);
-	thlog_or_tty->print_cr("[STATISTICS] | TOTAL_OBJECTS_SIZE = %lu\n", total_objects_size);
-	thlog_or_tty->print_cr("[STATISTICS] | DISTRIBUTION | B = %lu | KB = %lu | MB = %lu\n",
-			obj_distr_size[0], obj_distr_size[1], obj_distr_size[2]);
-
-	thlog_or_tty->print_cr("[STATISTICS] | NUM_PRIMITIVE_ARRAYS  = %lu\n", num_primitive_arrays);
-	thlog_or_tty->print_cr("[STATISTICS] | PRIMITIVE_ARRAYS_SIZE  = %lu\n", primitive_arrays_size);
+  thlog_or_tty->print_cr("[STATISTICS] | NUM_PRIMITIVE_ARRAYS  = %lu\n", num_primitive_arrays);
+  thlog_or_tty->print_cr("[STATISTICS] | PRIMITIVE_ARRAYS_SIZE  = %lu\n", primitive_arrays_size);
   thlog_or_tty->print_cr("[STATISTICS] | NUM_PRIMITIVE_OBJ  = %lu\n", num_primitive_obj);
-	thlog_or_tty->print_cr("[STATISTICS] | PRIMITIVE_OBJ_SIZE  = %lu\n", primitive_obj_size);
+  thlog_or_tty->print_cr("[STATISTICS] | PRIMITIVE_OBJ_SIZE  = %lu\n", primitive_obj_size);
   thlog_or_tty->print_cr("[STATISTICS] | NUM_NON_PRIMITIVE_OBJ  = %lu\n", num_non_primitive_obj);
-	thlog_or_tty->print_cr("[STATISTICS] | NON_PRIMITIVE_OBJ_SIZE  = %lu\n", non_primitive_obj_size);
+  thlog_or_tty->print_cr("[STATISTICS] | NON_PRIMITIVE_OBJ_SIZE  = %lu\n", non_primitive_obj_size);
 
   thlog_or_tty->flush();
 
   // Init the statistics counters of TeraHeap to zero for the next GC
   memset(forward_ref, 0, ParallelGCThreads * sizeof(uint64_t));
+  #if defined(H2_COMPACT_STATISTICS)
+  memset(moved_objects_per_gc_thread, 0, ParallelGCThreads * sizeof(size_t));
+  memset(moved_bytes_per_gc_thread, 0, ParallelGCThreads * sizeof(size_t));
+  #endif
   backward_ref = 0;
   moved_objects_per_gc = 0;
   num_fwd_tables = 0;

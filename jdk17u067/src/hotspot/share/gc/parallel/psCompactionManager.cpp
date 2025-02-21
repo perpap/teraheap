@@ -41,6 +41,7 @@
 
 PSOldGen*               ParCompactionManager::_old_gen = NULL;
 ParCompactionManager**  ParCompactionManager::_manager_array = NULL;
+GrowableArray<size_t >** ParCompactionManager::_h1_regions_array = NULL;
 
 ParCompactionManager::OopTaskQueueSet*      ParCompactionManager::_oop_task_queues = NULL;
 ParCompactionManager::ObjArrayTaskQueueSet* ParCompactionManager::_objarray_task_queues = NULL;
@@ -84,10 +85,15 @@ void ParCompactionManager::initialize(ParMarkBitMap* mbm) {
   _oop_task_queues = new OopTaskQueueSet(parallel_gc_threads);
   _objarray_task_queues = new ObjArrayTaskQueueSet(parallel_gc_threads);
   _region_task_queues = new RegionTaskQueueSet(parallel_gc_threads);
-
+#ifdef TERA_MAJOR_GC
+  _h1_regions_array = NEW_C_HEAP_ARRAY(GrowableArray<size_t>*, parallel_gc_threads, mtGC);//FIXME perpap
+#endif
   // Create and register the ParCompactionManager(s) for the worker threads.
   for(uint i=0; i<parallel_gc_threads; i++) {
-    _manager_array[i] = new ParCompactionManager(i);//FIXME perpap
+    _manager_array[i] = new ParCompactionManager(i);//FIXME perpap : added gc_id to constrcutor
+#ifdef TERA_MAJOR_GC
+    _h1_regions_array[i] = new (ResourceObj::C_HEAP, mtGC) GrowableArray<size_t>(512);  //FIXME perpap
+#endif				    
     oop_task_queues()->register_queue(i, _manager_array[i]->marking_stack());
     _objarray_task_queues->register_queue(i, &_manager_array[i]->_objarray_stack);
     region_task_queues()->register_queue(i, _manager_array[i]->region_stack());

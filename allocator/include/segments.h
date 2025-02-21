@@ -7,6 +7,7 @@
 #include <threads.h>
 #define PR_BUFFER 1						
 #define PR_BUFFER_SIZE (2*1024LU*1024) /* Promotion buffer size */
+//#define H2_COMPACT_STATISTICS 1	// Enable allocator to print statistics for H2 compact
 #define HeapWordSize 8				   /* Java heap allignment */
 /* Objects that are grater than this threshold we write them directly using
  * async I/O. For objects less than this threshold we use the promotion buffer.
@@ -48,14 +49,21 @@ struct region{
     char *last_allocated_start;
     char *first_allocated_start;
     struct group *dependency_list;
+
 #if PR_BUFFER
-    struct pr_buffer *pr_buffer;
-    //struct pr_buffer **pr_buffers;//perpap
+    //struct pr_buffer *pr_buffer;
+    struct pr_buffer **pr_buffers;//perpap
 #endif
-    int8_t used;
+
     uint32_t rdd_id;
     uint32_t part_id;
-    //mtx_t mutex;//perpap
+    int8_t used;
+/* 
+#if PR_BUFFER
+    //struct pr_buffer *pr_buffer;
+    struct pr_buffer * pr_buffers[];//perpap
+#endif
+*/
 };
 
 /*
@@ -250,14 +258,28 @@ bool object_starts_from_region(char *obj);
  *			be move to H2
  * size: Size of the object
  */
-void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t gc_thread_id);
+void buffer_insert(char* obj, char* new_adr, size_t size, uint32_t worker_id);
 
 /*
  * Flush all active buffers and free each buffer memory. We need to free their
  * memory to limit waste space.
  */
 void free_all_buffers();
+void free_all_buffers_parallel(uint32_t worker_id);
 
+#endif
+
+#if defined(H2_COMPACT_STATISTICS)
+double total_buffer_insert_elapsed_time();
+double total_flush_buffer_elapsed_time();
+//double total_flush_buffer_fragmentation_elapsed_time();
+//double total_flush_buffer_nofreespace_elapsed_time();
+//double total_async_request_elapsed_time();
+size_t total_buffer_insert_operations();
+size_t total_flush_buffer_operations();
+//size_t total_flush_buffer_fragmentation_operations();
+//size_t total_flush_buffer_nofreespace_operations();
+//size_t total_async_request_operations();
 #endif
 
 #endif

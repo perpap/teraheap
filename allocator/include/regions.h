@@ -42,7 +42,7 @@ uint64_t total_h2_regions();
 // Initialize allocator with start address 'heap_end + 1'. The end of the
 // heap. The path indicates the path to create the file for H2 and its size.
 //void       init(uint64_t alignment, const char* path, uint64_t size);
-void       init(uint64_t gc_threads, const char *h2_write_policy, uint64_t alignment, const char* path, uint64_t size, char* heap_end);
+void       init(bool is_parallel, uint64_t gc_threads, const char *h2_write_policy, uint64_t alignment, const char* path, uint64_t size, char* heap_end);
 // Return the unaligned address of the mmaped region
 char*      start_mmap_region(void);
 // Return the start address of the memory allocation pool
@@ -77,15 +77,16 @@ void	   r_enable_rand(void);
 
 // Explicit write 'data' with 'size' in certain 'offset' using system call
 // without memcpy.
-void	   r_write(char *data, char *offset, size_t size);
+void	   r_write(char *data, char *offset, size_t size, uint64_t worker_id);
 
 // Explicit asynchronous write 'data' with 'size' in certain 'offset' using
 // system call without memcpy.
-void	   r_awrite(char *data, char *offset, size_t size);
+void	   r_awrite(char *data, char *offset, size_t size, uint64_t worker_id);
 
 // Check if all the asynchronous requestes have been completed
 // Return 1 on succesfull, and 0 otherwise
 int		   r_areq_completed(void);
+int		   r_areq_completed_parallel(uint32_t worker_id);
 
 // We need to ensure that all the writes will be flushed from buffer
 // cur_alloc_ptrcur_alloc_ptrhe and they will be written to the device.

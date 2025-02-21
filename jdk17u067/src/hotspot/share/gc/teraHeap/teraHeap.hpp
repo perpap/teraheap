@@ -19,7 +19,6 @@
 #include <map>
 #include <tr1/tuple>
 #endif
-//#define PARALLEL_H2_COMPACT
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
@@ -59,7 +58,7 @@ private:
                                     // partition id for tera-marked
                                     // object to promote this id
                                     // to their reference objects
-#ifdef H2_PARALLEL_COMPACT
+#ifdef TERA_PARALLEL_H2_COMPACT
   HeapWord **obj_h1_addr_array;
   HeapWord **obj_h2_addr_array;
 #else 
@@ -110,11 +109,11 @@ private:
 
   // Explicit (using systemcall) write 'data' with 'size' to the specific
   // 'offset' in the file.
-  void h2_write(char *data, char *offset, size_t size);
+  void h2_write(char *data, char *offset, size_t size, uint64_t worker_id);
 
   // Explicit (using systemcall) asynchronous write 'data' with 'size' to
   // the specific 'offset' in the file.
-  void h2_awrite(char *data, char *offset, size_t size);
+  void h2_awrite(char *data, char *offset, size_t size, uint64_t worker_id);
 
   // We need to ensure that all the writes in TeraHeap using asynchronous
   // I/O have been completed succesfully.
@@ -132,15 +131,28 @@ private:
 
   // At the end of the major GC flush and free all the promotion
   // buffers.
-  void h2_free_promotion_buffers();
+  void h2_free_promotion_buffers(); 
 #endif
+
 
 public:
   // Default Constructor with hint for H2 placement after H1 address range
   TeraHeap(HeapWord* heap_end = nullptr);
   // Destructor
   ~TeraHeap();
-  
+  #if defined(H2_COMPACT_STATISTICS)
+  static double h2_total_buffer_insert_elapsed_time();
+  static double h2_total_flush_buffer_elapsed_time();
+  //static double h2_total_flush_buffer_fragmentation_elapsed_time();
+  //static double h2_total_flush_buffer_nofreespace_elapsed_time();
+  //static double h2_total_async_request_elapsed_time();
+  static size_t h2_total_buffer_insert_operations();
+  static size_t h2_total_flush_buffer_operations();
+  //static size_t h2_total_flush_buffer_fragmentation_operations();
+  //static size_t h2_total_flush_buffer_nofreespace_operations();
+  //static size_t h2_total_async_request_operations();
+  #endif
+ 
   uint64_t get_total_h2_regions() const{ return total_h2_regions(); }
 
   // Get object start array for h2
@@ -318,7 +330,7 @@ public:
 
   // Complete the transfer of the objects in H2
   void h2_complete_transfers();
-
+  void h2_complete_transfers(uint worker_id);
   // Check if the group of regions in H2 is enabled
   bool is_h2_group_enabled(uint gc_thread_id);
 

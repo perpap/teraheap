@@ -2,13 +2,13 @@
 #include "gc/parallel/parallelScavengeHeap.hpp"
 #include "gc/teraHeap/teraDynamicResizingPolicy.hpp"
 #include "memory/universe.hpp"
-#include "gc/shared/cycleCounting.hpp"
+//#include "gc/shared/cycleCounting.hpp"
 #include "gc/teraHeap/teraHeap.hpp"
 #include "memory/universe.hpp"
 
 #define BUFFER_SIZE 1024
 
-const uint64_t TeraDynamicResizingPolicy::CYCLES_PER_SECOND{get_cycles_per_second()};
+//const uint64_t TeraDynamicResizingPolicy::CYCLES_PER_SECOND{get_cycles_per_second()};
 
 #define REGULAR_INTERVAL ((10LL * 1000)) 
   
@@ -171,8 +171,8 @@ void TeraDynamicResizingPolicy::calculate_gc_io_costs(double *avg_gc_time_ms,
 TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
   cpu_usage = init_cpu_usage_stats();
 
-  window_start_time = get_cycles();
-  //clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
+  //window_start_time = get_cycles();
+  clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_iowait_time_ms = 0;
   gc_time = 0;
@@ -195,19 +195,20 @@ TeraDynamicResizingPolicy::TeraDynamicResizingPolicy() {
 }
 
 // Calculate ellapsed time
-double TeraDynamicResizingPolicy::ellapsed_time(uint64_t /*struct timespec*/ start_time,
-		uint64_t /*struct timespec*/ end_time) {
-        
-	double elapsed_time = (double)(end_time - start_time) / CYCLES_PER_SECOND;
-        return (elapsed_time * 1000.0);
-	//double elapsed_time_ms = (double)((end_time.tv_sec - start_time.tv_sec) * 1000000000L + (end_time.tv_nsec - start_time.tv_nsec)) / 1000000L;
-	//return elapsed_time_ms;
+/*double TeraDynamicResizingPolicy::ellapsed_time(uint64_t start_time, uint64_t end_time) {
+    double elapsed_time = (double)(end_time - start_time) / CYCLES_PER_SECOND;
+    return elapsed_time * 1000.0;
+}
+*/
+double TeraDynamicResizingPolicy::ellapsed_time(struct timespec start_time, struct timespec end_time) {
+    //double elapsed_time_ms = (double)((end_time.tv_sec - start_time.tv_sec) * 1000000000L + (end_time.tv_nsec - start_time.tv_nsec)) / 1000000L;
+    return (double)((end_time.tv_sec - start_time.tv_sec) * 1000000000L + (end_time.tv_nsec - start_time.tv_nsec)) / 1000000L;
 }
 
 // Set current time since last window
 void TeraDynamicResizingPolicy::reset_counters() {
-  window_start_time = get_cycles();
-  //clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
+  //window_start_time = get_cycles();
+  clock_gettime(CLOCK_MONOTONIC_RAW, &window_start_time);
 
   cpu_usage->read_cpu_usage(STAT_START, MUTATOR_STAT);
   gc_time = 0;
@@ -221,16 +222,19 @@ void TeraDynamicResizingPolicy::reset_counters() {
 
 // Check if the window limit exceed time
 bool TeraDynamicResizingPolicy::is_window_limit_exeed() {
-	uint64_t /*struct timespec*/ window_end_time;
-	static int i = 0;
-	window_end_time = get_cycles();
-	//clock_gettime(CLOCK_MONOTONIC_RAW, &window_end_time);
-	interval = ellapsed_time(window_start_time, window_end_time);
+#if 1//FIXME
+    struct timespec window_end_time;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &window_end_time);
+#endif
+#if 0
+uint64_t  window_end_time = get_cycles();
+#endif
+    interval = ellapsed_time(window_start_time, window_end_time);
 
 #ifdef PER_MINOR_GC
-	return true;
+    return true;
 #else
-	return (interval >= window_interval) ? true : false;
+    return (interval >= window_interval) ? true : false;
 #endif // PER_MINOR_GC
 }
 

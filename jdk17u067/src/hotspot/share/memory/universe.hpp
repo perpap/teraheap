@@ -47,6 +47,7 @@ class TeraHeap;
 class FlexHeap;
 class TeraPebs;
 
+
 // A helper class for caching a Method* when the user of the cache
 // only cares about the latest version of the Method*.  This cache safely
 // interacts with the RedefineClasses API.
@@ -320,7 +321,7 @@ class Universe: AllStatic {
   
   // Accessor of flexHeap
   static TeraPebs *teraPebs() { return _teraPebs; }
-
+    
   DEBUG_ONLY(static bool is_in_h2_or_null(const void* p));
   DEBUG_ONLY(static bool is_in_h2(const void* p));
   DEBUG_ONLY(static bool is_obj_in_h2(const oop obj);)

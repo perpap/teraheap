@@ -8,32 +8,37 @@
 
 class WritePolicy : public CHeapObj<mtInternal> {
     public:
-	virtual void h2_write(char *data, char *offset, size_t size) const = 0;
+	virtual void h2_write(char *data, char *offset, size_t size, uint64_t worker_id) const = 0;
 	virtual void h2_complete_transfers() const = 0;
+        virtual void h2_complete_transfers(uint worker_id) const = 0;
 };
 
 class DefaultWritePolicy : public WritePolicy{
     public:
-        virtual void h2_write(char *data, char *offset, size_t size) const override;
+        virtual void h2_write(char *data, char *offset, size_t size, uint64_t worker_id) const override;
         virtual void h2_complete_transfers() const override;
+        virtual void h2_complete_transfers(uint worker_id) const override;
 };
 
 class FmapWritePolicy : public WritePolicy{
     public:
-        virtual void h2_write(char *data, char *offset, size_t size) const override;
+        virtual void h2_write(char *data, char *offset, size_t size, uint64_t worker_id) const override;
         virtual void h2_complete_transfers() const override;
+        virtual void h2_complete_transfers(uint worker_id) const override;
 };
 
 class SyncWritePolicy : public WritePolicy{
     public:
-        virtual void h2_write(char *data, char *offset, size_t size) const override;
+        virtual void h2_write(char *data, char *offset, size_t size, uint64_t worker_id) const override;
         virtual void h2_complete_transfers() const override;
+        virtual void h2_complete_transfers(uint worker_id) const override;
 };
 
 class AsyncWritePolicy : public WritePolicy{
     public:
-        virtual void h2_write(char *data, char *offset, size_t size) const override;
+        virtual void h2_write(char *data, char *offset, size_t size, uint64_t worker_id) const override;
         virtual void h2_complete_transfers() const override;
+        virtual void h2_complete_transfers(uint worker_id) const override;
 };
 
 #endif //SHARE_GC_TERAHEAP_TERAWRITEPOLICY_HPP

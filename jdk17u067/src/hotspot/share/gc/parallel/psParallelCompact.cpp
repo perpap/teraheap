@@ -118,17 +118,37 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 
 #if 1//perpap
 #ifdef TERA_MAJOR_GC
-  class ParallelCompactH2Task: public AbstractGangTask {
-  private:
-	  uint _total_workers;
-	  HeapWord* _source_beg;
-	  HeapWord* _source_end;
-	  size_t total_regions; 
-	  size_t cur_region;
-	  size_t end_region;
-	  int active_workers; 
-  public:
+  class ParallelCompactH2CompleteTransfersTask: public AbstractGangTask {
+	  public:
+          ParallelCompactH2CompleteTransfersTask(const char* name)
+          : AbstractGangTask(name) {
+	  }
 
+          virtual void work(uint worker_id){
+	      Universe::teraHeap()->h2_complete_transfers(worker_id);
+	  }
+  };
+  class ParallelCompactH2Task: public AbstractGangTask {
+	  private:
+	  //uint _total_workers;
+	  //HeapWord* _source_beg;
+	  //HeapWord* _source_end;
+	  //size_t total_regions; 
+	  //size_t cur_region;
+	  //size_t end_region;
+	  //int active_workers;
+	  GrowableArray<size_t> **_regions_stack_array; 
+	  public:
+	  /*
+         ParallelCompactH2Task(const char* name)
+	  : AbstractGangTask(name){
+	 }*/
+
+         
+	  ParallelCompactH2Task(const char* name, GrowableArray<size_t>** regions_stack_array)
+          : AbstractGangTask(name), _regions_stack_array(regions_stack_array) {
+	  }
+/*
 	  ParallelCompactH2Task(const char* name, uint total_workers, HeapWord* source_beg, HeapWord* source_end)
 	  : AbstractGangTask(name), _total_workers(total_workers), _source_beg(source_beg), _source_end(source_end){
              cur_region = PSParallelCompact::_summary_data.addr_to_region_idx(_source_beg);
@@ -136,21 +156,18 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 	     total_regions = end_region - cur_region; 
              // If total_regions is less than total_workers, reduce the number of workers
              active_workers = MIN2(static_cast<int>(total_workers), static_cast<int>(total_regions));
-	 }
-	  
-	  virtual void work(uint worker_id){
-		  //internal_work(worker_id);
-                  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
-		  #if 0
-		  assert(cm->gc_thread_id() == worker_id, "cm->gc_thread_id:%u is out of range[0-%u)", cm->gc_thread_id(), ParallelGCThreads-1);
-		  if(cm->gc_thread_id() != worker_id && cm->gc_thread_id() >= ParallelGCThreads){
-	              fprintf(stderr, "cm->gc_thread_id:%u is out of range[0-%u)", cm->gc_thread_id(), ParallelGCThreads-1);
-	              exit(EXIT_FAILURE); 
-		  }
-                  #endif
-                  auto regions = calculate_regions(total_regions, active_workers, cur_region, static_cast<int>(worker_id));
-		  if(regions.first != regions.second){
-		      for (size_t region_idx = regions.first; region_idx < regions.second; ++region_idx) {
+	 }*/
+	 virtual void work(uint worker_id){
+                  GrowableArray<size_t> *regions_stack = _regions_stack_array[worker_id]; 
+                  //GrowableArray<size_t>* regions_stack = ParCompactionManager::gc_thread_h1_regions_array(worker_id); 
+		  ParCompactionManager* cm = ParCompactionManager::gc_thread_compaction_manager(worker_id);
+		  
+                  //auto regions = calculate_regions(total_regions, active_workers, cur_region, static_cast<int>(worker_id));
+		  //if(regions.first != regions.second)
+		  {
+		      while(regions_stack->is_nonempty()){
+                          size_t region_idx = regions_stack->pop();
+		      //for (size_t region_idx = regions.first; region_idx < regions.second; ++region_idx) {
 			  HeapWord *beg_addr = PSParallelCompact::_summary_data.region_to_addr(region_idx);
 			  size_t end_bit = PSParallelCompact::_mark_bitmap.addr_to_bit(beg_addr + ParallelCompactData::RegionSize);
 			  // The bitmap routines require the right boundary to be word-aligned.
@@ -189,6 +206,7 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 					//#endif //TERA_TIMERS
 					// Move objects to H2
 					Universe::teraHeap()->h2_move_obj(h1_addr, h2_addr, size, worker_id);
+				        
 					//#ifdef TERA_TIMERS
 					//Universe::teraHeap()->getTeraTimer()->h2_compact_region_lock_end(worker_id);
 					//#endif //TERA_TIMERS
@@ -211,7 +229,7 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 	  size_t total_regions; 
 	  size_t cur_region;
 	  size_t end_region;
-	  int active_workers; 
+	  int active_workers;
   public:
 
 	  ParallelPreCompactH2Task(const char* name, uint total_workers, HeapWord* source_beg, HeapWord* source_end/*, ParMarkBitMap* mb, ParallelCompactData* sd*/)
@@ -221,7 +239,7 @@ Pair<size_t, size_t> calculate_regions(size_t total_regions, int active_workers,
 	     total_regions = end_region - cur_region; 
              // If total_regions is less than total_workers, reduce the number of workers
              active_workers = MIN2(static_cast<int>(total_workers), static_cast<int>(total_regions));
-	 }
+	  }
 	  
 	  virtual void work(uint worker_id){
 		  //internal_work(worker_id);
@@ -2441,6 +2459,14 @@ bool PSParallelCompact::invoke_no_policy(bool maximum_heap_compaction) {
 #ifdef TERA_MAJOR_GC
     if (EnableTeraHeap) {
       // Wait to complete all the transfers to H2 and then continue
+      /*
+      if(EnableParallelH2Compact){
+          ParallelCompactH2CompleteTransfersTask task("ParallelCompactH2CompleteTransfersTask");
+          ParallelScavengeHeap::heap()->workers().run_task(&task); 
+      }
+      else{	    
+           Universe::teraHeap()->h2_complete_transfers();
+      }*/
       Universe::teraHeap()->h2_complete_transfers();
 
       if (DynamicHeapResizing) {
@@ -2959,22 +2985,6 @@ public:
 
 #ifdef TERA_MAJOR_GC
 void PSParallelCompact::compact_h2_candidate_objects() {
-/*
-#ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_compact_start();//FIXME TeraTimers
-#endif
-
-  for (unsigned int i = 0; i < last_space_id; ++i) {
-    const MutableSpace* space = _space_info[i].space();
-    ParCompactionManager* cm = ParCompactionManager::get_vmthread_cm();
-    _summary_data.compact_h2_candidate_objects(space->bottom(), space->top(),
-                                               _mark_bitmap, cm);
-  }
-
-#ifdef TERA_TIMERS
-  Universe::teraHeap()->getTeraTimer()->h2_compact_end();//FIXME TeraTimers
-#endif
-*/
 #ifdef TERA_TIMERS
   Universe::teraHeap()->getTeraTimer()->h2_compact_start();
 #endif //TERA_TIMERS
@@ -2994,13 +3004,39 @@ void PSParallelCompact::compact_h2_candidate_objects() {
     if(EnableParallelH2Compact){
       //tty->print("[compact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
       //fprintf(stderr, "[compact_h2_candidates] total_gc_threads=%u\n",total_gc_threads);
-      ParallelCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top());
+#if 1
+	    
+      GrowableArray<size_t> **regions_stack_array = NEW_C_HEAP_ARRAY(GrowableArray<size_t>*, total_gc_threads, mtInternal);
+      for (unsigned int tid = 0; tid < total_gc_threads; tid++) {
+          regions_stack_array[tid] = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<size_t>(512);  // Initialize each GrowableArray
+      }
+      size_t beg_region = /*PSParallelCompact::*/_summary_data.addr_to_region_idx(space->bottom());
+      size_t end_region = /*PSParallelCompact::*/_summary_data.addr_to_region_idx(/*PSParallelCompact::*/_summary_data.region_align_up(space->top()));
+      size_t total_regions = end_region - beg_region; 
+      size_t worker_id = 0;
+      for (size_t cur_region = beg_region; cur_region < end_region; ++cur_region) {
+	  //ParCompactionManager::gc_thread_h1_regions_array(worker_id)->push(cur_region);
+          regions_stack_array[worker_id]->push(cur_region);
+          // Assign regions to tasks in round-robin fashion.
+	  if (++worker_id == total_gc_threads) {
+	      worker_id = 0;
+	  }
+      }
+#endif
+      ParallelCompactH2Task task(_task_names[i], regions_stack_array);
+      //ParallelCompactH2Task task(_task_names[i], total_gc_threads, space->bottom(), space->top(), regions_stack_array);
       //tty->print("[compact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
       //fprintf(stderr, "[compact_h2_candidates] Running task:%s with id:%u\n", task.name(), task.gc_id());
       ParallelScavengeHeap::heap()->workers().run_task(&task);
-      #ifdef TERA_TIMERS
-      //Universe::teraHeap()->getTeraTimer()->print_h2_compact_lock_time();
-      #endif //TERA_TIMERS
+#if 0
+      for (unsigned int tid = 0; tid < total_gc_threads; tid++) {
+            delete regions_stack_array[tid];  // Delete each GrowableArray
+      }
+      FREE_C_HEAP_ARRAY(GrowableArray<size_t>*, regions_stack_array);
+#endif
+      #ifdef TERA_STATS
+      Universe::teraHeap()->get_tera_stats()->print_major_gc_stats();
+      #endif
     }else{
       ParCompactionManager* cm = ParCompactionManager::get_vmthread_cm();
       _summary_data.compact_h2_candidate_objects(space->bottom(), space->top(), _mark_bitmap, cm);
@@ -3011,6 +3047,13 @@ void PSParallelCompact::compact_h2_candidate_objects() {
 #endif 
   }
 #ifdef TERA_TIMERS
+  #if defined(TERA_PARALLEL_H2_COMPACT) && defined(H2_COMPACT_STATISTICS)
+  Universe::teraHeap()->getTeraTimer()->h2_total_buffer_insert_elapsed_time();
+  Universe::teraHeap()->getTeraTimer()->h2_total_flush_buffer_elapsed_time();
+  //Universe::teraHeap()->getTeraTimer()->h2_total_flush_buffer_fragmentation_elapsed_time();
+  //Universe::teraHeap()->getTeraTimer()->h2_total_flush_buffer_nofreespace_elapsed_time();
+  //Universe::teraHeap()->getTeraTimer()->h2_total_async_request_elapsed_time();
+  #endif
   Universe::teraHeap()->getTeraTimer()->h2_compact_end();
 #endif //TERA_TIMERS
 }

@@ -128,7 +128,7 @@ void create_file(const char* path, uint64_t size) {
 }
 
 // Initialize allocator
-void init(uint64_t gc_threads, const char *h2_write_policy, uint64_t align, const char* path, uint64_t size, char* h1_end) {
+void init(bool is_parallel, uint64_t gc_threads, const char *h2_write_policy, uint64_t align, const char* path, uint64_t size, char* h1_end) {
     fd = -1;
     assertf((allocator_log_fp = fopen("allocator_log", "w")) != NULL, "Allocator logger failed!");
 
@@ -147,7 +147,7 @@ void init(uint64_t gc_threads, const char *h2_write_policy, uint64_t align, cons
 #endif
     calculate_h2_region_array_size();
     init_regions(gc_threads, h2_write_policy);//perpap
-    req_init();
+    req_init(is_parallel ? gc_threads-1 : gc_threads);
 #ifdef ASSERT
     fclose(allocator_log_fp);
 #endif
@@ -272,7 +272,7 @@ void r_enable_rand() {
 
 // Explicit write 'data' with 'size' in certain 'offset' using system call
 // without memcpy.
-void r_write(char *data, char *offset, size_t size) {
+void r_write(char *data, char *offset, size_t size, uint64_t worker_id) {
 #ifdef ASSERT
 	ssize_t s_check = 0;
 	uint64_t diff = offset - tc_mem_pool.mmap_start;
@@ -288,17 +288,21 @@ void r_write(char *data, char *offset, size_t size) {
 // Explicit asynchronous write 'data' with 'size' in certain 'offset' using
 // system call without memcpy.
 // Do not use r_awrite with r_write
-void r_awrite(char *data, char *offset, size_t size) {
+void r_awrite(char *data, char *offset, size_t size, uint64_t worker_id) {
 	
 	uint64_t diff = offset - tc_mem_pool.mmap_start;
 
-	req_add(fd, data, size * HEAPWORD, diff);
+	req_add(fd, data, size * HEAPWORD, diff, worker_id);
 }
 	
 // Check if all the asynchronous requestes have been completed
 // Return 1 on succesfull, and 0 otherwise
 int	r_areq_completed() {
 	return is_all_req_completed();
+}
+
+int	r_areq_completed_parallel(uint32_t worker_id) {
+	return is_all_req_completed_parallel(worker_id);
 }
 	
 // We need to ensure that all the writes will be flushed from buffer

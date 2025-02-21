@@ -22,7 +22,7 @@ extern uint64_t dev_size;
 
 //#define ANONYMOUS             //< Set to 1 for small mmaps
 
-#define MAX_REQS	 64				  //< Maximum requests
+#define MAX_REQS       64				  //< Maximum requests
 
 #define BUFFER_SIZE  (8*1024LU*1024)  //< Buffer Size (in bytes) for async I/O
 
@@ -40,7 +40,6 @@ extern uint64_t max_rdd_id;
 extern uint64_t group_array_size;
 
 #define STATISTICS 0				  //< Enable allocator to print statistics
-
 #define DEBUG_PRINT 0			      //< Enable debug prints
 
 
