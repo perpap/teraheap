@@ -13,8 +13,12 @@ static uint16_t _requests_queue_size;
 static uint64_t _GC_THREADS;
 // Initialize the array of I/O requests for the asynchronous I/O
 void req_init(uint64_t gc_threads) {
-	_GC_THREADS = gc_threads;	
-	_requests_queue_size = MAX_REQS / _GC_THREADS;//FIXME
+	_GC_THREADS = gc_threads;
+	if (_GC_THREADS > 8 ) {
+	    _requests_queue_size = 5;
+	} else {
+	    _requests_queue_size = MAX_REQS / _GC_THREADS;//FIXME
+	}
 	//_requests_map = malloc(gc_threads * (sizeof(ioRequestMap_t) + queue_size * sizeof(ioRequest_t)));//FIXME
 	_requests_map = malloc(gc_threads * sizeof(ioRequestMap_t));
 
@@ -37,6 +41,10 @@ void req_init(uint64_t gc_threads) {
 			requests->request[i].buffer = NULL;
 #else
 			requests->request[i].buffer = malloc(BUFFER_SIZE * sizeof(char));
+			if(!requests->request[i].buffer) {
+			    perror("Allocation failure! No memory available for request buffer.");   
+	                    exit(EXIT_FAILURE);
+			}
 			requests->request[i].size = BUFFER_SIZE;
 #endif
 		}
@@ -85,7 +93,7 @@ static int find_slot(uint64_t worker_id) {
 #endif
 					*slot = i;
 					return i;
-					break;
+					//break;
 
 				case EINPROGRESS:
 					break;
@@ -174,6 +182,10 @@ void req_add(int fd, char *data, size_t size, uint64_t offset, uint64_t worker_i
 #else	
 	if (size > requests->request[slot].size) {
 		char *ptr_new = realloc(requests->request[slot].buffer, size);
+		if(!ptr_new) {
+		    perror("ReAllocation failure! No memory available for request buffer.");
+		    exit(EXIT_FAILURE);
+		}
 		requests->request[slot].buffer = ptr_new;
 		requests->request[slot].size = size;
 	}

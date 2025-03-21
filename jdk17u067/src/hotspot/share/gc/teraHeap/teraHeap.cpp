@@ -36,7 +36,7 @@ TeraHeap::TeraHeap(HeapWord* heap_end) {
   _stop_addr = stop_addr_mem_pool();
 
   cur_obj_group_id = 0;
-#ifdef TERA_PARALLEL_H2_COMPACT
+  #ifdef TERA_PARALLEL_H2_COMPACT
   if(EnableParallelH2Compact){
     obj_h1_addr_array = NEW_C_HEAP_ARRAY(HeapWord*, ParallelGCThreads+1, mtGC); 
     obj_h2_addr_array = NEW_C_HEAP_ARRAY(HeapWord*, ParallelGCThreads+1, mtGC);
@@ -487,6 +487,7 @@ oop* TeraHeap::h2_adjust_next_back_reference() {
 
 // Check if the collector transfers and adjust H2 candidate objects.
 bool TeraHeap::compact_h2_candidate_obj_enabled(uint gc_thread_id) {
+    //return obj_h1_addr_array[gc_thread_id] != NULL;
     #ifndef TERA_PARALLEL_H2_COMPACT	
     return obj_h1_addr != NULL;
     #else
@@ -498,6 +499,8 @@ bool TeraHeap::compact_h2_candidate_obj_enabled(uint gc_thread_id) {
 //void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr){
 void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr, uint gc_thread_id){
     enable_region_groups((char*) new_addr);
+    //obj_h1_addr_array[gc_thread_id] = old_addr;
+    //obj_h2_addr_array[gc_thread_id] = new_addr;
 #ifdef TERA_PARALLEL_H2_COMPACT
     obj_h1_addr_array[gc_thread_id] = old_addr;
     obj_h2_addr_array[gc_thread_id] = new_addr;
@@ -510,6 +513,8 @@ void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr, uint gc_thr
 // Disables region groupping
 void TeraHeap::disable_groups(uint gc_thread_id){
     disable_region_groups();
+    //obj_h1_addr_array[gc_thread_id] = NULL;
+    //obj_h2_addr_array[gc_thread_id] = NULL;
 #ifdef TERA_PARALLEL_H2_COMPACT
     obj_h1_addr_array[gc_thread_id] = NULL;
     obj_h2_addr_array[gc_thread_id] = NULL;
@@ -663,7 +668,6 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, uint gc_thre
 	return;
     }
 #endif
-
     if (is_obj_in_h2(cast_to_oop(obj))) {
         //check_for_group((char*) obj);
 #ifdef TERA_PARALLEL_H2_COMPACT
@@ -685,13 +689,13 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, uint gc_thre
     if (obj_h1_addr == NULL) {
         return;
     }
-#endif
-	
+#endif	
     // Mark the H2 card table as dirty if obj is in H1 (backward
     // reference)
     BarrierSet* bs = BarrierSet::barrier_set();
     CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-    CardTable* ct = ctbs->card_table();
+    CardTable* ct = ctbs->card_table(); 
+    
     #ifdef TERA_PARALLEL_H2_COMPACT
     size_t diff =  (HeapWord *)obj_field - obj_h1_addr_array[gc_thread_id];
     assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(obj_h1_addr_array[gc_thread_id])->size()),"Diff out of range: %lu", diff);
@@ -701,6 +705,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field, uint gc_thre
     assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(obj_h1_addr)->size()),"Diff out of range: %lu", diff);
     HeapWord *h2_obj_field = obj_h2_addr + diff;
     #endif
+    
     assert(is_field_in_h2((void *) h2_obj_field), "Shoud be in H2");
     ct->th_write_ref_field(h2_obj_field);
 }
@@ -797,11 +802,12 @@ void TeraHeap::h2_complete_transfers(uint worker_id) {
 
 // Check if the group of regions in H2 is enabled
 bool TeraHeap::is_h2_group_enabled(uint gc_thread_id) {
+    //return (obj_h1_addr_array[gc_thread_id] != NULL  || obj_h2_addr_array[gc_thread_id] != NULL);
     #ifndef TERA_PARALLEL_H2_COMPACT	
         return (obj_h1_addr != NULL  || obj_h2_addr != NULL);
     #else
         return (obj_h1_addr_array[gc_thread_id] != NULL  || obj_h2_addr_array[gc_thread_id] != NULL);
-    #endif 
+    #endif
 }
 
 #ifdef TERA_TIMERS

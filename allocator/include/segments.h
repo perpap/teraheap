@@ -58,12 +58,6 @@ struct region{
     uint32_t rdd_id;
     uint32_t part_id;
     int8_t used;
-/* 
-#if PR_BUFFER
-    //struct pr_buffer *pr_buffer;
-    struct pr_buffer * pr_buffers[];//perpap
-#endif
-*/
 };
 
 /*
