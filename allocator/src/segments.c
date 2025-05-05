@@ -150,7 +150,9 @@ static inline void measure_execution_time(void (*func)(void*, void*, size_t), vo
  */
 void init_regions(uint32_t gc_threads, const char *h2_write_policy){
   _GC_THREADS = gc_threads;
-  
+  #if DEBUG_PRINT 
+  fprintf(allocator_log_fp, "[%s|%s|%d]_GC_THREADS:%" PRIu32 "\n", __FILE__, __func__, __LINE__, _GC_THREADS);
+  #endif 
   #if defined(H2_COMPACT_STATISTICS)
   _buffer_insert_elapsed_times = calloc(0, _GC_THREADS * sizeof(double));
   check_allocation_failure(_buffer_insert_elapsed_times, "[Error] - Failed to allocate memory for _buffer_insert_elapsed_times\n");
