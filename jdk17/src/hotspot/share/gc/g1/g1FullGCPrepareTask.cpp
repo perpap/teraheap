@@ -149,7 +149,11 @@ bool G1FullGCPrepareTask::G1CalculatePointersClosure::should_compact(HeapRegion*
   // High live ratio region will not be compacted.
   // return live_words <= live_words_threshold;
   // FIXME: ignore threshold for now. Should patch it later.
-  return true;
+  if (EnableTeraHeap) {
+    return true;
+  } else {
+    return live_words <= live_words_threshold;
+  }
 }
 
 void G1FullGCPrepareTask::G1CalculatePointersClosure::reset_region_metadata(HeapRegion* hr) {
