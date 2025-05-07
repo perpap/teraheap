@@ -22,6 +22,7 @@ uint64_t TeraHeap::total_objects_size;
 uint64_t TeraHeap::fwd_ptrs_per_fgc;
 uint64_t TeraHeap::back_ptrs_per_fgc;
 uint64_t TeraHeap::trans_per_fgc;
+size_t TeraHeap::total_h2_humongous;
 
 uint64_t TeraHeap::tc_ct_trav_time[16];
 uint64_t TeraHeap::heap_ct_trav_time[16];
@@ -45,6 +46,7 @@ TeraHeap::TeraHeap() {
   // These counters are used for experiments
   total_objects = 0;
   total_objects_size = 0;
+  total_h2_humongous = 0;
 
   // Initialize arrays for the next minor collection
 // for (unsigned int i = 0; i < ParallelGCThreads; i++) {
@@ -82,15 +84,23 @@ TeraHeap::TeraHeap() {
   teraTimer = new TeraTimers();
 #endif
 
-  if(TeraHeapStatistics)
+  if (TeraHeapStatistics) {
     tera_stats = new TeraStatistics();
+    thr_time_alloc_h2 = NEW_C_HEAP_ARRAY(double, ParallelGCThreads, mtGC);
+    thr_time_copy_h2 = NEW_C_HEAP_ARRAY(double, ParallelGCThreads, mtGC);
 
+    h2_init_stats_counters();
+  }
 }
 
 // Destructor of TeraHeap
 TeraHeap::~TeraHeap() {
   FREE_C_HEAP_ARRAY(HeapWord*, h1_addr_arr);
   FREE_C_HEAP_ARRAY(HeapWord*, h2_addr_arr);
+  if (TeraHeapStatistics) {
+    FREE_C_HEAP_ARRAY(double, thr_time_alloc_h2);
+    FREE_C_HEAP_ARRAY(double, thr_time_copy_h2);
+  }
 }
 
 // Return H2 start address
@@ -368,6 +378,9 @@ void TeraHeap::h2_push_backward_reference(void *p, oop o) {
   stdprint << "BACKREF: pushing reference " << p << "\n";
 #endif // TERA_DBG_PHASES
 
+  if (TeraHeapStatistics)
+    Universe::teraHeap()->get_tera_stats()->add_back_ref();
+
 	_tc_stack.push((oop *)p);
 	_tc_adjust_stack.push((oop *)p);
 	
@@ -388,9 +401,15 @@ void TeraHeap::h2_push_humongous_region(void *p) {
 // Init the statistics counters of TeraHeap to zero when a Full GC
 // starts
 void TeraHeap::h2_init_stats_counters() {
-	fwd_ptrs_per_fgc  = 0;	
+  if (!TeraHeapStatistics)
+    return;
+
+	fwd_ptrs_per_fgc  = 0;
 	back_ptrs_per_fgc = 0;
 	trans_per_fgc     = 0;
+
+  memset(thr_time_alloc_h2, 0, ParallelGCThreads * sizeof(double));
+  memset(thr_time_copy_h2, 0, ParallelGCThreads * sizeof(double));
 }
 
 // Resets the used field of all regions in H2

@@ -59,6 +59,7 @@ protected:
     G1CMBitMap* _bitmap;
     G1FullGCCompactionPoint* _cp;
     bool _regions_freed;
+    uint _worker_id;
 
     bool should_compact(HeapRegion* hr);
     void prepare_for_compaction(HeapRegion* hr);
@@ -69,7 +70,8 @@ protected:
 
   public:
     G1CalculatePointersClosure(G1FullCollector* collector,
-                               G1FullGCCompactionPoint* cp);
+                               G1FullGCCompactionPoint* cp,
+                               uint worker_id);
 
     bool do_heap_region(HeapRegion* hr);
     bool freed_regions();
@@ -77,9 +79,10 @@ protected:
 
   class G1PrepareCompactLiveClosure : public StackObj {
     G1FullGCCompactionPoint* _cp;
+    uint _worker_id;
 
   public:
-    G1PrepareCompactLiveClosure(G1FullGCCompactionPoint* cp);
+    G1PrepareCompactLiveClosure(G1FullGCCompactionPoint* cp, uint worker_id);
     size_t apply(oop object);
   };
 

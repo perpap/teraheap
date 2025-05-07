@@ -37,6 +37,7 @@ class G1HeapTransition {
     size_t _old_length;
     size_t _archive_length;
     size_t _humongous_length;
+    size_t _h2_humongous_length;
     const MetaspaceCombinedStats _meta_sizes;
 
     // Only includes current eden regions.

@@ -13,10 +13,16 @@ private:
   // time to scan h2 card table
   double h2_card_table_scan_time_ms;
   // time for evacuation to be completed
-  double evac_time_ms; 
+  double evac_time_ms;
+  // total time of allocation to H2
+  double h2_allocate_ms;
 
-  bool is_mixed_gc;   
-  
+  // total time of copying to H2
+  double h2_copy_ms;
+
+  bool _is_mixed_gc;
+  bool _is_full_gc;
+
 public:
 
   TeraStatistics();
@@ -49,10 +55,21 @@ public:
     evac_time_ms = time;
   }
 
-  void set_is_in_mix(bool is_mix_gc){    
-    is_mixed_gc = is_mix_gc;
+  void record_h2_allocate_time(double time) {
+    h2_allocate_ms = time;
   }
 
+  void record_h2_copy_time(double time) {
+    h2_copy_ms = time;
+  }
+
+  void set_is_in_mix(bool is_mixed_gc) {
+    _is_mixed_gc = is_mixed_gc;
+  }
+
+  void set_is_in_full_gc(bool is_full_gc) {
+    _is_full_gc = is_full_gc;
+  }
 };
 
 #endif // SHARE_GC_TERAHEAP_TERASTATISTICS_HPP

@@ -72,7 +72,16 @@ size_t G1FullGCCompactTask::G1CompactRegionClosure::apply(oop obj) {
 
   if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(destination)) {
     // Move object to H2
-    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+    if (TeraHeapStatistics) {
+      Ticks start = Ticks::now();
+
+      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+
+      Tickspan time = Ticks::now() - start;
+      Universe::teraHeap()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+    } else {
+      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+    }
   } else {
     // Normal Copy
     Copy::aligned_conjoint_words(obj_addr, destination, size);
@@ -84,10 +93,10 @@ size_t G1FullGCCompactTask::G1CompactRegionClosure::apply(oop obj) {
   return size;
 }
 
-void G1FullGCCompactTask::compact_region(HeapRegion* hr) {
+void G1FullGCCompactTask::compact_region(HeapRegion* hr, uint worker_id) {
   assert(!hr->is_pinned(), "Should be no pinned region in compaction queue");
   assert(!hr->is_humongous(), "Should be no humongous regions in compaction queue");
-  G1CompactRegionClosure compact(collector()->mark_bitmap());
+  G1CompactRegionClosure compact(collector()->mark_bitmap(), worker_id);
   hr->apply_to_marked_objects(collector()->mark_bitmap(), &compact);
   // Clear the liveness information for this region if necessary i.e. if we actually look at it
   // for bitmap verification. Otherwise it is sufficient that we move the TAMS to bottom().
@@ -97,7 +106,7 @@ void G1FullGCCompactTask::compact_region(HeapRegion* hr) {
   hr->reset_compacted_after_full_gc();
 }
 
-void G1FullGCCompactTask::h2_move_humongous(HeapRegion* hr) {
+void G1FullGCCompactTask::h2_move_humongous(HeapRegion* hr, uint worker_id) {
   if (!EnableTeraHeap)
     return;
 
@@ -117,7 +126,16 @@ void G1FullGCCompactTask::h2_move_humongous(HeapRegion* hr) {
   assert(obj_addr != destination, "everything in this pass should be moving");
 
   // Move object to H2
-  Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+  if (TeraHeapStatistics) {
+    Ticks start = Ticks::now();
+
+    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+
+    Tickspan time = Ticks::now() - start;
+    Universe::teraHeap()->thr_add_time_copy_h2(worker_id, TimeHelper::counter_to_millis(time.value()));
+  } else {
+    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+  }
 
   cast_to_oop(destination)->init_mark();
   assert(cast_to_oop(destination)->klass() != NULL, "should have a class");
@@ -129,14 +147,15 @@ void G1FullGCCompactTask::work(uint worker_id) {
   for (GrowableArrayIterator<HeapRegion*> it = compaction_queue->begin();
        it != compaction_queue->end();
        ++it) {
-    compact_region(*it);
+    compact_region(*it, worker_id);
   }
 
   // Drain stack to move humongous
   if (EnableTeraHeap && worker_id == 0) {
     HeapRegion *hum_region = Universe::teraHeap()->h2_get_next_humongous_region();
     while (hum_region) {
-      h2_move_humongous(hum_region);
+      Universe::teraHeap()->stat_h2_humongous_add();
+      h2_move_humongous(hum_region, worker_id);
       // TODO: free all humongous regions here?
       // Iterate humongous regions of obj and call:
       //    G1CollectedHeap::heap()->free_humongous_region(hum_region, nullptr);
@@ -155,6 +174,6 @@ void G1FullGCCompactTask::serial_compaction() {
   for (GrowableArrayIterator<HeapRegion*> it = compaction_queue->begin();
        it != compaction_queue->end();
        ++it) {
-    compact_region(*it);
+    compact_region(*it, 0);
   }
 }

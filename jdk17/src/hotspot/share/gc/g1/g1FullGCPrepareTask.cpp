@@ -120,7 +120,7 @@ bool G1FullGCPrepareTask::has_freed_regions() {
 void G1FullGCPrepareTask::work(uint worker_id) {
   Ticks start = Ticks::now();
   G1FullGCCompactionPoint* compaction_point = collector()->compaction_point(worker_id);
-  G1CalculatePointersClosure closure(collector(), compaction_point);
+  G1CalculatePointersClosure closure(collector(), compaction_point, worker_id);
   G1CollectedHeap::heap()->heap_region_par_iterate_from_start(&closure, &_hrclaimer);
 
   compaction_point->update();
@@ -133,12 +133,14 @@ void G1FullGCPrepareTask::work(uint worker_id) {
 }
 
 G1FullGCPrepareTask::G1CalculatePointersClosure::G1CalculatePointersClosure(G1FullCollector* collector,
-                                                                            G1FullGCCompactionPoint* cp) :
+                                                                            G1FullGCCompactionPoint* cp,
+                                                                            uint worker_id) :
     _g1h(G1CollectedHeap::heap()),
     _collector(collector),
     _bitmap(collector->mark_bitmap()),
     _cp(cp),
-    _regions_freed(false) { }
+    _regions_freed(false),
+    _worker_id(worker_id) { }
 
 bool G1FullGCPrepareTask::G1CalculatePointersClosure::should_compact(HeapRegion* hr) {
   if (hr->is_pinned()) {
@@ -166,14 +168,27 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::reset_region_metadata(Heap
   }
 }
 
-G1FullGCPrepareTask::G1PrepareCompactLiveClosure::G1PrepareCompactLiveClosure(G1FullGCCompactionPoint* cp) :
-    _cp(cp) { }
+G1FullGCPrepareTask::G1PrepareCompactLiveClosure::G1PrepareCompactLiveClosure(G1FullGCCompactionPoint* cp, uint worker_id) :
+    _cp(cp), _worker_id(worker_id) { }
 
 size_t G1FullGCPrepareTask::G1PrepareCompactLiveClosure::apply(oop object) {
   size_t size = object->size();
   if (EnableTeraHeap && object->is_marked_move_h2() && !Universe::teraHeap()->is_in_h2(object->forwardee())) {
+    HeapWord *h2_address = nullptr;
+
     // Give address from H2 and store it in object header.
-    HeapWord *h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(object, size);
+    if (TeraHeapStatistics) {
+      Universe::teraHeap()->get_tera_stats()->add_object( object->size()*HeapWordSize );
+
+      Ticks start = Ticks::now();
+
+      h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(object, size);
+
+      Tickspan time = Ticks::now() - start;
+      Universe::teraHeap()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+    } else {
+      h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(object, size);
+    }
 
   #ifdef TERA_DBG_PHASES
     {
@@ -207,7 +222,7 @@ size_t G1FullGCPrepareTask::G1RePrepareClosure::apply(oop obj) {
 
 void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_for_compaction_work(G1FullGCCompactionPoint* cp,
                                                                                   HeapRegion* hr) {
-  G1PrepareCompactLiveClosure prepare_compact(cp);
+  G1PrepareCompactLiveClosure prepare_compact(cp, _worker_id);
   hr->set_compaction_top(hr->bottom());
   hr->apply_to_marked_objects(_bitmap, &prepare_compact);
 }
@@ -229,8 +244,20 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(H
   if (Universe::teraHeap()->is_in_h2(obj->forwardee())) {
     return;
   }
+  HeapWord *h2_address = nullptr;
 
-  HeapWord *h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(obj, obj->size());
+  if (TeraHeapStatistics) {
+    Universe::teraHeap()->get_tera_stats()->add_object( obj->size()*HeapWordSize );
+
+    Ticks start = Ticks::now();
+
+    h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(obj, obj->size());
+
+    Tickspan time = Ticks::now() - start;
+    Universe::teraHeap()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+  } else {
+    h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(obj, obj->size());
+  }
 
 #ifdef TERA_DBG_PHASES
   {

@@ -39,6 +39,8 @@ G1HeapTransition::Data::Data(G1CollectedHeap* g1_heap) :
   _eden_length_per_node(NULL),
   _survivor_length_per_node(NULL) {
 
+  _h2_humongous_length = (EnableTeraHeap) ? Universe::teraHeap()->stat_h2_humongous_get() : 0;
+
   uint node_count = G1NUMA::numa()->num_active_nodes();
 
   if (node_count > 1) {
@@ -179,6 +181,12 @@ void G1HeapTransition::print() {
 
   log_info(gc, heap)("Humongous regions: " SIZE_FORMAT "->" SIZE_FORMAT,
                      _before._humongous_length, after._humongous_length);
+
+  if (EnableTeraHeap) {
+    log_info(gc, heap)("H2 Humongous objects transfered: " SIZE_FORMAT "->" SIZE_FORMAT,
+                       _before._h2_humongous_length, after._h2_humongous_length);
+  }
+
   log_trace(gc, heap)(" Used: " SIZE_FORMAT "K, Waste: " SIZE_FORMAT "K",
       usage._humongous_used / K, ((after._humongous_length * HeapRegion::GrainBytes) - usage._humongous_used) / K);
 

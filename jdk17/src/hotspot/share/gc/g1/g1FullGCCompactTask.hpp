@@ -39,8 +39,8 @@ protected:
   HeapRegionClaimer _claimer;
 
 private:
-  void compact_region(HeapRegion* hr);
-  void h2_move_humongous(HeapRegion* hr);
+  void compact_region(HeapRegion* hr, uint worker_id);
+  void h2_move_humongous(HeapRegion* hr, uint worker_id);
 
 public:
   G1FullGCCompactTask(G1FullCollector* collector) :
@@ -51,9 +51,10 @@ public:
 
   class G1CompactRegionClosure : public StackObj {
     G1CMBitMap* _bitmap;
+    uint _worker_id;
 
   public:
-    G1CompactRegionClosure(G1CMBitMap* bitmap) : _bitmap(bitmap) { }
+    G1CompactRegionClosure(G1CMBitMap* bitmap, uint worker_id) : _bitmap(bitmap), _worker_id(worker_id) { }
     size_t apply(oop object);
   };
 };

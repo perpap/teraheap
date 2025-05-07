@@ -68,6 +68,11 @@ private:
 
   static uint64_t back_ptrs_per_mgc; //< Total number of back ptrs per MGC
 
+  double* thr_time_alloc_h2;
+  double* thr_time_copy_h2;
+
+  static size_t total_h2_humongous;
+
   static uint64_t
       obj_distr_size[3]; //< Object size distribution between B, KB, MB
 
@@ -450,6 +455,41 @@ public:
 
   uint get_total_objs() { return total_objects; }
   uint get_total_objs_size() { return total_objects_size; }
+
+  double get_max_thr_time_alloc_h2() {
+    double max_time = 0.0;
+    for (uint i = 0; i < ParallelGCThreads; i++) {
+      double time = thr_time_alloc_h2[i];
+      if (time > max_time) {
+        max_time = time;
+      }
+    }
+
+    return max_time;
+  }
+
+  double get_max_thr_time_copy_h2() {
+    double max_time = 0.0;
+    for (uint i = 0; i < ParallelGCThreads; i++) {
+      double time = thr_time_copy_h2[i];
+      if (time > max_time) {
+        max_time = time;
+      }
+    }
+
+    return max_time;
+  }
+
+  void thr_add_time_alloc_h2(uint thread_id, double time) {
+    thr_time_alloc_h2[thread_id] += time;
+  }
+
+  void thr_add_time_copy_h2(uint thread_id, double time) {
+    thr_time_copy_h2[thread_id] += time;
+  }
+
+  void stat_h2_humongous_add() { total_h2_humongous++; }
+  size_t stat_h2_humongous_get() { return total_h2_humongous; }
 
   // Make every card of H2 dirty (used for debugging)
   void dirty_all_cards(CardTable *th_card_table);
