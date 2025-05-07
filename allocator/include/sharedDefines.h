@@ -10,7 +10,7 @@
 #define DEV "/mnt/fmap/h2-100.heap"	     //< Device name
 #define DEV_SIZE (100*1024LU*1024*1024)  //< Device size (in bytes)
 
-//#define ASSERT
+// #define ASSERT
 
 #ifdef ASSERT
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))

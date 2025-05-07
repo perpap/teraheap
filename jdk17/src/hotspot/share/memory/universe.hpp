@@ -321,7 +321,6 @@ class Universe: AllStatic {
 
   static bool is_field_in_h2(void* p);
 
-
   // Reserve Java heap and determine CompressedOops mode
   static ReservedHeapSpace reserve_heap(size_t heap_size, size_t alignment);
 

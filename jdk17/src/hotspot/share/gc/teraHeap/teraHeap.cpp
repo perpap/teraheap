@@ -1024,4 +1024,5 @@ TeraStatistics* TeraHeap::get_tera_stats() {
 // Make every card of H2 dirty
 void TeraHeap::dirty_all_cards(CardTable *th_card_table) {
   th_card_table->th_dirty_cards((HeapWord*) h2_start_addr(), (HeapWord*) h2_end_addr() - 1);
+  fprintf(stderr, "All cards are dirty\n");
 }
