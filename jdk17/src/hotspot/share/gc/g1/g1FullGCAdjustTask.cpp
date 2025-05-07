@@ -39,6 +39,61 @@
 #include "memory/iterator.inline.hpp"
 #include "runtime/atomic.hpp"
 
+#ifdef TERA_DBG_VERIFY_CT
+// TODO: remove
+class G1BackwardReportClosure : public BasicOopIterateClosure {
+  oop _obj;
+  uint _worker_id;
+
+  template <class T> inline void report(T* p);
+public:
+  G1BackwardReportClosure(oop obj, uint worker_id) : _obj(obj), _worker_id(worker_id) { }
+  template <class T> void do_oop_work(T* p) { 
+    oop field = cast_to_oop(p);
+    if (!Universe::teraHeap()->is_in_h2(field) && !Universe::teraHeap()->is_in_h2(field->forwardee())) {
+      stdprint << "From thread <" << _worker_id << "> obj " << _obj
+        << " has back-ref " << field->forwardee() << "\n";
+    }
+  }
+  virtual void do_oop(oop* p) { do_oop_work(p); }
+  virtual void do_oop(narrowOop* p) { do_oop_work(p); }
+
+  virtual ReferenceIterationMode reference_iteration_mode() { return DO_FIELDS; }
+};
+#endif // TERA_DEBUG
+
+#ifdef TERA_DBG_VERIFY_CT
+// TODO: remove
+class G1ValidateDirtyCardsClosure : public BasicOopIterateClosure {
+  oop _h1_obj;
+  uint _worker_id;
+
+  template <class T> inline void report(T* p);
+public:
+  G1ValidateDirtyCardsClosure(oop h1_obj, uint worker_id) : _h1_obj(h1_obj), _worker_id(worker_id) { }
+
+  template <class T> void do_oop_work(T* p) { 
+    T heap_oop = RawAccess<>::oop_load(p);
+    if (CompressedOops::is_null(heap_oop)) return;
+    oop obj = CompressedOops::decode_not_null(heap_oop);
+    if (!Universe::teraHeap()->is_in_h2(obj) && !Universe::teraHeap()->is_in_h2(obj->forwardee())) {
+      size_t diff = (HeapWord*) p - cast_from_oop<HeapWord*>(_h1_obj);
+      HeapWord *h2_field_addr = cast_from_oop<HeapWord *>(_h1_obj->forwardee()) + diff;
+      CardTable::CardValue card = *G1CollectedHeap::heap()->th_card_table()->byte_for(h2_field_addr);
+
+      if (card == CardTable::clean_card_val()) {
+        stdprint << "ERROR: " << "Card for field " << h2_field_addr << "is not dirty! (" << card << ")" << "\n";
+      }
+    }
+  }
+
+  virtual void do_oop(oop* p) { do_oop_work(p); }
+  virtual void do_oop(narrowOop* p) { do_oop_work(p); }
+
+  virtual ReferenceIterationMode reference_iteration_mode() { return DO_FIELDS; }
+};
+#endif // TERA_DEBUG
+
 class G1AdjustLiveClosure : public StackObj {
   G1AdjustClosure* _adjust_closure;
   uint worker_id;
@@ -54,7 +109,19 @@ public:
 
     if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(object->forwardee())) {
       Universe::teraHeap()->thread_enable_groups(worker_id, cast_from_oop<HeapWord*>(object), cast_from_oop<HeapWord*>(object->forwardee()));
+
+    #ifdef TERA_DBG_VERIFY_CT
+      G1BackwardReportClosure report_cl(object->forwardee(), worker_id);
+      object->oop_iterate_size(&report_cl);
+    #endif // TERA_DEBUG
+
       res = object->oop_iterate_size(_adjust_closure);
+
+    #ifdef TERA_DBG_VERIFY_CT
+      G1ValidateDirtyCardsClosure card_cl(object, worker_id);
+      object->oop_iterate(&card_cl);
+    #endif // TERA_DEBUG
+
       Universe::teraHeap()->thread_disable_groups(worker_id);
     } else {
       res = object->oop_iterate_size(_adjust_closure);
