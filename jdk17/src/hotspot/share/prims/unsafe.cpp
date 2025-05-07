@@ -875,13 +875,14 @@ UNSAFE_ENTRY(jint, Unsafe_GetLoadAverage0(JNIEnv *env, jobject unsafe, jdoubleAr
 
 UNSAFE_ENTRY(void, Unsafe_h2TagAndMoveRoot(JNIEnv *env, jobject unsafe, jobject obj, jlong label, jlong partId)) {
   
-  if (!EnableTeraHeap) return;
+  if (!EnableTeraHeap)
+    return;
   
   oop o = JNIHandles::resolve_non_null(obj);
 
   // If the object is already in TeraCache then do not mark its teraflag
-  if (Universe::is_in_h2(o)) return;
-  if( Universe::teraHeap()->is_metadata(o) ) return;
+  if (Universe::is_in_h2(o))
+    return;
 
   // Initialize object's teraflag
   o->mark_move_h2(label, partId);
