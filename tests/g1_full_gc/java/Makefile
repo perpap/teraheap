@@ -25,7 +25,7 @@ TARGET=Array.class Array_List.class Array_List_Int.class Array_List_String.class
 	   MultiList.class Simple_Lambda.class Extend_Lambda.class \
 	   Test_Reflection.class Test_Reference.class HashMap.class Rehashing.class \
 	   Clone.class Groupping.class MultiHashMap.class Test_WeakHashMap.class \
-	   ClassInstance.class
+	   ClassInstance.class Humongous.class HumongousChain.class TriggerImplicitGCs.class
 	   
 all: $(TARGET)
 

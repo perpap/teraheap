@@ -21,7 +21,7 @@ JAVAC=$(JAVA_COMP) -d ./bin
 
 GDB=gdb
 
-TARGET=A.class Phase1_MarkOneObject.class Phase1_MarkSubObject.class Phase2_GiveAddressesFromH2.class Phase3_UpdateReferences.class SimpleOneObj.class SimpleOneBackward.class
+TARGET=A.class Phase1_MarkOneObject.class Phase1_MarkSubObject.class Phase2_GiveAddressesFromH2.class Phase3_UpdateReferences.class SimpleOneObj.class SimpleOneBackward.class FGCAfterCM.class
 
 all: $(TARGET)
 

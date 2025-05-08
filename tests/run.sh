@@ -36,7 +36,7 @@ EXEC_JAVA=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList" \
 
 EXEC_PHASES=("Phase1_MarkOneObject" "Phase1_MarkSubObject" \
   "Phase2_GiveAddressesFromH2" "Phase3_UpdateReferences" \
-  "SimpleOneObj" "SimpleOneBackward")
+  "SimpleOneObj" "SimpleOneBackward" "FGCAfterCM")
 
 # Export Enviroment Variables
 export_env_vars() {
@@ -82,6 +82,7 @@ function interpreter_mode() {
 		-Xmx${MAX}g \
 		-Xms${XMS}g \
 		-XX:+TeraHeapStatistics \
+    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
 		-Xlogth:llarge_teraCache.txt \
 		-XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
     -cp ./${dir}/bin ${class_file} \
@@ -105,6 +106,7 @@ function c1_mode() {
     -Xmx${MAX}g \
     -Xms${XMS}g \
     -XX:+TeraHeapStatistics \
+    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
     -Xlogth:llarge_teraCache.txt \
     -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
     -cp ./${dir}/bin ${class_file} \
@@ -129,6 +131,7 @@ function c2_mode() {
     -Xmx${MAX}g \
     -Xms${XMS}g \
     -XX:+TeraHeapStatistics \
+    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
     -Xlogtc:llarge_teraCache.txt \
     -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
     -cp ./${dir}/bin ${class_file} \
@@ -149,6 +152,7 @@ function run_tests() {
     -Xmx${MAX}g \
     -Xms${XMS}g \
     -XX:+TeraHeapStatistics \
+    -Xlog:gc*:file=./${dir}/out/${class_file}_gc.log \
     -Xlogth:llarge_teraCache.txt \
     -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
     -cp ./${dir}/bin ${class_file} \
@@ -170,6 +174,7 @@ function run_tests_debug() {
     -Xmx${MAX}g \
     -Xms${XMS}g \
     -XX:+TeraHeapStatistics \
+    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
     -Xlogth:llarge_teraCache.txt \
     -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
     -cp ./${dir}/bin ${class_file}
@@ -190,6 +195,7 @@ function run_tests_msg_box() {
     -XX:+TeraHeapStatistics \
 		-Xmx${MAX}g \
 		-Xms${XMS}g \
+    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
 		-Xlogth:llarge_teraCache.txt -cp ./${dir}/bin ${class_file} \
     > ./${dir}/out/${class_file}_err 2>&1 > ./${dir}/out/${class_file}_out
 }
@@ -333,7 +339,7 @@ then
   EXEC_JAVA+=("Array_mine" "Array_List_String")
 elif [ "${TESTD}" == "g1_full_gc" ]
 then
-  EXEC_JAVA+=("Array_List_String")
+  EXEC_JAVA+=("Array_List_String" "Humongous" "HumongousChain" "TriggerImplicitGCs")
 fi
 
 # Setup exec files
@@ -363,6 +369,8 @@ then
     -XX:G1MixedGCCountTarget=4 $X_FLAGS"
 fi
 
+TMP_X_FLAGS="$X_FLAGS"
+
 # Run tests
 for gcThread in "${PARALLEL_GC_THREADS[@]}"
 do
@@ -370,7 +378,7 @@ do
 
   for exec_file in "${EXEC[@]}"
   do
-    if [ "${exec_file}" == "ClassInstance" ]
+    if [ "${exec_file}" == "ClassInstance" ] || [ "${exec_file}" == "TriggerImplicitGCs" ]
     then
       XMS=2
     elif [ "${exec_file}" == "Array_List" ]
@@ -381,6 +389,13 @@ do
       XMS=3
     else
       XMS=1
+    fi
+
+    if [ "${exec_file}" == "FGCAfterCM" ]
+    then
+      X_FLAGS="-XX:InitiatingHeapOccupancyPercent=20 -XX:MaxGCPauseMillis=5 $TMP_X_FLAGS"
+    else
+      X_FLAGS="$TMP_X_FLAGS"
     fi
 
     MAX=100
