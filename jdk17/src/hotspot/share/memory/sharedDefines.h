@@ -55,6 +55,7 @@
 #define TERA_CONC_MARKING   // Do the marking : mark transitive closure, old region statistics (h2 liveness) , sort based on garbage-1st policy 
 #define TERA_EVAC_MOVE    // Move objs that have their tera flag enabled, to h2
 
+#define DISABLE_TRAVERSE_OLD_GEN  // Enables CT optimization to avoid scanning H2 regions with pointers to Old Gen during Young GC
 
   // #define BACK_REF_STAT            //< Collect statistics for backward
                                    //refenrences. Works only with -XX:GCThreads=1
