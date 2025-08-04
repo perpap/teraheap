@@ -109,6 +109,13 @@ void vm_init_globals() {
   SuspendibleThreadSet_init();
 }
 
+#ifdef RUSAGE_MUTATOR
+void atexit_report_rusage() {
+  if (EnableTeraHeap) {
+    Universe::teraHeap()->get_tera_stats()->report_rusage();
+  }
+}
+#endif // RUSAGE_MUTATOR
 
 jint init_globals() {
   management_init();
@@ -173,6 +180,12 @@ jint init_globals() {
 
 void exit_globals() {
   static bool destructorsCalled = false;
+
+#ifdef RUSAGE_MUTATOR
+  if (EnableTeraHeap && TeraHeapStatistics) {
+    atexit_report_rusage();
+  }
+#endif // RUSAGE_MUTATOR
   if (!destructorsCalled) {
     destructorsCalled = true;
     perfMemory_exit();

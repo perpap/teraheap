@@ -157,4 +157,6 @@
 
 #define HINT_HIGH_LOW_WATERMARK   //< Promotion hint with high and low watermark
 
+// #define RUSAGE_MUTATOR  //< Enables rusage measuremetns excluding STW GCs
+
 #endif  // _SHARE_DEFINES_H_

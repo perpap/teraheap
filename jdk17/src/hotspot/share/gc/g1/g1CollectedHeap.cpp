@@ -112,6 +112,10 @@
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/stack.inline.hpp"
 
+#ifdef RUSAGE_MUTATOR
+  #include <sys/resource.h>
+#endif // RUSAGE_MUTATOR
+
 size_t G1CollectedHeap::_humongous_object_threshold_in_words = 0;
 
 #ifdef TERA_CARDS
@@ -3057,6 +3061,26 @@ void G1CollectedHeap::gc_tracer_report_gc_end(bool concurrent_operation_is_full_
 }
 
 void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_pause_time_ms) {
+#ifdef RUSAGE_MUTATOR
+  if (EnableTeraHeap && TeraHeapStatistics) {
+    // Start of Young/Mixed
+    struct rusage current_start;
+    getrusage(RUSAGE_SELF, &current_start);
+
+    TeraStatistics *stats = Universe::teraHeap()->get_tera_stats();
+
+    stats->add_mutator_system_time(
+      current_start.ru_stime.tv_sec - stats->get_last_mutator_system_time()
+    );
+    stats->add_mutator_major_page_faults(
+      current_start.ru_majflt - stats->get_last_mutator_major_page_faults()
+    );
+    stats->add_mutator_minor_page_faults(
+      current_start.ru_minflt - stats->get_last_mutator_minor_page_faults()
+    );
+  }
+#endif // RUSAGE_MUTATOR
+
   GCIdMark gc_id_mark;
 
   SvcGCMarker sgcm(SvcGCMarker::MINOR);
@@ -3277,6 +3301,20 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
     start_concurrent_cycle(concurrent_operation_is_full_mark);
     ConcurrentGCBreakpoints::notify_idle_to_active();
   }
+  // TODO: get_rusage(); check if it returns earlier
+#ifdef RUSAGE_MUTATOR
+  if (EnableTeraHeap && TeraHeapStatistics) {
+    // End of Young/Mixed
+    struct rusage current_end;
+    getrusage(RUSAGE_SELF, &current_end);
+
+    TeraStatistics *stats = Universe::teraHeap()->get_tera_stats();
+
+    stats->set_last_mutator_system_time(current_end.ru_stime.tv_sec);
+    stats->set_last_mutator_major_page_faults(current_end.ru_majflt);
+    stats->set_last_mutator_minor_page_faults(current_end.ru_minflt);
+  }
+#endif // RUSAGE_MUTATOR
 }
 
 void G1CollectedHeap::preserve_mark_during_evac_failure(uint worker_id, oop obj, markWord m) {

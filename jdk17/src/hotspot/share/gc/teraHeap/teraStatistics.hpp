@@ -4,6 +4,10 @@
 #include "memory/allocation.hpp"
 #include "oops/oop.hpp"
 
+#ifdef RUSAGE_MUTATOR
+  #include <sys/resource.h>
+#endif // RUSAGE_MUTATOR
+
 class TeraStatistics: public CHeapObj<mtInternal> {
 private:
   long  total_objects_moved;               
@@ -22,6 +26,16 @@ private:
 
   bool _is_mixed_gc;
   bool _is_full_gc;
+
+#ifdef RUSAGE_MUTATOR
+  time_t last_mutator_system_time_s;
+  long last_mutator_major_page_faults;
+  long last_mutator_minor_page_faults;
+
+  time_t mutator_system_time_s;
+  long mutator_major_page_faults;
+  long mutator_minor_page_faults;
+#endif // RUSAGE_MUTATOR
 
 public:
 
@@ -70,6 +84,59 @@ public:
   void set_is_in_full_gc(bool is_full_gc) {
     _is_full_gc = is_full_gc;
   }
+
+#ifdef RUSAGE_MUTATOR
+  time_t get_last_mutator_system_time() {
+    return last_mutator_system_time_s;
+  }
+
+  long get_last_mutator_major_page_faults() {
+    return last_mutator_major_page_faults;
+  }
+
+  long get_last_mutator_minor_page_faults() {
+    return last_mutator_minor_page_faults;
+  }
+
+  void set_last_mutator_system_time(time_t sys_time_s) {
+    last_mutator_system_time_s = sys_time_s;
+  }
+
+  void set_last_mutator_major_page_faults(long major_page_faults) {
+    last_mutator_major_page_faults = major_page_faults;
+  }
+
+  void set_last_mutator_minor_page_faults(long minor_page_faults) {
+    last_mutator_minor_page_faults = minor_page_faults;
+  }
+
+  time_t get_mutator_system_time() {
+    return mutator_system_time_s;
+  }
+
+  long get_mutator_major_page_faults() {
+    return mutator_major_page_faults;
+  }
+
+  long get_mutator_minor_page_faults() {
+    return mutator_minor_page_faults;
+  }
+
+  void add_mutator_system_time(time_t sys_time_s) {
+    mutator_system_time_s += sys_time_s;
+  }
+
+  void add_mutator_major_page_faults(long major_page_faults) {
+    mutator_major_page_faults += major_page_faults;
+  }
+
+  void add_mutator_minor_page_faults(long minor_page_faults) {
+    mutator_minor_page_faults += minor_page_faults;
+  }
+
+  void report_rusage();
+
+#endif // RUSAGE_MUTATOR
 };
 
 #endif // SHARE_GC_TERAHEAP_TERASTATISTICS_HPP

@@ -169,6 +169,26 @@ public:
 };
 
 void G1FullCollector::prepare_collection() {
+#ifdef RUSAGE_MUTATOR
+  if (EnableTeraHeap && TeraHeapStatistics) {
+    // Start of Full
+    struct rusage current_start;
+    getrusage(RUSAGE_SELF, &current_start);
+
+    TeraStatistics *stats = Universe::teraHeap()->get_tera_stats();
+
+    stats->add_mutator_system_time(
+      current_start.ru_stime.tv_sec - stats->get_last_mutator_system_time()
+    );
+    stats->add_mutator_major_page_faults(
+      current_start.ru_majflt - stats->get_last_mutator_major_page_faults()
+    );
+    stats->add_mutator_minor_page_faults(
+      current_start.ru_minflt - stats->get_last_mutator_minor_page_faults()
+    );
+  }
+#endif // RUSAGE_MUTATOR
+
   _heap->policy()->record_full_collection_start();
 
   _heap->print_heap_before_gc();
@@ -232,6 +252,20 @@ void G1FullCollector::complete_collection() {
   }
 #endif // DEBUG
   
+#ifdef RUSAGE_MUTATOR
+  if (EnableTeraHeap && TeraHeapStatistics) {
+    // End of Full
+    struct rusage current_end;
+    getrusage(RUSAGE_SELF, &current_end);
+
+    TeraStatistics *stats = Universe::teraHeap()->get_tera_stats();
+
+    stats->set_last_mutator_system_time(current_end.ru_stime.tv_sec);
+    stats->set_last_mutator_major_page_faults(current_end.ru_majflt);
+    stats->set_last_mutator_minor_page_faults(current_end.ru_minflt);
+  }
+#endif // RUSAGE_MUTATOR
+
   if (EnableTeraHeap && TeraHeapStatistics) {
     Universe::teraHeap()->get_tera_stats()->record_h2_allocate_time(Universe::teraHeap()->get_max_thr_time_alloc_h2());
     Universe::teraHeap()->get_tera_stats()->record_h2_copy_time(Universe::teraHeap()->get_max_thr_time_copy_h2());
