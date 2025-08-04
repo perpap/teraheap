@@ -759,6 +759,10 @@ void G1ParScanThreadState::th_ref_update(T*p, oop obj, G1HeapRegionAttr region_a
     return;
   }
 
+  if (TeraHeapStatistics) {
+    Universe::teraHeap()->get_tera_stats()->add_back_ref();
+  }
+
 
   //p (h2) -> obj (h1)
   //obj creates a back ref, because it cant be transfered to h2.
