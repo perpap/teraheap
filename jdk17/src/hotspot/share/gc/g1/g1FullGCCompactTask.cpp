@@ -156,9 +156,17 @@ void G1FullGCCompactTask::work(uint worker_id) {
     while (hum_region) {
       Universe::teraHeap()->stat_h2_humongous_add();
       h2_move_humongous(hum_region, worker_id);
-      // TODO: free all humongous regions here?
-      // Iterate humongous regions of obj and call:
-      //    G1CollectedHeap::heap()->free_humongous_region(hum_region, nullptr);
+
+      G1CollectedHeap* g1h = G1CollectedHeap::heap();
+
+      // Iterate and free humongous regions of obj
+      do {
+        HeapRegion *next = g1h->next_region_in_humongous(hum_region);
+        hum_region->set_containing_set(nullptr);
+        G1CollectedHeap::heap()->free_humongous_region(hum_region, nullptr);
+        hum_region = next;
+      } while (hum_region != nullptr);
+
       hum_region = Universe::teraHeap()->h2_get_next_humongous_region();
     }
   }
