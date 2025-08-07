@@ -213,6 +213,11 @@ void G1FullCollector::prepare_collection() {
   // Clear and activate derived pointer collection.
   clear_and_activate_derived_pointers();
 
+  // Reset to find unused regions in H2.
+  if (EnableTeraHeap) {
+    Universe::teraHeap()->h2_reset_used_field();
+  }
+
   if (EnableTeraHeap && TeraHeapStatistics) {
     Universe::teraHeap()->get_tera_stats()->set_is_in_full_gc(G1CollectedHeap::heap()->collector_state()->in_full_gc());
     Universe::teraHeap()->h2_init_stats_counters();
@@ -403,6 +408,11 @@ void G1FullCollector::phase1_mark_live_objects() {
   }
 
   scope()->tracer()->report_object_count_after_gc(&_is_alive);
+
+  // Free unused H2 regions
+  if (EnableTeraHeap) {
+    Universe::teraHeap()->free_unused_regions();
+  }
 
 #ifdef TERA_DEBUG
   {
