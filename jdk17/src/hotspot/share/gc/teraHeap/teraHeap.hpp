@@ -24,10 +24,12 @@ class PSCardTable;
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
-  static char *_start_addr; // TeraHeap start address of mmap region
-  static char *_stop_addr;  // TeraHeap ends address of mmap region
-  ObjectStartArray _start_array; // Keeps track of where objects
-                                        // start in a 2^CARD_SEGMENT_SIZE block
+  static char *_start_mmap;       // TeraHeap unaligned start address of mmap region
+  static char *_start_addr;       // TeraHeap start address of mmap region
+  static char *_stop_addr;        // TeraHeap ends address of mmap region
+
+  ObjectStartArray _start_array;  // Keeps track of where objects
+                                  // start in a 2^CARD_SEGMENT_SIZE block
 
   /*-----------------------------------------------
    * Stacks
@@ -136,13 +138,17 @@ private:
 
 public:
   // Constructor
-  TeraHeap();
+  // heap_end: used for H2 placement after H1
+  TeraHeap(HeapWord *heap_end = nullptr);
 
   // Destructor
   ~TeraHeap();
 
   // Get object start array for h2
   ObjectStartArray *h2_start_array() { return &_start_array; }
+
+  // Return H2 unaligned start address
+  char *h2_start_mmap_addr(void);
   
   // Return H2 start address
   char *h2_start_addr(void);
@@ -154,6 +160,9 @@ public:
   // end address of the last allocated object in the last region of
   // H2.
   char *h2_top_addr(void);
+
+  // Update current top
+  void h2_update_top(void);
 
 
   // Check if H2 is empty.
@@ -228,7 +237,7 @@ public:
   HeapWord *get_first_object_in_region(HeapWord *addr);
 
   // Add new object in the region
-  char *h2_add_object(oop obj, size_t size);
+  char *h2_add_object(oop obj, size_t size, uint thread_id);
 
   // Pop the objects that are in `_tc_stack`. These objects are
   // located in the Java Heap and we need to ensure that they will be
@@ -268,11 +277,11 @@ public:
 
   // Explicit (using systemcall) write 'data' with 'size' to the specific
   // 'offset' in the file.
-  void h2_write(char *data, char *offset, size_t size);
+  void h2_write(char *data, char *offset, size_t size, uint thread_id);
 
   // Explicit (using systemcall) asynchronous write 'data' with 'size' to
   // the specific 'offset' in the file.
-  void h2_awrite(char *data, char *offset, size_t size);
+  void h2_awrite(char *data, char *offset, size_t size, uint thread_id);
 
   // We need to ensure that all the writes in TeraHeap using asynchronous
   // I/O have been completed succesfully.
@@ -286,7 +295,7 @@ public:
   // Add an object 'obj' with size 'size' to the promotion buffer. 'New_adr' is
   // used to know where the object will move to H2. We use promotion buffer to
   // reduce the number of system calls for small sized objects.
-  void h2_promotion_buffer_insert(char *obj, char *new_adr, size_t size);
+  void h2_promotion_buffer_insert(char *obj, char *new_adr, size_t size, uint thread_id);
 
   // At the end of the major GC flush and free all the promotion
   // buffers.
@@ -432,13 +441,15 @@ public:
 
   // Move object with size 'size' from source address 'src' to the h2
   // destination address 'dst' 
-  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size);
+  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, uint thread_id);
 
   // Complete the transfer of the objects in H2
   void h2_complete_transfers();
+  void h2_complete_transfers(uint thread_id);
 
   // Check if the group of regions in H2 is enabled
   bool is_h2_group_enabled();
+  bool is_h2_group_enabled(uint thread_id);
 
 #ifdef TERA_TIMERS
   TeraTimers* getTeraTimer();

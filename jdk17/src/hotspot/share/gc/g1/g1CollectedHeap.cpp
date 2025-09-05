@@ -3226,12 +3226,13 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
         post_evacuate_collection_set(evacuation_info, &rdcqs, &per_thread_states);
 
 
-#ifdef TERA_MAINTENANCE
         if (EnableTeraHeap) {
+#ifdef TERA_MAINTENANCE
           // Wait to complete all the transfers to H2 and then continue
           Universe::teraHeap()->h2_complete_transfers();  
-        }
 #endif
+          Universe::teraHeap()->h2_update_top();
+        }
 
         start_new_collection_set();
 

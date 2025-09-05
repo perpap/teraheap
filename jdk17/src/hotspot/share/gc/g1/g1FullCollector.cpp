@@ -430,6 +430,10 @@ void G1FullCollector::phase2_prepare_compaction() {
   if (!task.has_freed_regions()) {
     task.prepare_serial_compaction();
   }
+
+  if (EnableTeraHeap) {
+    Universe::teraHeap()->h2_update_top();
+  }
 }
 
 void G1FullCollector::phase3_adjust_pointers() {

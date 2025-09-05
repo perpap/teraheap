@@ -10,6 +10,7 @@
 #include "runtime/mutexLocker.hpp"
 
 
+char *TeraHeap::_start_mmap = NULL;
 char *TeraHeap::_start_addr = NULL;
 char *TeraHeap::_stop_addr = NULL;
 
@@ -34,11 +35,16 @@ uint64_t TeraHeap::obj_distr_size[3];
 // long int TeraHeap::cur_obj_part_id;
 
 // Constructor of TeraHeap
-TeraHeap::TeraHeap() {
-
+TeraHeap::TeraHeap(HeapWord *heap_end) {
   uint64_t align = CardTable::th_ct_max_alignment_constraint();
-  init(align);
 
+  if (AllocateH2At == NULL || H2FileSize == 0) {
+    ShouldNotReachHere();
+  }
+
+  init(true, ParallelGCThreads, "MemCpy", align, AllocateH2At, H2FileSize, (char *) heap_end);
+
+  _start_mmap = start_mmap_region();
   _start_addr = start_addr_mem_pool();
   _stop_addr = stop_addr_mem_pool();
 
@@ -103,6 +109,12 @@ TeraHeap::~TeraHeap() {
   }
 }
 
+// Return H2 unaligned start address
+char* TeraHeap::h2_start_mmap_addr(void) {
+  assert((char *)(_start_mmap) != NULL, "H2 allocator is not initialized");
+  return _start_mmap;
+}
+
 // Return H2 start address
 char* TeraHeap::h2_start_addr(void) {
 	assert((char *)(_start_addr) != NULL, "H2 allocator is not initialized");
@@ -121,6 +133,11 @@ char* TeraHeap::h2_end_addr(void) {
 // H2.
 char* TeraHeap::h2_top_addr(void) {
 	return cur_alloc_ptr();
+}
+
+// Update current top
+void TeraHeap::h2_update_top(void) {
+  update_top();
 }
 
 // Check if the TeraHeap is empty. If yes, return 'true', 'false' otherwise
@@ -661,8 +678,8 @@ void TeraHeap::thread_disable_groups(uint thread_id){
 // Add an object 'obj' with size 'size' to the promotion buffer. 'New_adr' is
 // used to know where the object will move to H2. We use promotion buffer to
 // reduce the number of system calls for small sized objects.
-void  TeraHeap::h2_promotion_buffer_insert(char* obj, char* new_adr, size_t size) {
-	buffer_insert(obj, new_adr, size);
+void  TeraHeap::h2_promotion_buffer_insert(char* obj, char* new_adr, size_t size, uint thread_id) {
+	buffer_insert(obj, new_adr, size, thread_id);
 }
 
 // At the end of the major GC flush and free all the promotion buffers.
@@ -673,14 +690,14 @@ void TeraHeap::h2_free_promotion_buffers() {
 
 // Explicit (using systemcall) write 'data' with 'size' to the specific
 // 'offset' in the file.
-void TeraHeap::h2_write(char *data, char *offset, size_t size) {
-	r_write(data, offset, size);
+void TeraHeap::h2_write(char *data, char *offset, size_t size, uint thread_id) {
+	r_write(data, offset, size, thread_id);
 }
 
 // Explicit (using systemcall) asynchronous write 'data' with 'size' to
 // the specific 'offset' in the file.
-void TeraHeap::h2_awrite(char *data, char *offset, size_t size) {
-	r_awrite(data, offset, size);
+void TeraHeap::h2_awrite(char *data, char *offset, size_t size, uint thread_id) {
+	r_awrite(data, offset, size, thread_id);
 }
 		
 // We need to ensure that all the writes in TeraHeap using asynchronous
@@ -733,8 +750,8 @@ void TeraHeap::mark_used_region(HeapWord *obj) {
 
 // Allocate new object 'obj' with 'size' in words in TeraHeap.
 // Return the allocated 'pos' position of the object
-char* TeraHeap::h2_add_object(oop obj, size_t size) {
-  MutexLocker x(tera_heap_lock);
+char* TeraHeap::h2_add_object(oop obj, size_t size, uint thread_id) {
+  // MutexLocker x(tera_heap_lock);
 	char *pos;			// Allocation position
 
 	// Update Statistics
@@ -757,7 +774,7 @@ char* TeraHeap::h2_add_object(oop obj, size_t size) {
 	}
 
 
-	pos = allocate(size, (uint64_t)obj->get_obj_group_id(), (uint64_t)obj->get_obj_part_id());
+	pos = allocate(size, (uint64_t)obj->get_obj_group_id(), (uint64_t)obj->get_obj_part_id(), thread_id);
 	
 	assert( (HeapWord *) h2_top_addr() < (HeapWord*) _stop_addr , "H2 is Out of Memory\n" );
 
@@ -977,11 +994,12 @@ bool TeraHeap::h2_object_starts_in_region(HeapWord *obj) {
 
 // Move object with size 'size' from source address 'src' to the h2
 // destination address 'dst' 
-void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size) {
+void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, uint thread_id) {
   assert(src != NULL, "Src address should not be null");
   assert(dst != NULL, "Dst address should not be null");
   assert(size > 0, "Size should not be zero");
 
+// TODO: add async-copy
 
 #if defined(SYNC)
   h2_write((char *)src, (char *)dst, size);
@@ -1020,6 +1038,14 @@ void TeraHeap::h2_complete_transfers() {
 #elif defined(FMAP)
   tc_fsync();
 #endif
+}
+
+// Complete the transfer of the objects in H2
+void TeraHeap::h2_complete_transfers(uint thread_id) {
+#if defined(ASYNC) && defined(PR_BUFFER)
+  free_all_buffers_parallel(thread_id);
+#endif
+  // TODO: policy h2_complete_transfers
 }
   
 // Check if the group of regions in H2 is enabled

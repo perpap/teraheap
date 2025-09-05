@@ -75,12 +75,12 @@ size_t G1FullGCCompactTask::G1CompactRegionClosure::apply(oop obj) {
     if (TeraHeapStatistics) {
       Ticks start = Ticks::now();
 
-      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, _worker_id);
 
       Tickspan time = Ticks::now() - start;
       Universe::teraHeap()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
-      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, _worker_id);
     }
   } else {
     // Normal Copy
@@ -129,12 +129,12 @@ void G1FullGCCompactTask::h2_move_humongous(HeapRegion* hr, uint worker_id) {
   if (TeraHeapStatistics) {
     Ticks start = Ticks::now();
 
-    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, worker_id);
 
     Tickspan time = Ticks::now() - start;
     Universe::teraHeap()->thr_add_time_copy_h2(worker_id, TimeHelper::counter_to_millis(time.value()));
   } else {
-    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, worker_id);
   }
 
   cast_to_oop(destination)->init_mark();

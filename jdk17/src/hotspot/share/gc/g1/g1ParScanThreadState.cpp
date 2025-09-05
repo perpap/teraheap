@@ -660,24 +660,26 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
   oop h2_obj;
 
   {
-    MutexLocker x(tera_heap_evac_lock);
+    // MutexLocker x(tera_heap_evac_lock);
+
     //Two diff refs may point to the same obj that is going to be evacuated in h2.
     //If both refs are popped and they are now executing do_copy_to_h2_space() for the same obj
     //then only one will manage to evacuate the obj to h2. The other one when unlocked, will hit this if statment and return
     if (obj->is_forwarded())
       return obj->forwardee(); 
 
+    // TODO: in case of undo, these metrics will not be accurate...
     if (TeraHeapStatistics) {
       Universe::teraHeap()->get_tera_stats()->add_object( obj->size()*HeapWordSize );
 
       Ticks start = Ticks::now();
 
-      h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz );
+      h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz, worker_id());
 
       Tickspan time = Ticks::now() - start;
       Universe::teraHeap()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
-      h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz );
+      h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz, worker_id());
     }
 
     assert(h2_obj_addr != NULL, "when we get here, allocation should have succeeded");
@@ -690,25 +692,32 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
     //else someone else manage to set the forwarding ptr, to another h2 location. 
     //Thus it return that new location of h2, which is not h2_obj_addr 
     const oop forward_ptr = obj->forward_to_atomic( h2_obj, old_mark , memory_order_relaxed);
-    assert(forward_ptr == NULL, "Sanity check");
+    // assert(forward_ptr == NULL, "Sanity check");
 
+    if (forward_ptr != NULL) {
+      // already forwarded
+      Universe::heap()->fill_with_dummy_object(h2_obj_addr, h2_obj_addr + word_sz, true);
+      Universe::teraHeap()->get_tera_stats()->add_waste(word_sz);
+      fprintf(stderr, "(mixed) Dummy object at %p (%s)\n", h2_obj_addr, cast_to_oop(h2_obj_addr)->klass()->internal_name());
+      return forward_ptr;
+    }
+
+    // Copy to H2
+    // TODO: maybe copy object after child traversal --> Reduced I/O and async-copy-proof
     if (TeraHeapStatistics) {
       Ticks start = Ticks::now();
 
-      Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
+      Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz, worker_id());
 
       Tickspan time = Ticks::now() - start;
       Universe::teraHeap()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
-      Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
+      Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz, worker_id());
     }
 
     h2_obj->set_mark(old_mark);
 
   }//destroy mutex. Continue in parallel.
-
-
- 
 
   //traverse the 1-st level kids
   //----------------------------------
@@ -731,8 +740,8 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
   }
 
   h2_obj->oop_iterate_backwards(&_tera_scanner, klass);
-  return h2_obj;
 
+  return h2_obj;
 }
 #endif
 

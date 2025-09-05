@@ -953,12 +953,17 @@ const intx ObjectAlignmentInBytes = 8;
    product(bool, H2LivenessAnalysis, false,                                 \
           "Liveness analysis per H2 region objects")                        \
                                                                             \
-   product(uintx, TeraHeapSize, 0,                                      \
-          "Initial TeraHeap total size(in bytes)")                         \
+   product(uintx, TeraHeapSize, 0,					                                \
+          "Initial TeraHeap total size(in bytes)")			                    \
                                                                             \
-   product(uintx, TeraStripeSize, 512,                                     \
-          "Size of TeraHeap stripe size (e.g 128)")                        \
+   product(uintx, TeraStripeSize, 512,					                            \
+          "Size of TeraHeap stripe size (e.g 128)")			                    \
                                                                             \
+   product(uintx, H2FileSize, 0,					                                  \
+	  "H2 file size (bytes e.g 20GB=21474836480")			                        \
+                                                                            \
+   product(ccstr, AllocateH2At, NULL,					                              \
+	  "Path to the directory where the H2 file will be created")	            \
                                                                             \
   /* JVMTI heap profiling */                                                \
                                                                             \

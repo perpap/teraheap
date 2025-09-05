@@ -6,6 +6,7 @@
 PARALLEL_GC_THREADS=2
 # REGION_SIZE / 2^(TERA_CARD_SIZE) -> found in sharedDefines.hpp
 STRIPE_SIZE=32768
+H2_SIZE_IN_BYTES=$(echo "100 * 1024 * 1024 * 1024" | bc)
 
 # JAVA="../jdk17/build/linux-x86_64-server-slowdebug/jdk/bin/java"
 JAVA="../jdk17/build/linux-x86_64-server-release/jdk/bin/java"
@@ -21,7 +22,9 @@ FLAGS="-XX:+EnableTeraHeap \
   -XX:TeraStripeSize=${STRIPE_SIZE} \
   -XX:-ClassUnloading \
   -XX:-UseCompressedOops \
-  -XX:-UseCompressedClassPointers"
+  -XX:-UseCompressedClassPointers \
+  -XX:AllocateH2At=/mnt/fmap/  \
+  -XX:H2FileSize=${H2_SIZE_IN_BYTES}"
 
 # Extra flags that may be useful in some cases
 X_FLAGS=""

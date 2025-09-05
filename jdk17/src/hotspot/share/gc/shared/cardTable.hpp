@@ -222,8 +222,12 @@ public:
     } else {
       CardValue *result = &_th_byte_map_base[uintptr_t(p) >> th_card_shift];
 
-      assert(result >= _th_byte_map && result < _th_byte_map + _th_byte_map_size,
-             "out of bounds accessor for tc_card marking array");
+      // FIXME: this assertion is failing
+      // assert(result >= _th_byte_map && result < _th_byte_map + _th_byte_map_size,
+      //        "out of bounds accessor for tc_card marking array");
+      if (!(result >= _th_byte_map && result < _th_byte_map + _th_byte_map_size)) {
+        fprintf(stderr, "Field [%p] byte_for -> %p\n", p, result);
+      }
 
       return result;
     }

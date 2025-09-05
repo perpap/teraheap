@@ -68,7 +68,7 @@ bool G1FullGCPrepareTask::G1CalculatePointersClosure::do_heap_region(HeapRegion*
       if (!_bitmap->is_marked(obj)) {
         free_pinned_region<true>(hr);
       } else if (EnableTeraHeap && obj->is_marked_move_h2() && !Universe::teraHeap()->is_in_h2(obj->forwardee())) {
-        prepare_humongous_for_h2(hhr_start, obj);
+        prepare_humongous_for_h2(hhr_start, obj, _worker_id);
       }
     } else if (hr->is_open_archive()) {
       bool is_empty = _collector->live_words(hr->hrm_index()) == 0;
@@ -182,12 +182,12 @@ size_t G1FullGCPrepareTask::G1PrepareCompactLiveClosure::apply(oop object) {
 
       Ticks start = Ticks::now();
 
-      h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(object, size);
+      h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(object, size, _worker_id);
 
       Tickspan time = Ticks::now() - start;
       Universe::teraHeap()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
-      h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(object, size);
+      h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(object, size, _worker_id);
     }
 
   #ifdef TERA_DBG_PHASES
@@ -195,8 +195,15 @@ size_t G1FullGCPrepareTask::G1PrepareCompactLiveClosure::apply(oop object) {
       stdprint << "### Phase 2 obj " << object << " will be moved to " << h2_address << "\n";
     }
   #endif // DEBUG
-
-    object->forward_to(cast_to_oop(h2_address));
+    
+    // TODO probably remove (traverse objects in per-region, not in graph)
+    if (object->forward_to_atomic(cast_to_oop(h2_address), object->mark(), memory_order_relaxed) != NULL) {
+      // Already forwarded
+      fprintf(stderr, "Already\n");
+      Universe::heap()->fill_with_dummy_object(h2_address, h2_address + size, true);
+      Universe::teraHeap()->get_tera_stats()->add_waste(size);
+      fprintf(stderr, "(full) Dummy object at %p (%s)\n", h2_address, cast_to_oop(h2_address)->klass()->internal_name());
+    }
   } else {
     _cp->forward(object, size);
   }
@@ -237,7 +244,7 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_for_compaction(Hea
   prepare_for_compaction_work(_cp, hr);
 }
 
-void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(HeapRegion *hr, oop obj) {
+void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(HeapRegion *hr, oop obj, uint worker_id) {
   MutexLocker x(tera_heap_humongous_lock);
   
   // Already forwarded to H2
@@ -251,12 +258,12 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(H
 
     Ticks start = Ticks::now();
 
-    h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(obj, obj->size());
+    h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(obj, obj->size(), worker_id);
 
     Tickspan time = Ticks::now() - start;
     Universe::teraHeap()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
   } else {
-    h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(obj, obj->size());
+    h2_address = (HeapWord *) Universe::teraHeap()->h2_add_object(obj, obj->size(), worker_id);
   }
 
 #ifdef TERA_DBG_PHASES

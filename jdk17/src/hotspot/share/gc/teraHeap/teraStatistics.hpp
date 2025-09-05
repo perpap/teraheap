@@ -10,8 +10,8 @@
 
 class TeraStatistics: public CHeapObj<mtInternal> {
 private:
-  long  total_objects_moved;               
-  long  total_objects_size; 
+  long  total_objects_moved;
+  long  total_objects_size;
   long  backward_ref;
 
   // time to scan h2 card table
@@ -26,6 +26,8 @@ private:
 
   bool _is_mixed_gc;
   bool _is_full_gc;
+
+  uint waste_space;
 
 #ifdef RUSAGE_MUTATOR
   time_t last_mutator_system_time_s;
@@ -83,6 +85,14 @@ public:
 
   void set_is_in_full_gc(bool is_full_gc) {
     _is_full_gc = is_full_gc;
+  }
+
+  void add_waste(uint waste) {
+    waste_space += waste;
+  }
+
+  uint get_waste() {
+    return waste_space;
   }
 
 #ifdef RUSAGE_MUTATOR
