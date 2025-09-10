@@ -6,12 +6,15 @@
 PARALLEL_GC_THREADS=2
 # REGION_SIZE / 2^(TERA_CARD_SIZE) -> found in sharedDefines.hpp
 STRIPE_SIZE=32768
+H2_SIZE_IN_BYTES=$(echo "100 * 1024 * 1024 * 1024" | bc)
 
 # JAVA="../jdk17/build/linux-x86_64-server-slowdebug/jdk/bin/java"
 JAVA="../jdk17/build/linux-x86_64-server-release/jdk/bin/java"
 
 # Flag to set which GC the jvm will use
 GC="UseG1GC"
+
+ITER=1
  
 # Java files should be under: ${TESTD}/${EXEC_DIR_NAME}
 TESTD="g1_full_gc"
@@ -21,7 +24,9 @@ FLAGS="-XX:+EnableTeraHeap \
   -XX:TeraStripeSize=${STRIPE_SIZE} \
   -XX:-ClassUnloading \
   -XX:-UseCompressedOops \
-  -XX:-UseCompressedClassPointers"
+  -XX:-UseCompressedClassPointers \
+  -XX:AllocateH2At=/mnt/fmap/  \
+  -XX:H2FileSize=${H2_SIZE_IN_BYTES}"
 
 # Extra flags that may be useful in some cases
 X_FLAGS=""
@@ -207,6 +212,7 @@ usage() {
   echo -n "      $0 [option ...] [-h]"
   echo
   echo "Options:"
+  echo "      -n  Number of iterations"
   echo "      -m  Mode (0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)"
   echo "      -t  Number of GC threads (2, 4, 8, 16, 32)"
   echo "      -d  Directory of tests"
@@ -237,6 +243,7 @@ check_args() {
 
 print_msg() {
   local gcThread=$1
+  local iteration=$2
   local mode_value
   local gc_name
 
@@ -273,6 +280,7 @@ print_msg() {
   echo "___________________________________"
   echo "         Run ${EXEC_DIR_NAME} Tests"
   echo 
+  echo "Iteration:  ${iteration}"
   echo "GC:         ${gc_name}"
   echo "Mode:       ${mode_value}"
   echo "GC Threads: ${gcThread}"
@@ -304,9 +312,12 @@ parse_test_dir() {
 }
 
 # Check for the input arguments
-while getopts "m:t:d:g:h" opt
+while getopts "n:m:t:d:g:h" opt
 do
   case "${opt}" in
+    n)
+      ITER=${OPTARG}
+      ;;
     m)
       MODE=${OPTARG}
       ;;
@@ -371,82 +382,86 @@ fi
 
 TMP_X_FLAGS="$X_FLAGS"
 
-# Run tests
-for gcThread in "${PARALLEL_GC_THREADS[@]}"
+for itr in $(seq 1 $ITER)
 do
-  print_msg "$gcThread"
-
-  for exec_file in "${EXEC[@]}"
+  # Run tests
+  for gcThread in "${PARALLEL_GC_THREADS[@]}"
   do
-    if [ "${exec_file}" == "ClassInstance" ] || [ "${exec_file}" == "TriggerImplicitGCs" ]
-    then
-      XMS=2
-    elif [ "${exec_file}" == "Array_List" ]
-    then
-      XMS=10
-    elif [[ "${exec_file}" == "HashMap" || "${exec_file}" == "Array_List_String" ]]
-    then
-      XMS=3
-    else
-      XMS=1
-    fi
+    print_msg "$gcThread" "$itr"
 
-    if [ "${exec_file}" == "FGCAfterCM" ]
-    then
-      X_FLAGS="-XX:InitiatingHeapOccupancyPercent=20 -XX:MaxGCPauseMillis=5 $TMP_X_FLAGS"
-    else
-      X_FLAGS="$TMP_X_FLAGS"
-    fi
+    for exec_file in "${EXEC[@]}"
+    do
+      if [ "${exec_file}" == "ClassInstance" ] || [ "${exec_file}" == "TriggerImplicitGCs" ]
+      then
+        XMS=2
+      elif [ "${exec_file}" == "Array_List" ]
+      then
+        XMS=10
+      elif [[ "${exec_file}" == "HashMap" || "${exec_file}" == "Array_List_String" ]]
+      then
+        XMS=3
+      else
+        XMS=1
+      fi
 
-    MAX=100
-    TERACACHE_SIZE=$(echo $(( (MAX-XMS)*1024*1024*1024 )))
-    case ${MODE} in
-      0)
-        # clear_env
-        export_env_vars
-        run_tests "$exec_file" "$gcThread"
-        ;;
-      1)
-        # clear_env
-        export_env_vars
-        interpreter_mode "$exec_file" "$gcThread"
-        ;;
-      2)
-        # clear_env
-        export_env_vars
-        c1_mode "$exec_file" "$gcThread"
-        ;;
-      3)
-        # clear_env
-        export_env_vars
-        c2_mode "$exec_file" "$gcThread"
-        ;;
-      4)
-        # clear_env
-        export_env_vars
-        run_tests_debug "$exec_file" "$gcThread"
-        ;;
-      5)
-        # clear_env
-        export_env_vars
-        run_tests_msg_box "$exec_file" "$gcThread"
-        ;;
-    esac
+      if [ "${exec_file}" == "FGCAfterCM" ]
+      then
+        X_FLAGS="-XX:InitiatingHeapOccupancyPercent=20 -XX:MaxGCPauseMillis=5 $TMP_X_FLAGS"
+      else
+        X_FLAGS="$TMP_X_FLAGS"
+      fi
 
-    ans=$?
+      MAX=100
+      TERACACHE_SIZE=$(echo $(( (MAX-XMS)*1024*1024*1024 )))
+      case ${MODE} in
+        0)
+          # clear_env
+          export_env_vars
+          run_tests "$exec_file" "$gcThread"
+          ;;
+        1)
+          # clear_env
+          export_env_vars
+          interpreter_mode "$exec_file" "$gcThread"
+          ;;
+        2)
+          # clear_env
+          export_env_vars
+          c1_mode "$exec_file" "$gcThread"
+          ;;
+        3)
+          # clear_env
+          export_env_vars
+          c2_mode "$exec_file" "$gcThread"
+          ;;
+        4)
+          # clear_env
+          export_env_vars
+          run_tests_debug "$exec_file" "$gcThread"
+          ;;
+        5)
+          # clear_env
+          export_env_vars
+          run_tests_msg_box "$exec_file" "$gcThread"
+          ;;
+      esac
 
-    echo -ne "${exec_file} "
+      ans=$?
 
-    if [ $ans -eq 0 ]
-    then    
-      echo -e '\e[30G \e[32;1mPASS\e[0m';
-    else    
-      echo -e '\e[30G \e[31;1mFAIL\e[0m';
-      cp ${TESTD}/${EXEC_DIR_NAME}/out/${exec_file}_out ${TESTD}/${EXEC_DIR_NAME}/out/fail_${exec_file}_out
-      cp ${TESTD}/${EXEC_DIR_NAME}/out/${exec_file}_err ${TESTD}/${EXEC_DIR_NAME}/out/fail_${exec_file}_err
-      # NOTE: uncomment if you want to break when a test fails.
-      # break
-    fi
+      echo -ne "${exec_file} "
+
+      if [ $ans -eq 0 ]
+      then    
+        echo -e '\e[30G \e[32;1mPASS\e[0m';
+      else    
+        echo -e '\e[30G \e[31;1mFAIL\e[0m';
+        cp ${TESTD}/${EXEC_DIR_NAME}/out/${exec_file}_out ${TESTD}/${EXEC_DIR_NAME}/out/fail_${exec_file}_out
+        cp ${TESTD}/${EXEC_DIR_NAME}/out/${exec_file}_err ${TESTD}/${EXEC_DIR_NAME}/out/fail_${exec_file}_err
+        # NOTE: uncomment if you want to break when a test fails.
+        # break
+      fi
+    done
+
   done
 
 done

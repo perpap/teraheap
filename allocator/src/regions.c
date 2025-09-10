@@ -18,6 +18,12 @@
 #define HEADER_SIZE (32)                   // Header size of the Dummy object	
 #define align_size_up_(size, alignment) (((size) + ((alignment) - 1)) & ~((alignment) - 1))
 
+char dev[150] = { '\0' };
+
+uint64_t dev_size = 0;
+uint64_t region_array_size = 0;
+uint64_t max_rdd_id = 0;
+
 struct _mem_pool tc_mem_pool;
 int fd;
 
@@ -29,35 +35,83 @@ void* align_ptr_up(void* ptr, size_t alignment) {
 	return (void*)align_size_up((intptr_t)ptr, (intptr_t)alignment);
 }
 
+void create_file(const char *path, uint64_t size) {
+  if (path == NULL || size == 0) {
+    fprintf(stderr, "Cannot create H2 file! Path is [%s], size is [%lu]\n", path, size);
+    return;
+  }
+
+  assertf(size >= 1024*1024*1024LU, "Size should be grater than 1GB");
+  size_t path_size = strlen(path);
+
+  // 142 chars + 7 for the the file name + 1 null-terminator = 150
+  if (path_size > 142) {
+    fprintf(stderr, "Path size is too long!\n");
+    return;
+  }
+
+  strncpy(dev, path, path_size + 1);
+
+  if (dev[path_size + 1] != '\0') {
+    perror("[ERROR] - strncpy failed!");
+    exit(EXIT_FAILURE);
+  }
+
+  // dev --> "/path/to/tempfile/.XXXXXX"
+  strcat(dev, ".XXXXXX");
+
+  fd = mkstemp(dev);
+  unlink(dev);
+
+  assertf(fd >= 1, "temp file was not created!");
+
+  int status = posix_fallocate(fd, 0, size);
+
+  if (status != 0) {
+    fprintf(stderr, "[%s|%s|%d] Fallocate error %d\n",__FILE__,__func__,__LINE__, status);
+    exit(EXIT_FAILURE);
+  }
+}
+
 // Initialize allocator
-void init(uint64_t align) {
-    fd = -1;
+void init(uint64_t align, const char *h2_file_path, uint64_t h2_file_size) {
+  fd = -1;
 
 #if ANONYMOUS
 	// Anonymous mmap
-    fd = open(DEV, O_RDWR);
+  fd = open(DEV, O_RDWR);
 	tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
 #else
-    fd = open(DEV, O_RDWR);
-	// Memory-mapped a file over a storage device
-	tc_mem_pool.mmap_start = mmap(0, DEV_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  dev_size = h2_file_size;
+  create_file(h2_file_path, dev_size);
+  // Memory-mapped a file over a storage device
+  tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 #endif
 
 	assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
 
 	// Card table in JVM needs the start address of TeraCache to be align up
 	tc_mem_pool.start_address = (char *) align_ptr_up(tc_mem_pool.mmap_start, align);
-
 	tc_mem_pool.cur_alloc_ptr = tc_mem_pool.start_address;
 	tc_mem_pool.size = 0;
+
 #if ANONYMOUS
 	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + V_SPACE;
-    printf("Start address:%p\n",tc_mem_pool.start_address);
-    printf("Stop address:%p\n",tc_mem_pool.stop_address);
+  printf("Start address:%p\n",tc_mem_pool.start_address);
+  printf("Stop address:%p\n",tc_mem_pool.stop_address);
 #else
-	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + DEV_SIZE;
+	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + dev_size;
 #endif
-    init_regions();
+
+  region_array_size = dev_size / REGION_SIZE;
+
+  assertf(region_array_size >= MAX_PARTITIONS,
+          "Device size should be larger, because region_array_size is "
+          "calculated to be smaller than MAX_PARTITIONS!");
+
+  max_rdd_id = region_array_size / MAX_PARTITIONS;
+
+  init_regions();
 	req_init();
 }
 
@@ -80,7 +134,7 @@ size_t mem_pool_size() {
 #if ANONYMOUS
     return V_SPACE;
 #else
-	return DEV_SIZE;
+	return dev_size;
 #endif
 }
 
@@ -133,20 +187,20 @@ int r_is_empty() {
 // Close allocator and unmap pages
 void r_shutdown(void) {
 	printf("CALL HERE");
-	munmap(tc_mem_pool.mmap_start, DEV_SIZE);
+	munmap(tc_mem_pool.mmap_start, dev_size);
 }
 
 // Give advise to kernel to expect page references in sequential order.  (Hence,
 // pages in the given range can be aggressively read ahead, and may be freed
 // soon after they are accessed.)
 void r_enable_seq() {
-	madvise(tc_mem_pool.mmap_start, DEV_SIZE, MADV_SEQUENTIAL);
+	madvise(tc_mem_pool.mmap_start, dev_size, MADV_SEQUENTIAL);
 }
 
 // Give advise to kernel to expect page references in random order (Hence, read
 // ahead may be less useful than normally.)
 void r_enable_rand() {
-	madvise(tc_mem_pool.mmap_start, DEV_SIZE, MADV_NORMAL);
+	madvise(tc_mem_pool.mmap_start, dev_size, MADV_NORMAL);
 }
 
 // Explicit write 'data' with 'size' in certain 'offset' using system call
@@ -194,11 +248,11 @@ void r_fsync() {
 // This function if for the FastMap hybrid version. Give advise to kernel to
 // serve all the pagefault using regular pages.
 void r_enable_regular_flts(void) {
-	madvise(tc_mem_pool.mmap_start, DEV_SIZE, MADV_NOHUGEPAGE);
+	madvise(tc_mem_pool.mmap_start, dev_size, MADV_NOHUGEPAGE);
 }
 
 // This function if for the FastMap hybrid version. Give advise to kernel to
 // serve all the pagefault using huge pages.
 void r_enable_huge_flts(void) {
-	madvise(tc_mem_pool.mmap_start, DEV_SIZE, MADV_HUGEPAGE);
+	madvise(tc_mem_pool.mmap_start, dev_size, MADV_HUGEPAGE);
 }

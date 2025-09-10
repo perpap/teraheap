@@ -36,8 +36,8 @@ function release()
   make dist-clean
   bash ./configure \
     --with-jobs="$(nproc)" \
-    --with-extra-cflags="-O3 -I/spare/imel/work/teraheap/allocator/include -I/spare/imel/work/teraheap/allocator/include" \
-    --with-extra-cxxflags="-O3 -I/spare/imel/work/teraheap/allocator/include -I/spare/imel/work/teraheap/allocator/include" \
+    --with-extra-cflags="-O3 -I/home1/public/imel/work/teraheap/allocator/include -I/home1/public/imel/work/teraheap/allocator/include" \
+    --with-extra-cxxflags="-O3 -I/home1/public/imel/work/teraheap/allocator/include -I/home1/public/imel/work/teraheap/allocator/include" \
     --with-target-bits=64
   
   intercept-build make

@@ -938,26 +938,32 @@ const intx ObjectAlignmentInBytes = 8;
   product(bool, EnableTeraHeap, false,                                      \
           "Enable TeraHeap. Works only with G1 collector")                  \
                                                                             \
-   product(bool, TeraHeapStatistics, false,                                 \
+  product(bool, TeraHeapStatistics, false,                                  \
           "Print TeraHeap statistics")                                      \
                                                                             \
-   product(bool, TeraHeapAllocatorStatistics, false,                        \
+  product(bool, TeraHeapAllocatorStatistics, false,                         \
           "Print TeraHeap allocator statistics")                            \
                                                                             \
-   product(bool, TeraHeapCardStatistics, false,                             \
+  product(bool, TeraHeapCardStatistics, false,                              \
           "Count the number of dirty cards in H2")                          \
                                                                             \
-   product(bool, H2ObjectPlacement, false,                                  \
+  product(bool, H2ObjectPlacement, false,                                   \
           "Print the objects labels in H2 regions")                         \
                                                                             \
-   product(bool, H2LivenessAnalysis, false,                                 \
+  product(bool, H2LivenessAnalysis, false,                                  \
           "Liveness analysis per H2 region objects")                        \
                                                                             \
-   product(uintx, TeraHeapSize, 0,                                      \
-          "Initial TeraHeap total size(in bytes)")                         \
+  product(uintx, TeraHeapSize, 0,                                           \
+          "(depricated?)Initial TeraHeap total size(in bytes)")             \
                                                                             \
-   product(uintx, TeraStripeSize, 512,                                     \
-          "Size of TeraHeap stripe size (e.g 128)")                        \
+  product(uintx, TeraStripeSize, 512,                                       \
+          "Size of TeraHeap stripe size (e.g 128)")                         \
+                                                                            \
+  product(uintx, H2FileSize, 0,						    \
+          "H2 file size (bytes e.g 20GB=21474836480")			    \
+                                                                            \
+  product(ccstr, AllocateH2At, NULL,					    \
+          "Path to the directory where the H2 file will be created")	    \
                                                                             \
                                                                             \
   /* JVMTI heap profiling */                                                \
@@ -976,6 +982,7 @@ const intx ObjectAlignmentInBytes = 8;
                                                                             \
   product(bool, UseDynamicNumberOfCompilerThreads, true,                    \
           "Dynamically choose the number of parallel compiler threads")     \
+                                                                            \
                                                                             \
   product(bool, ReduceNumberOfCompilerThreads, true, DIAGNOSTIC,            \
              "Reduce the number of parallel compiler threads when they "    \
