@@ -42,6 +42,8 @@
 	#define TERA_REMOVE(code)
 #endif  // TERA_DEBUG
 
+// #define DBG_PROTECT_FREE_REGIONS  // For debugging: check allocator define -- enable both
+
 // #define TERA_AVOID_FULL_GC       // if full gc is not aware of H2, this should be enabled
 #define TERA_LOG				         // Define logging for TeraHeap
 

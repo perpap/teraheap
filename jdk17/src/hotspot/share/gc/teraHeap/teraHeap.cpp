@@ -551,10 +551,16 @@ void TeraHeap::free_unused_regions(void){
     struct region_list *ptr = free_regions();
     struct region_list *prev = NULL;
     while (ptr != NULL){
-        _start_array.th_region_reset((HeapWord*)ptr->start,(HeapWord*)ptr->end);
-        prev = ptr;
-        ptr = ptr->next;
-        free(prev);
+      _start_array.th_region_reset((HeapWord*)ptr->start,(HeapWord*)ptr->end);
+
+#ifdef DBG_PROTECT_FREE_REGIONS
+      make_region_inaccessible(ptr->start, GCId::current());
+#endif // DBG_PROTECT_FREE_REGIONS
+
+      prev = ptr;
+      ptr = ptr->next;
+
+      free(prev);
     }
 }
 

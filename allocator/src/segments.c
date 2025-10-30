@@ -170,6 +170,14 @@ char* new_region(size_t size){
     region_array[i].last_allocated_start = region_array[cur_region].start_address;
     region_array[i].first_allocated_start = region_array[cur_region].start_address;
     region_array[i].last_allocated_end = region_array[cur_region].start_address + size;
+
+#ifdef DBG_PROTECT_FREE_REGIONS
+    // Enable accesses
+    fprintf(stderr, "Enable permissions for region: %u\n", i);
+    if (mprotect(region_array[i].start_address, REGION_SIZE, PROT_READ | PROT_WRITE) != 0) {
+      fprintf(stderr, "mprotect error\n");
+    }
+#endif /* ifdef DBG_PROTECT_FREE_REGIONS */
   }
 
   return region_array[cur_region].start_address;
@@ -788,6 +796,20 @@ char* top_in_last_region() {
   }
 
   return top_reg.last_allocated_end;
+}
+
+#ifdef DBG_PROTECT_FREE_REGIONS
+void make_region_inaccessible(char *region_start, uint gc_number) {
+  // Remove read/write permissions
+  fprintf(stderr, "[%u] Remove permissions for region: %lu\n", gc_number, region_containing_addr(region_start));
+  if (mprotect(region_start, REGION_SIZE, PROT_NONE) != 0) {
+    fprintf(stderr, "mprotect error\n");
+  }
+}
+#endif /* ifdef DBG_PROTECT_FREE_REGIONS */
+
+uint64_t region_containing_addr(char *addr) {
+  return (addr - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
 }
 
 #if PR_BUFFER

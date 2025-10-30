@@ -245,6 +245,11 @@ bool object_starts_from_region(char *obj);
 
 char* top_in_last_region();
 
+#ifdef DBG_PROTECT_FREE_REGIONS
+void make_region_inaccessible(char *region_start, uint gc_number);
+#endif // DBG_PROTECT_FREE_REGIONS
+
+uint64_t region_containing_addr(char *addr);
 #if PR_BUFFER
 /*
  * Add an obect to the promotion buffer. We use promotion buffer to avoid write
