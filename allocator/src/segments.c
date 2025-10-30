@@ -164,7 +164,11 @@ char* new_region(size_t size){
 
   for (i = cur_region ; i < cur_region + cont_regions ; i++){
     assertf(region_array[i].used == 0, "Error, write to an already used region");
+  #ifdef DBG_LOST_REGION
+    mark_used(region_array[i].start_address, "new_region", -1);
+  #else
     mark_used(region_array[i].start_address);
+  #endif /* ifdef DBG_LOST_REGION */
     references(region_array[cur_region].start_address, region_array[i].start_address);
     //references(region_array[i].start_address, region_array[cur_region].start_address);
     region_array[i].last_allocated_start = region_array[cur_region].start_address;
@@ -297,7 +301,11 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
     return res;
   }
 
+#ifdef DBG_LOST_REGION
+  mark_used(mapped_region->start_address, "allocate_to_region", -1);
+#else
   mark_used(mapped_region->start_address);
+#endif /* ifdef DBG_LOST_REGION */
   mapped_region->last_allocated_start =
       mapped_region->last_allocated_end;
   mapped_region->last_allocated_end =
@@ -380,7 +388,11 @@ void references(char *obj1, char *obj2){
     new->region = &region_array[seg2];
     region_array[seg1].dependency_list = new;
     if (region_array[seg1].used) {
+    #ifdef DBG_LOST_REGION
+      mark_used(region_array[seg2].start_address, "references", -1);
+    #else
       mark_used(region_array[seg2].start_address);
+    #endif /* ifdef DBG_LOST_REGION */
     }
 }
 
@@ -411,7 +423,11 @@ void check_for_group(char *obj){
     new->region = &region_array[seg2];
     region_array[seg1].dependency_list = new;
     if (region_array[seg1].used) {
+    #ifdef DBG_LOST_REGION
+      mark_used(region_array[seg2].start_address, "check_for_group", -1);
+    #else
       mark_used(region_array[seg2].start_address);
+    #endif /* ifdef DBG_LOST_REGION */
     }
 }
 
@@ -447,6 +463,27 @@ void reset_used(){
  * counter (if it belongs to a tera_group)
  * Arguments: obj: the object that is alive
  */
+#ifdef DBG_LOST_REGION
+void mark_used(char *obj, char *from, uint gc_number) {
+	struct tera_group *ptr = NULL;
+    uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+
+	assertf(seg >= 0 && seg < region_array_size,
+			"Segment index is out of range %lu", seg); 
+    if (region_array[seg].used == 1)
+        return;
+
+    region_array[seg].used = 1;
+    ptr = region_array[seg].dependency_list;
+
+    // fprintf(stderr, "[%u] %s -- used Region %lu\n", gc_number, from, region_containing_addr(obj));
+
+    while (ptr) {
+        mark_used(ptr->region->start_address, from, gc_number);
+        ptr = ptr->next;
+    }
+}
+#else
 void mark_used(char *obj) {
 	struct tera_group *ptr = NULL;
     uint64_t seg = (obj - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
@@ -464,6 +501,7 @@ void mark_used(char *obj) {
         ptr = ptr->next;
     }
 }
+#endif /* ifdef DBG_LOST_REGION */
 
 #if STATISTICS
 void print_statistics(){
@@ -810,6 +848,14 @@ void make_region_inaccessible(char *region_start, uint gc_number) {
 
 uint64_t region_containing_addr(char *addr) {
   return (addr - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
+}
+
+int is_used(uint64_t region) {
+  return region_array[region].used;
+}
+
+struct region *get_region(uint64_t region_index) {
+  return &region_array[region_index];
 }
 
 #if PR_BUFFER

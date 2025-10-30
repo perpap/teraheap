@@ -56,4 +56,8 @@
 // Enable define both in allocator and in jvm
 // #define DBG_PROTECT_FREE_REGIONS
 
+// Enables debugging code for the lost region bug.
+// Enable define both in allocator and in jvm
+// #define DBG_LOST_REGION
+
 #endif

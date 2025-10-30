@@ -308,7 +308,11 @@ public:
   void h2_reset_used_field(void);
 
   // Marks the region containing obj as used
+#ifdef DBG_LOST_REGION
+  void mark_used_region(HeapWord *obj, char *from);
+#else
   void mark_used_region(HeapWord *obj);
+#endif // DBG_LOST_REGION
 
   // Prints all active regions
   void print_h2_active_regions(void);

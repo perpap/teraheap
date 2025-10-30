@@ -33,6 +33,38 @@ uint64_t TeraHeap::obj_distr_size[3];
 // long int TeraHeap::cur_obj_group_id;
 // long int TeraHeap::cur_obj_part_id;
 
+#ifdef DBG_LOST_REGION
+static size_t page_size;
+static int times = 0;
+
+static void segv_handler(int sig, siginfo_t *si, void *arg) {
+  void *addr = si->si_addr;
+  if (times == 0) {
+    times++;
+    return;
+  }
+
+  fprintf(stderr, "SIGSEGV at address %p (si_code=%d)\n", addr, si->si_code);
+  if (Universe::teraHeap()->is_in_h2(addr)) {
+    uint64_t region = region_containing_addr((char *)addr);
+    fprintf(stderr, "L The address is in H2 in region %lu which is used=%d\n", region, is_used(region));
+  }
+  _exit(128 + SIGSEGV);
+}
+
+void install_segv_handler() {
+  page_size = sysconf(_SC_PAGESIZE);
+  struct sigaction sa;
+  sa.sa_sigaction = segv_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_SIGINFO | SA_RESTART;
+  if (sigaction(SIGSEGV, &sa, NULL) != 0) {
+    perror("sigaction");
+    exit(1);
+  }
+}
+#endif // DBG_LOST_REGION
+
 // Constructor of TeraHeap
 TeraHeap::TeraHeap() {
   uint64_t align = CardTable::th_ct_max_alignment_constraint();
@@ -135,6 +167,14 @@ bool TeraHeap::h2_is_empty() {
 // Check if an object `ptr` belongs to the TeraHeap. If the object belongs
 // then the function returns true, either it returns false.
 bool TeraHeap::is_obj_in_h2(oop ptr) {
+#ifdef DBG_LOST_REGION
+  if ((cast_from_oop<HeapWord *>(ptr) >= (HeapWord *)_start_addr) && (cast_from_oop<HeapWord *>(ptr) < (HeapWord *)_stop_addr)) {
+    mark_used_region(cast_from_oop<HeapWord*>(ptr), (char *) "debug");
+    return true;
+  }
+  return false;
+    //--- Debug ^
+#endif // DBG_LOST_REGION
 	return (cast_from_oop<HeapWord *>(ptr) >= (HeapWord *)_start_addr)     // if greater than start address
 			&& (cast_from_oop<HeapWord *>(ptr) < (HeapWord *)_stop_addr);  // if smaller than stop address
 }
@@ -142,6 +182,14 @@ bool TeraHeap::is_obj_in_h2(oop ptr) {
 // Check if an object `p` belongs to TeraHeap. If the object bolongs to
 // TeraHeap then the function returns true, either it returns false.
 bool TeraHeap::is_in_h2(HeapWord *p) {
+#ifdef DBG_LOST_REGION
+  if (p >= (HeapWord *)_start_addr && p < (HeapWord *)_stop_addr) {
+    mark_used_region(p, (char *) "debug");
+    return true;
+  }
+  return false;
+    //--- Debug ^
+#endif // DBG_LOST_REGION
 	return p >= (HeapWord *)_start_addr && p < (HeapWord *)_stop_addr;
 }
 
@@ -149,6 +197,15 @@ bool TeraHeap::is_in_h2(HeapWord *p) {
 // TeraHeap then the function returns true, either it returns false.
 bool TeraHeap::is_in_h2(const void* p) {
 	const char* cp = (char *)p;
+#ifdef DBG_LOST_REGION
+    //--- Debug v
+  if (cp >= _start_addr && cp < _stop_addr) {
+    mark_used_region(cast_from_oop<HeapWord*>(cast_to_oop(p)), (char *) "debug");
+    return true;
+  }
+  return false;
+    //--- Debug ^
+#endif // DBG_LOST_REGION
 	return cp >= _start_addr && cp < _stop_addr;
 }
 
@@ -156,6 +213,15 @@ bool TeraHeap::is_in_h2(const void* p) {
 // TeraHeap then the function returns true, either it returns false.
 bool TeraHeap::is_field_in_h2(void *p) {
 	char* const cp = (char *)p;
+#ifdef DBG_LOST_REGION
+    //--- Debug v
+  if (cp >= _start_addr && cp < _stop_addr) {
+    mark_used_region(cast_from_oop<HeapWord*>(cast_to_oop(p)), (char *) "debug");
+    return true;
+  }
+  return false;
+    //--- Debug ^
+#endif // DBG_LOST_REGION
 	return cp >= _start_addr && cp < _stop_addr;
 }
 
@@ -546,8 +612,13 @@ void TeraHeap::h2_mark_live_objects_per_region() {
   h2_reset_marked_objects();
 }
 
+#ifdef DBG_LOST_REGION
+#include "gc/g1/g1CollectedHeap.hpp"
+#endif // DBG_LOST_REGION
+
 // Frees all unused regions
 void TeraHeap::free_unused_regions(void){
+    // fprintf(stderr, "[WARNING] Free is disabled!\n");
     struct region_list *ptr = free_regions();
     struct region_list *prev = NULL;
     while (ptr != NULL){
@@ -733,13 +804,22 @@ uint64_t TeraHeap::h2_get_region_partId(void* p) {
 	return get_obj_part_id((char *) p);
 }
 
+#ifdef DBG_LOST_REGION
 // Marks the region containing obj as used
+void TeraHeap::mark_used_region(HeapWord *obj, char *from) {
+    mark_used((char *) obj, from, GCId::current());
+
+  if (H2LivenessAnalysis)
+    cast_to_oop(obj)->set_live();
+}
+#else
 void TeraHeap::mark_used_region(HeapWord *obj) {
     mark_used((char *) obj);
 
   if (H2LivenessAnalysis)
     cast_to_oop(obj)->set_live();
 }
+#endif // DBG_LOST_REGION
 
 // Allocate new object 'obj' with 'size' in words in TeraHeap.
 // Return the allocated 'pos' position of the object

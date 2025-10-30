@@ -116,7 +116,11 @@ void reset_used();
  * counter (if it belongs to a tera_group)
  * Arguments: obj:the object that is alive
  */
+#ifdef DBG_LOST_REGION
+void mark_used(char *obj, char *from, uint gc_number);
+#else
 void mark_used(char *obj);
+#endif // DBG_LOST_REGION
 
 /*
  * Frees all unused regions
@@ -250,6 +254,9 @@ void make_region_inaccessible(char *region_start, uint gc_number);
 #endif // DBG_PROTECT_FREE_REGIONS
 
 uint64_t region_containing_addr(char *addr);
+int is_used(uint64_t region);
+struct region *get_region(uint64_t region_index);
+
 #if PR_BUFFER
 /*
  * Add an obect to the promotion buffer. We use promotion buffer to avoid write

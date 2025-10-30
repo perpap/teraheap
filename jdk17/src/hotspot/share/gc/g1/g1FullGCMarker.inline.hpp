@@ -99,7 +99,12 @@ template <class T> inline void G1FullGCMarker::mark_and_push(T* p) {
       stdprint << "### Phase 1 fencing reference to obj " << obj << "\n";
 #endif // TERA_DBG_PHASES
 
+    #ifdef DBG_LOST_REGION
+      const char *name = "G1FullGCMarker::mark_and_push";
+      Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+    #else
       Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord *>(obj));
+    #endif // DBG_LOST_REGION
       return;
     }
 
