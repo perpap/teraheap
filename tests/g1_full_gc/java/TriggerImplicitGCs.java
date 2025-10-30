@@ -162,7 +162,7 @@ public class TriggerImplicitGCs {
 
             ((Object[]) new_p.a_field_without_usage)[0] = (Object) hum_array;
 
-            _UNSAFE.h2TagAndMoveRoot(new_p.a_field_without_usage,0,0);
+            _UNSAFE.h2TagAndMoveRoot(new_p.a_field_without_usage, j % 5,0);
           }
 
           points[i].add(new_p);

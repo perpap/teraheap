@@ -216,7 +216,7 @@ usage() {
   echo "      -m  Mode (0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)"
   echo "      -t  Number of GC threads (2, 4, 8, 16, 32)"
   echo "      -d  Directory of tests"
-  echo "      -g  GC tests (g1evac: minor/major gc, g1full: full gc, ps: parallel scavenge gc)"
+  echo "      -g  GC tests (g1evac: minor/major gc, g1full: full gc, g1: other tests, ps: parallel scavenge gc)"
   echo "      -h  Show usage"
   echo
 
@@ -271,6 +271,9 @@ print_msg() {
     g1_full_gc)
       gc_name="G1 Full GC"
       ;;
+    g1_gc)
+      gc_name="G1 GC (other tests)"
+      ;;
     parallel_gc)
       gc_name="Parallel Scavenge"
       ;;
@@ -299,6 +302,10 @@ parse_test_dir() {
       ;;
     "g1full")
       TESTD="g1_full_gc"
+      GC="${gc_opt[0]}"
+      ;;
+    "g1")
+      TESTD="g1_gc"
       GC="${gc_opt[0]}"
       ;;
     "ps")
@@ -351,6 +358,10 @@ then
 elif [ "${TESTD}" == "g1_full_gc" ]
 then
   EXEC_JAVA+=("Array_List_String" "Humongous" "HumongousChain" "TriggerImplicitGCs")
+elif [ "${TESTD}" == "g1_gc" ]
+then
+  # only call theses
+  EXEC_JAVA=("Test_CM_WeakRef")
 fi
 
 # Setup exec files
@@ -364,7 +375,7 @@ fi
 # NOTE: you can overwrite EXEC here to run specific tests
 # Attention: if you overwrite EXEC make sure you have the
 # correct flags.
-# EXEC=("Array")
+# EXEC=("TriggerImplicitGCs")
 
 # Add extra flags
 if [ "$EXEC_DIR_NAME" == "phases" ]
@@ -372,12 +383,17 @@ then
   X_FLAGS="-XX:G1HeapWastePercent=0 $X_FLAGS"
 elif [ "$TESTD" == "g1_evacuations" ]
 then
-  X_FLAGS="-Xbootclasspath/a:./g1_evacuations/Whitebox/wb.jar \
+  X_FLAGS="-Xbootclasspath/a:./Whitebox/wb.jar \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:+WhiteBoxAPI \
     -XX:InitialTenuringThreshold=5 -XX:MaxTenuringThreshold=7 \
     -XX:MaxGCPauseMillis=30000 \
     -XX:G1MixedGCCountTarget=4 $X_FLAGS"
+elif [ "$TESTD" == "g1_gc" ]
+then
+  X_FLAGS="-Xbootclasspath/a:./Whitebox/wb.jar \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:+WhiteBoxAPI $X_FLAGS"
 fi
 
 TMP_X_FLAGS="$X_FLAGS"

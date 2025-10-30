@@ -15,11 +15,11 @@ export C_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include/:$C_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/tera_malloc/include/:$CPLUS_INCLUDE_PATH
 
 # Firstly : make the wb.jar
-cd ../Whitebox
+cd Whitebox
 javac -sourcepath . -d . jdk/test/**/**.java
 jar cf ./wb.jar .
 find . -type f -name '*.class' -delete
-cd -
+cd ..
 
 # Secondly : compile GC.java
 make -C java GC.class
