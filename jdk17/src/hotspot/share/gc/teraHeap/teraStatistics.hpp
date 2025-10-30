@@ -27,6 +27,9 @@ private:
   bool _is_mixed_gc;
   bool _is_full_gc;
 
+  // In words
+  uint h2_waste_space;
+
 #ifdef RUSAGE_MUTATOR
   time_t last_mutator_system_time_s;
   long last_mutator_major_page_faults;
@@ -83,6 +86,10 @@ public:
 
   void set_is_in_full_gc(bool is_full_gc) {
     _is_full_gc = is_full_gc;
+  }
+
+  void add_h2_waste(uint waste) {
+    h2_waste_space += waste;
   }
 
 #ifdef RUSAGE_MUTATOR

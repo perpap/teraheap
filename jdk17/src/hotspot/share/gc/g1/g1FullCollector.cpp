@@ -243,6 +243,10 @@ void G1FullCollector::collect() {
 
   phase4_do_compaction();
 
+  if (EnableTeraHeap) {
+    assert(Universe::teraHeap()->h2_verify_top(), "[ERROR][Full] h2 top is corrupted!\n");
+  }
+
 #ifdef TERA_DEBUG
   {
     stdprint << "End Collection" << "\n";

@@ -39,8 +39,16 @@ TeraStatistics::TeraStatistics() {
   total_objects_moved = 0;
   total_objects_size = 0;
   backward_ref = 0;
+
+  h2_card_table_scan_time_ms = 0;
+  evac_time_ms = 0;
+  h2_allocate_ms = 0;
+  h2_copy_ms = 0;
+
   _is_mixed_gc = false;
   _is_full_gc = false;
+
+  h2_waste_space = 0;
 
 #ifdef RUSAGE_MUTATOR
   struct rusage mutator_usage;
@@ -92,6 +100,7 @@ void TeraStatistics::print_gc_stats() {
     thlog_or_tty->print_cr("[MIXED] | TIME_SCAN_H2_CT %.3lf ms", h2_card_table_scan_time_ms);
     thlog_or_tty->print_cr("[MIXED] | TIME_TO_ALLOC_H2 %.3lf ms", h2_allocate_ms);
     thlog_or_tty->print_cr("[MIXED] | TIME_TO_COPY_H2 %.3lf ms", h2_copy_ms);
+    thlog_or_tty->print_cr("[MIXED] | WASTE_SPACE = %u", h2_waste_space * HeapWordSize);
     // thlog_or_tty->print_cr("[MIXED] | marked/moved: %lu/%lu", Universe::teraHeap()->get_marked(), Universe::teraHeap()->get_moved());
   } else if (_is_full_gc) {
     // FGC phases breakdown

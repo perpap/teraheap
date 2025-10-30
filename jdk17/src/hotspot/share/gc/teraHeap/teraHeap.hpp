@@ -141,6 +141,17 @@ public:
   // Destructor
   ~TeraHeap();
 
+  bool h2_verify_top() {
+    bool res = verify_top();
+
+    if (!res) {
+      fprintf(stderr, "[ERROR] Allocator bounds [%p, %p), top: %p\n",
+              start_addr_mem_pool(), stop_addr_mem_pool(), cur_alloc_ptr());
+    }
+
+    return res; 
+  }
+
   // Get object start array for h2
   ObjectStartArray *h2_start_array() { return &_start_array; }
   

@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <aio.h>
+#include <pthread.h>
 
 #include "../include/regions.h"
 #include "../include/sharedDefines.h"
@@ -24,7 +25,10 @@ uint64_t dev_size = 0;
 uint64_t region_array_size = 0;
 uint64_t max_rdd_id = 0;
 
-struct _mem_pool tc_mem_pool;
+// Global lock to prevent multiple threads
+// from updating global variables.
+pthread_mutex_t tc_mem_pool_lock;
+volatile struct _mem_pool tc_mem_pool;
 int fd;
 
 intptr_t align_size_up(intptr_t size, intptr_t alignment) {
@@ -111,6 +115,8 @@ void init(uint64_t align, const char *h2_file_path, uint64_t h2_file_size) {
 
   max_rdd_id = region_array_size / MAX_PARTITIONS;
 
+  pthread_mutex_init(&tc_mem_pool_lock, NULL);
+
   init_regions();
 	req_init();
 }
@@ -139,8 +145,7 @@ size_t mem_pool_size() {
 }
 
 char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
-	char* alloc_ptr = tc_mem_pool.cur_alloc_ptr;
-	char* prev_alloc_ptr = tc_mem_pool.cur_alloc_ptr;
+	char* alloc_ptr = NULL;
 
 	assertf(size > 0, "Object should be > 0");
 
@@ -151,23 +156,38 @@ char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
     exit(EXIT_FAILURE);
   }
 
-    tc_mem_pool.size += size;
-    tc_mem_pool.cur_alloc_ptr = (char *) (((uint64_t) alloc_ptr) + size * HEAPWORD);
+  assertf(alloc_ptr >= start_addr_mem_pool() && alloc_ptr < stop_addr_mem_pool(),
+          "[ERROR] out of bounds allocation! %p !E [%p, %p)",
+          alloc_ptr, start_addr_mem_pool(), stop_addr_mem_pool());
 
-	if (prev_alloc_ptr > tc_mem_pool.cur_alloc_ptr)
-		tc_mem_pool.cur_alloc_ptr = prev_alloc_ptr;
+  char *cur_allocation_ptr = (char *) (((uint64_t) alloc_ptr) + size * HEAPWORD);
 
-	assertf(prev_alloc_ptr <= tc_mem_pool.cur_alloc_ptr, 
-			"Error alloc ptr: Prev = %p, Cur = %p", prev_alloc_ptr, tc_mem_pool.cur_alloc_ptr);
+  pthread_mutex_lock(&tc_mem_pool_lock);
+
+  char* prev_allocation_ptr = tc_mem_pool.cur_alloc_ptr;
+
+  tc_mem_pool.size += size;
+
+	if (cur_allocation_ptr > prev_allocation_ptr) {
+    tc_mem_pool.cur_alloc_ptr = cur_allocation_ptr;
+  }
+
+  pthread_mutex_unlock(&tc_mem_pool_lock);
+
+	assertf(prev_allocation_ptr <= tc_mem_pool.cur_alloc_ptr, 
+			"Error alloc ptr: Prev = %p, Cur = %p", prev_allocation_ptr, tc_mem_pool.cur_alloc_ptr);
 
 	// Alighn to 8 words the pointer (TODO: CHANGE TO ASSERTION)
-	if ((uint64_t) tc_mem_pool.cur_alloc_ptr % HEAPWORD != 0)
-		tc_mem_pool.cur_alloc_ptr = (char *)((((uint64_t)tc_mem_pool.cur_alloc_ptr) + (HEAPWORD - 1)) & -HEAPWORD);
+	if ((uint64_t) tc_mem_pool.cur_alloc_ptr % HEAPWORD != 0) {
+    fprintf(stderr, "[INFO] alignment");
+    tc_mem_pool.cur_alloc_ptr = (char *)((((uint64_t)tc_mem_pool.cur_alloc_ptr) + (HEAPWORD - 1)) & -HEAPWORD);
+  }
 
 	return alloc_ptr;
 }
 
 // Return the current allocation pointer
+// NOTE: Does not require lock as it is not called during updates
 char* cur_alloc_ptr() {
 	assertf(tc_mem_pool.cur_alloc_ptr >= tc_mem_pool.start_address
 			&& tc_mem_pool.cur_alloc_ptr < tc_mem_pool.stop_address,
@@ -178,6 +198,7 @@ char* cur_alloc_ptr() {
 
 // Return 'true' if the allocator is empty, 'false' otherwise.
 // Invariant: Initialize allocator
+// NOTE: Does not require lock as it is not called during updates
 int r_is_empty() {
 	assertf(tc_mem_pool.start_address != NULL, "Allocator should be initialized");
 
@@ -255,4 +276,10 @@ void r_enable_regular_flts(void) {
 // serve all the pagefault using huge pages.
 void r_enable_huge_flts(void) {
 	madvise(tc_mem_pool.mmap_start, dev_size, MADV_HUGEPAGE);
+}
+
+int verify_top(void) {
+  return cur_alloc_ptr() >= top_in_last_region() &&
+         cur_alloc_ptr() >= start_addr_mem_pool() &&
+         cur_alloc_ptr() < stop_addr_mem_pool();
 }

@@ -3315,6 +3315,10 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
     stats->set_last_mutator_minor_page_faults(current_end.ru_minflt);
   }
 #endif // RUSAGE_MUTATOR
+
+  if (EnableTeraHeap) {
+    assert(Universe::teraHeap()->h2_verify_top(), "[ERROR][Mixed] h2 top is corrupted!\n");
+  }
 }
 
 void G1CollectedHeap::preserve_mark_during_evac_failure(uint worker_id, oop obj, markWord m) {

@@ -660,7 +660,6 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
   oop h2_obj;
 
   {
-    MutexLocker x(tera_heap_evac_lock);
     //Two diff refs may point to the same obj that is going to be evacuated in h2.
     //If both refs are popped and they are now executing do_copy_to_h2_space() for the same obj
     //then only one will manage to evacuate the obj to h2. The other one when unlocked, will hit this if statment and return
@@ -690,7 +689,18 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
     //else someone else manage to set the forwarding ptr, to another h2 location. 
     //Thus it return that new location of h2, which is not h2_obj_addr 
     const oop forward_ptr = obj->forward_to_atomic( h2_obj, old_mark , memory_order_relaxed);
-    assert(forward_ptr == NULL, "Sanity check");
+
+    if (forward_ptr != NULL) {
+      // TODO: undo allocation
+      G1CollectedHeap::heap()->fill_with_dummy_object(h2_obj_addr, h2_obj_addr + word_sz, true);
+      Universe::teraHeap()->get_tera_stats()->add_h2_waste(word_sz);
+
+    #ifdef TERA_DEBUG
+      fprintf(stderr, "[INFO] filled with dummy object\n");
+    #endif // TERA_DEBUG
+
+      return forward_ptr;
+    }
 
     if (TeraHeapStatistics) {
       Ticks start = Ticks::now();

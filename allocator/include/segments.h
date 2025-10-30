@@ -242,6 +242,9 @@ int get_num_of_continuous_regions(char *addr);
  */
 bool object_starts_from_region(char *obj);
 
+
+char* top_in_last_region();
+
 #if PR_BUFFER
 /*
  * Add an obect to the promotion buffer. We use promotion buffer to avoid write

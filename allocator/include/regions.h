@@ -37,7 +37,7 @@ extern "C" {
   extern uint64_t region_array_size;
   extern uint64_t max_rdd_id; //< Total different rdds
 
-  extern struct _mem_pool tc_mem_pool;	//< Allocator pool
+  extern volatile struct _mem_pool tc_mem_pool;	//< Allocator pool
   extern int fd;							//< File descriptor for the opended file
   extern int num_reqs;					//< Number of asynchronous write requests
 
@@ -99,6 +99,8 @@ extern "C" {
   // This function if for the FastMap hybrid version. Give advise to kernel to
   // serve all the pagefault using huge pages.
   void      r_enable_huge_flts(void);
+
+  int       verify_top(void);
 
 #ifdef __cplusplus
 }

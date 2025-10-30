@@ -6,12 +6,28 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <limits.h>
+#include <pthread.h>
 #include "../include/segments.h"
 #include "../include/regions.h"
 #include "../include/sharedDefines.h"
 
+// Mapping of rdd_id to the corresponding region.
+// Locking the Mapping prevents multiple threads from
+// allocating to the same same region.
+//
+// NOTE: we do not lock the region itself, as a thread
+// can only access a region through the mapping.
+struct id_to_reg_mapping {
+  struct region *mapped_region;
+  pthread_mutex_t mapping_lock;
+};
+
+// Global lock to only allow one thread to request new
+// region and create a new mapping.
+pthread_mutex_t alloc_region_lock;
+
 struct region *region_array;
-struct region **id_array;
+struct id_to_reg_mapping *id_mapping_array;
 struct offset *offset_list;
 
 int32_t		 region_enabled;
@@ -42,8 +58,10 @@ void init_regions(){
   region_array = malloc(region_array_size * sizeof(struct region));
   check_allocation_failure(region_array, "[ERROR] -- Failed to allocate memory for region_array\n");
 
-  id_array = malloc((MAX_PARTITIONS * max_rdd_id) * sizeof(struct region *));
-  check_allocation_failure(id_array, "[ERROR] -- Failed to allocate memory for id_array\n");
+  id_mapping_array =
+      malloc((MAX_PARTITIONS * max_rdd_id) * sizeof(struct id_to_reg_mapping));
+  check_allocation_failure(
+      id_mapping_array, "[ERROR] -- Failed to allocate memory for id_mapping_array\n");
 
 #if DEBUG_PRINT 
   fprintf(stderr, "Total num of regions:%d\n", (int32_t) region_array_size);
@@ -72,8 +90,11 @@ void init_regions(){
   }
 
   for (i = 0; i < MAX_PARTITIONS * max_rdd_id; i++) {
-    id_array[i]                               = NULL;
+    id_mapping_array[i].mapped_region = NULL;
+    pthread_mutex_init(&id_mapping_array[i].mapping_lock, NULL);
   }
+
+  pthread_mutex_init(&alloc_region_lock, NULL);
 
 #if ANONYMOUS
   struct offset *prev = NULL;
@@ -169,8 +190,13 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 #endif
 
   int32_t id_index = get_id(rdd_id, partition_id);
-  if (id_array[id_index] == NULL) {
+
+  pthread_mutex_lock(&id_mapping_array[id_index].mapping_lock);
+
+  if (id_mapping_array[id_index].mapped_region == NULL) {
+    pthread_mutex_lock(&alloc_region_lock);
     char* res = new_region(size);
+    pthread_mutex_unlock(&alloc_region_lock);
   
     if (res == NULL) {
       perror("[Error] - H2 Allocator is full");
@@ -178,12 +204,15 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
     }
     /* If object spans more than 1 region we don't want to allocate more objects with it*/
     if (size < (uint64_t) REGION_SIZE) {
-      id_array[id_index] = &region_array[((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE)];
-      id_array[id_index]->rdd_id = rdd_id;
-      id_array[id_index]->part_id = partition_id;
+      id_mapping_array[id_index].mapped_region =
+          &region_array[((res + size) - region_array[0].start_address) /
+                        ((uint64_t)REGION_SIZE)];
+      id_mapping_array[id_index].mapped_region->rdd_id = rdd_id;
+      id_mapping_array[id_index].mapped_region->part_id = partition_id;
     }
 
 #if ANONYMOUS
+    // TODO: maybe needs patching
     uint64_t i = 0;
     struct offset *mmap_offset = offset_list;
     for (i = 0; i < (size/MMAP_SIZE)+1 ; i++){
@@ -204,12 +233,19 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
     printf("Allocating from region %ld until region %ld\n",((res) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
 #endif
 
+    pthread_mutex_unlock(&id_mapping_array[id_index].mapping_lock);
+
     return res;
   }
 
-  if (id_array[id_index]->last_allocated_end + size > ((id_array[id_index]->start_address + (uint64_t)REGION_SIZE))) {
+  struct region *mapped_region = id_mapping_array[id_index].mapped_region;
 
+  if (mapped_region->last_allocated_end + size >
+      ((mapped_region->start_address + (uint64_t)REGION_SIZE))) {
+
+    pthread_mutex_lock(&alloc_region_lock);
     char* res = new_region(size);
+    pthread_mutex_unlock(&alloc_region_lock);
     
     if (res == NULL) {
       perror("[Error] - H2 Allocator is full");
@@ -218,14 +254,17 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 
     /* If object spans more than 1 region we don't want to allocate more objects with it*/
     if (size < (uint64_t) REGION_SIZE){
-      id_array[id_index] = &region_array[((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE)];
-      id_array[id_index]->rdd_id = rdd_id;
-      id_array[id_index]->part_id = partition_id;
+      id_mapping_array[id_index].mapped_region =
+          &region_array[((res + size) - region_array[0].start_address) /
+                        ((uint64_t)REGION_SIZE)];
+      id_mapping_array[id_index].mapped_region->rdd_id = rdd_id;
+      id_mapping_array[id_index].mapped_region->part_id = partition_id;
     }
 
     assertf(res != NULL, "No empty region");
 
 #if ANONYMOUS
+    // TODO: maybe needs patching
     uint64_t i = 0;
     for (i = 0; i < (size/MMAP_SIZE)+1 ; i++){
       struct offset *tmp = offset_list;
@@ -244,13 +283,17 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 #if DEBUG_PRINT
     printf("Allocating from region %ld until region %ld\n",((res) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((res+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
 #endif
+    
+    pthread_mutex_unlock(&id_mapping_array[id_index].mapping_lock);
 
     return res;
   }
 
-  mark_used(id_array[id_index]->start_address);
-  id_array[id_index]->last_allocated_start = id_array[id_index]->last_allocated_end;
-  id_array[id_index]->last_allocated_end = id_array[id_index]->last_allocated_start + size;
+  mark_used(mapped_region->start_address);
+  mapped_region->last_allocated_start =
+      mapped_region->last_allocated_end;
+  mapped_region->last_allocated_end =
+      mapped_region->last_allocated_start + size;
 
 #if ANONYMOUS
   if (size > MMAP_SIZE || id_array[id_index]->last_allocated_end > id_array[id_index]->start_address+id_array[id_index]->size_mapped){
@@ -287,7 +330,11 @@ char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id) {
   printf("Allocating from region %ld until region %ld\n",((id_array[id_index]->last_allocated_start) - region_array[0].start_address) / ((uint64_t)REGION_SIZE),((id_array[id_index]->last_allocated_start+size) - region_array[0].start_address) / ((uint64_t)REGION_SIZE));
 #endif
 
-  return id_array[id_index]->last_allocated_start;
+  char *last_alloc_start = mapped_region->last_allocated_start;
+
+  pthread_mutex_unlock(&id_mapping_array[id_index].mapping_lock);
+
+  return last_alloc_start;
 }
 
 
@@ -324,8 +371,9 @@ void references(char *obj1, char *obj2){
     new->next = region_array[seg1].dependency_list;
     new->region = &region_array[seg2];
     region_array[seg1].dependency_list = new;
-    if (region_array[seg1].used)
-        mark_used(region_array[seg2].start_address);
+    if (region_array[seg1].used) {
+      mark_used(region_array[seg2].start_address);
+    }
 }
 
 /*
@@ -354,8 +402,9 @@ void check_for_group(char *obj){
     new->next = region_array[seg1].dependency_list;
     new->region = &region_array[seg2];
     region_array[seg1].dependency_list = new;
-    if (region_array[seg1].used)
-        mark_used(region_array[seg2].start_address);
+    if (region_array[seg1].used) {
+      mark_used(region_array[seg2].start_address);
+    }
 }
 
 /*
@@ -480,8 +529,11 @@ struct region_list* free_regions() {
       }
       region_array[i].offset_list = NULL;
 #endif
-      if (id_array[get_id(region_array[i].rdd_id, region_array[i].part_id)] == &region_array[i]) {
-        id_array[get_id(region_array[i].rdd_id, region_array[i].part_id)] = NULL;
+      if (id_mapping_array[get_id(region_array[i].rdd_id,
+                                  region_array[i].part_id)].mapped_region ==
+          &region_array[i]) {
+        id_mapping_array[get_id(region_array[i].rdd_id,
+                                region_array[i].part_id)].mapped_region = NULL;
       }
       region_array[i].rdd_id = MAX_PARTITIONS * max_rdd_id;
 
@@ -626,8 +678,13 @@ int get_num_of_continuous_regions(char *addr){
  */
 char* get_region_start_addr(char *obj, uint64_t rdd_id, uint64_t part_id) {
 	uint64_t index = get_id(rdd_id, part_id);
+  char *start_addr = NULL;
 
-	return id_array[index]->start_address;
+  pthread_mutex_lock(&id_mapping_array[index].mapping_lock);
+  start_addr = id_mapping_array[index].mapped_region->start_address;
+  pthread_mutex_unlock(&id_mapping_array[index].mapping_lock);
+
+  return start_addr;
 }
 
 /*
@@ -718,6 +775,19 @@ long total_used_regions() {
 			counter++;                                                          
 	}                                                                           
 	return counter;                                                             
+}
+
+char* top_in_last_region() {
+  int32_t i;
+  struct region top_reg = region_array[0]; 
+  for (i = 1 ; i < region_array_size; i++) {
+    if (region_array[i].start_address == region_array[i].last_allocated_end) {
+      continue;
+    }
+    top_reg = region_array[i];
+  }
+
+  return top_reg.last_allocated_end;
 }
 
 #if PR_BUFFER
