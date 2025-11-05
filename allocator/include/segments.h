@@ -24,10 +24,11 @@ struct offset{
  * for small sized objects.
  */
 struct pr_buffer {
-	char *buffer;					 /* Allocation buffer */
-	char *first_obj_addr;			 /* First object address in region */
-	char *alloc_ptr;			     /* Allocation pointer for the buffer */
-	size_t size;					 /* Current size of the buffer */
+  pthread_mutex_t buffer_lock;  /* Lock per buffer */
+  char *buffer;					        /* Allocation buffer */
+  char *first_obj_addr;			    /* First object address in region */
+  char *alloc_ptr;			        /* Allocation pointer for the buffer */
+  size_t size;					        /* Current size of the buffer */
 };
 #endif
 

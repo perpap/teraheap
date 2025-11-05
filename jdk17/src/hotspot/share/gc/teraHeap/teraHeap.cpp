@@ -1065,11 +1065,15 @@ bool TeraHeap::h2_object_starts_in_region(HeapWord *obj) {
 
 // Move object with size 'size' from source address 'src' to the h2
 // destination address 'dst' 
-void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size) {
+void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, bool is_in_fgc) {
   assert(src != NULL, "Src address should not be null");
   assert(dst != NULL, "Dst address should not be null");
   assert(size > 0, "Size should not be zero");
 
+  if (is_in_fgc) {
+    h2_promotion_buffer_insert((char *)src, (char *)dst, size);
+    return;
+  }
 
 #if defined(SYNC)
   h2_write((char *)src, (char *)dst, size);
@@ -1100,6 +1104,9 @@ void TeraHeap::h2_move_obj(HeapWord *src, HeapWord *dst, size_t size) {
 
 // Complete the transfer of the objects in H2
 void TeraHeap::h2_complete_transfers() {
+  h2_free_promotion_buffers();
+  while(!h2_areq_completed());
+
 #if defined(ASYNC) && defined(PR_BUFFER)
   h2_free_promotion_buffers();
   while(!h2_areq_completed());

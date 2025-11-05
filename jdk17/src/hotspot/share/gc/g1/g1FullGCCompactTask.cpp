@@ -75,20 +75,21 @@ size_t G1FullGCCompactTask::G1CompactRegionClosure::apply(oop obj) {
     if (TeraHeapStatistics) {
       Ticks start = Ticks::now();
 
-      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+      obj->init_mark();
+      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
 
       Tickspan time = Ticks::now() - start;
       Universe::teraHeap()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
-      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+      obj->init_mark();
+      Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
     }
   } else {
     // Normal Copy
     Copy::aligned_conjoint_words(obj_addr, destination, size);
+    cast_to_oop(destination)->init_mark();
+    assert(cast_to_oop(destination)->klass() != NULL, "should have a class");
   }
-
-  cast_to_oop(destination)->init_mark();
-  assert(cast_to_oop(destination)->klass() != NULL, "should have a class");
 
   return size;
 }
@@ -129,15 +130,17 @@ void G1FullGCCompactTask::h2_move_humongous(HeapRegion* hr, uint worker_id) {
   if (TeraHeapStatistics) {
     Ticks start = Ticks::now();
 
-    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+    obj->init_mark();
+    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
 
     Tickspan time = Ticks::now() - start;
     Universe::teraHeap()->thr_add_time_copy_h2(worker_id, TimeHelper::counter_to_millis(time.value()));
   } else {
-    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size);
+    obj->init_mark();
+    Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
   }
 
-  cast_to_oop(destination)->init_mark();
+  // TODO: this assertion may break if object is not yet copied.
   assert(cast_to_oop(destination)->klass() != NULL, "should have a class");
 }
 

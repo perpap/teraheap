@@ -260,6 +260,10 @@ void G1FullCollector::complete_collection() {
     stdprint << "Completing Collection" << "\n";
   }
 #endif // DEBUG
+
+  if (EnableTeraHeap) {
+    Universe::teraHeap()->h2_complete_transfers();  
+  }
   
 #ifdef RUSAGE_MUTATOR
   if (EnableTeraHeap && TeraHeapStatistics) {

@@ -4,13 +4,17 @@
 #include <stdint.h>
 #include <aio.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "../include/asyncIO.h"
 
 struct ioRequest request[MAX_REQS];
+pthread_mutex_t request_lock;
 
 // Initialize the array of I/O requests for the asynchronous I/O
 void req_init() {
 	int i;
+
+  pthread_mutex_init(&request_lock, NULL);
 	
 	for (i = 0; i < MAX_REQS; i++) {
 		request[i].state = 0;
@@ -28,11 +32,12 @@ void req_init() {
 // Return the 'index' of the available slot in the array, or return '-1' if all
 // the slots are active and allocated.
 static int find_slot() {
-	static int i = 0;
+	static volatile int i = 0;
 
 	for (; i < MAX_REQS; i++) {
-		if (request[i].state == 0)
-			return i;
+		if (request[i].state == 0) {
+      return i;
+    }
 
 		// If the request is in active state, then check if it has finished.
 		// Update the state based on the return valuew of aio_error().
@@ -76,7 +81,8 @@ static int find_slot() {
 //	offset - Write the data to the specific offset in the file
 //	
 void req_add(int fd, char *data, size_t size, uint64_t offset) {
-	int slot;					// Find available slot for the request
+  pthread_mutex_lock(&request_lock);
+  int slot;					// Find available slot for the request
 
 	slot = find_slot();
 
@@ -89,7 +95,7 @@ void req_add(int fd, char *data, size_t size, uint64_t offset) {
 	// If we don't init to 0, we have undefined behavior.
 	// E.g. through sigevent op.aio_sigevent there could be a callback function
 	// being set, that the program tries to call - which will then fail.
-    struct aiocb obj = {0};
+  struct aiocb obj = {0};
 
 	obj.aio_fildes = fd;
 	obj.aio_offset = offset;
@@ -115,6 +121,7 @@ void req_add(int fd, char *data, size_t size, uint64_t offset) {
 #else
 	aio_write(&request[slot].aiocbp);
 #endif
+  pthread_mutex_unlock(&request_lock);
 }
 
 // Traverse tthe array to check if all the i/o requests have been completed.  We

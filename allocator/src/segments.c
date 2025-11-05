@@ -86,6 +86,7 @@ void init_regions(){
     region_array[i].pr_buffer->size           = 0;
     region_array[i].pr_buffer->alloc_ptr      = NULL;
     region_array[i].pr_buffer->first_obj_addr = NULL;
+    pthread_mutex_init(&region_array[i].pr_buffer->buffer_lock, NULL);
 #endif
   }
 
@@ -895,6 +896,8 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 	uint64_t seg = (new_adr - region_array[0].start_address) / ((uint64_t)REGION_SIZE);
 	struct pr_buffer *buf = region_array[seg].pr_buffer;
 
+  pthread_mutex_lock(&buf->buffer_lock);
+
 	char*  start_adr  = buf->first_obj_addr;
 	size_t cur_size   = buf->size;
 	size_t free_space = PR_BUFFER_SIZE - cur_size;
@@ -902,8 +905,9 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 	assertf(THRESHOLD < PR_BUFFER_SIZE, "Threshold should be less that promotion buffer size");
 
 	if ((size * HeapWordSize) > THRESHOLD) {
-		r_awrite(obj, new_adr, size);
-		return;
+    r_awrite(obj, new_adr, size);
+    pthread_mutex_unlock(&buf->buffer_lock);
+    return;
 	}
 
 	/* Allocate a buffer for the region and set buffer allocation ptr */
@@ -921,6 +925,9 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 		buf->first_obj_addr = new_adr;
 		buf->alloc_ptr += size * HeapWordSize;
 		buf->size = size * HeapWordSize;
+
+    pthread_mutex_unlock(&buf->buffer_lock);
+
 		return;
 	}
 	
@@ -940,6 +947,8 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 		buf->alloc_ptr += size * HeapWordSize;
 		buf->size = size * HeapWordSize;
 
+    pthread_mutex_unlock(&buf->buffer_lock);
+
 		return;
 	}
 	
@@ -947,6 +956,8 @@ void buffer_insert(char* obj, char* new_adr, size_t size) {
 
 	buf->alloc_ptr += size * HeapWordSize;
 	buf->size += size * HeapWordSize;
+
+  pthread_mutex_unlock(&buf->buffer_lock);
 }
 
 /*
@@ -957,10 +968,12 @@ void free_all_buffers() {
 	uint64_t i;
 	struct pr_buffer *buf;
 
-    for (i = 0; i < region_array_size; i++) {
+  for (i = 0; i < region_array_size; i++) {
 		buf = region_array[i].pr_buffer;
 
-		/* Buffer is not empty, so flush it*/
+    pthread_mutex_lock(&buf->buffer_lock);
+
+		/* Buffer is not empty, so flush it */
 		if (buf->size != 0)
 			flush_buffer(i);
 
@@ -972,6 +985,8 @@ void free_all_buffers() {
 			buf->first_obj_addr = NULL;
 			buf->size = 0;
 		}
+
+    pthread_mutex_unlock(&buf->buffer_lock);
 	}
 }
 

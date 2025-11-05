@@ -3232,7 +3232,8 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
 #ifdef TERA_MAINTENANCE
         if (EnableTeraHeap) {
           // Wait to complete all the transfers to H2 and then continue
-          Universe::teraHeap()->h2_complete_transfers();  
+          // TODO: uncomment
+          // Universe::teraHeap()->h2_complete_transfers();  
         }
 #endif
 

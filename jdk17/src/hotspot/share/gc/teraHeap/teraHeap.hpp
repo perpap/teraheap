@@ -447,7 +447,7 @@ public:
 
   // Move object with size 'size' from source address 'src' to the h2
   // destination address 'dst' 
-  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size);
+  void h2_move_obj(HeapWord *src, HeapWord *dst, size_t size, bool is_fgc = false);
 
   // Complete the transfer of the objects in H2
   void h2_complete_transfers();
