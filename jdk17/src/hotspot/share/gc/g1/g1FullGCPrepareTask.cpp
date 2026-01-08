@@ -67,7 +67,10 @@ bool G1FullGCPrepareTask::G1CalculatePointersClosure::do_heap_region(HeapRegion*
       oop obj = cast_to_oop(hhr_start->bottom());
       if (!_bitmap->is_marked(obj)) {
         free_pinned_region<true>(hr);
-      } else if (EnableTeraHeap && obj->is_marked_move_h2() && !Universe::teraHeap()->is_in_h2(obj->forwardee())) {
+      } else if (EnableTeraHeap
+          && obj->is_marked_move_h2()
+          && !Universe::teraHeap()->is_in_h2(obj->forwardee())
+          && hhr_start == hr) {
         prepare_humongous_for_h2(hhr_start, obj);
       }
     } else if (hr->is_open_archive()) {
@@ -196,6 +199,11 @@ size_t G1FullGCPrepareTask::G1PrepareCompactLiveClosure::apply(oop object) {
     }
   #endif // DEBUG
 
+    // TODO: remove only for debug
+    // We check that we don't double allocate the same object
+    // Maybe make assert
+    guarantee(!object->is_forwarded(), "Object already forwarded to h2 from fgc!\n");
+
     object->forward_to(cast_to_oop(h2_address));
   } else {
     _cp->forward(object, size);
@@ -238,8 +246,6 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_for_compaction(Hea
 }
 
 void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(HeapRegion *hr, oop obj) {
-  MutexLocker x(tera_heap_humongous_lock);
-  
   // Already forwarded to H2
   if (Universe::teraHeap()->is_in_h2(obj->forwardee())) {
     return;
@@ -264,6 +270,11 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(H
     stdprint << "### Phase 2 hum.obj " << obj << " will be moved to " << h2_address << "\n";
   }
 #endif // DEBUG
+
+  // TODO: remove only for debug
+  // We check that we don't double allocate the same object
+  // Maybe make assert
+  guarantee(!obj->is_forwarded(), "Object already forwarded humongous to h2 from fgc!\n");
 
   obj->forward_to(cast_to_oop(h2_address));
   Universe::teraHeap()->h2_push_humongous_region((void *) hr);
