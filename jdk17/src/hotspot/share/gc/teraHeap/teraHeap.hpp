@@ -63,22 +63,6 @@ private:
                                     // to H2 if it has back ptrs
                                     // to H1
 
-#if defined(HINT_HIGH_LOW_WATERMARK) || defined(NOHINT_HIGH_LOW_WATERMARK)
-  size_t total_marked_obj_for_h2;   // Total marked objects to be moved in H2
-
-  size_t h2_low_promotion_threshold;    // Promotion threshold
-#endif
-  
-  long non_promote_tag;             // Object with this label cannot be promoted to H2
-
-  long promote_tag;                 // Objects with labels less than
-                                    // the promote_tag can be moved to
-                                    // H2 during major GC
-
-  bool direct_promotion;            // Indicate to move tagged objects
-                                    // to H2 without waiting any hint
-                                    // from the framework
- 
 public:
   // Constructor
   TeraHeap();
@@ -289,18 +273,6 @@ public:
   // belongs to.
   uint64_t h2_get_region_partId(void *p);
 
-  // Set non promote label value
-  void set_non_promote_tag(long val);
-
-  // Set promote label value
-  void set_promote_tag(long val);
-
-  // Get non promote label value
-  long get_non_promote_tag();
-
-  // Get promote label value
-  long get_promote_tag();
-  
   // Check if the object `obj` is an instance of the following
   // metadata class:
   // - Instance Mirror Klass
@@ -308,22 +280,6 @@ public:
   // - Instance Class Loader Klass
   // If yes return true, otherwise false
   bool is_metadata(oop obj);
-
-  bool h2_promotion_policy(oop obj, bool is_direct = false);
-
-  void set_direct_promotion(size_t old_live, size_t max_old_gen_size);
-
-  bool is_direct_promote();
-
-#if defined(NOHINT_HIGH_LOW_WATERMARK) || defined(HINT_HIGH_LOW_WATERMARK)
-  void h2_incr_total_marked_obj_size(size_t size);
-
-  void h2_reset_total_marked_obj_size();
-
-  bool check_low_promotion_threshold(size_t sz);
-
-  void set_low_promotion_threshold();
-#endif
 
   // Check if the object with `addr` span multiple regions
   int h2_continuous_regions(HeapWord *addr);

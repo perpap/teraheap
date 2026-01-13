@@ -140,26 +140,6 @@
 
 #define VISITED_TERA_OBJ  203     //< Object visited during GC Analysis
 
-/**********************************
- * Policies for TeraCache
- **********************************/
- //#define SPARK_POLICY				      //< Policy that we use for Spark
-
-#define P_SD_BACK_REF_CLOSURE	 	  //< Find the transitive closure of backward
-                                  // edges
-
-//#define P_NO_TRANSFER           //< This policy is ONLY for debugging.
-
-#define P_SD_EXCLUDE_CLOSURE	 	  //< Exclude objects from the closure
-
-#define P_SD_REF_EXCLUDE_CLOSURE  //< Exclude reference objects from the closure
-
-//#define NOHINT_HIGH_WATERMARK     //< No prootion hint with high watermark only
-
-//#define NOHINT_HIGH_LOW_WATERMARK //< No promotion hint with high and low watermark
-
-#define HINT_HIGH_LOW_WATERMARK   //< Promotion hint with high and low watermark
-
 // #define RUSAGE_MUTATOR  //< Enables rusage measuremetns excluding STW GCs
 
 #endif  // _SHARE_DEFINES_H_

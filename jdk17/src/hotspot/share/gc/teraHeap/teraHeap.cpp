@@ -76,14 +76,6 @@ TeraHeap::TeraHeap() {
   obj_h1_addr = NULL;
   obj_h2_addr = NULL;
 
-  non_promote_tag = 0;
-  promote_tag = -1;
-  direct_promotion = false;
-
-#if defined(HINT_HIGH_LOW_WATERMARK) || defined(NOHINT_HIGH_LOW_WATERMARK)
-	total_marked_obj_for_h2 = 0;
-#endif
-
   if (TeraHeapStatistics) {
     tera_stats = new TeraStatistics();
   }
@@ -602,26 +594,6 @@ void TeraHeap::thread_group_region_enabled(uint thread_id, HeapWord *obj, void *
 	ct->th_write_ref_field(h2_obj_field);
 }
 
-// Set non promote label value
-void TeraHeap::set_non_promote_tag(long val) {
-  non_promote_tag = val;
-}
-
-// Set promote tag value
-void TeraHeap::set_promote_tag(long val) {
-  promote_tag = val;
-}
-
-// Get non promote tag value
-long TeraHeap::get_non_promote_tag() {
-  return non_promote_tag;
-}
-
-// Get promote tag value
-long TeraHeap::get_promote_tag() {
-  return promote_tag;
-}
-  
 // Check if the object `obj` is an instance of the following
 // metadata class:
 // - Instance Mirror Klass
@@ -644,75 +616,6 @@ bool TeraHeap::is_metadata(oop obj) {
 
   return false;
 }
-
-bool TeraHeap::h2_promotion_policy(oop obj, bool is_direct) {
-#ifdef P_NO_TRANSFER
-	return false;
-
-#elif defined(SPARK_POLICY)
-	return obj->is_marked_move_h2();
-
-#elif defined(HINT_HIGH_LOW_WATERMARK)
-  if (is_direct) {
-    if (!obj->is_marked_move_h2())
-      return false;
-
-    return check_low_promotion_threshold(obj->size());
-  }
-	
-  if (direct_promotion)
-    return obj->is_marked_move_h2();
-
-	return (obj->is_marked_move_h2() && obj->get_obj_group_id() <=  promote_tag);
-
-#elif defined(NOHINT_HIGH_WATERMARK)
-	if (direct_promotion)
-		return obj->is_marked_move_h2();
-
-	return false;
-
-#elif defined(NOHINT_HIGH_LOW_WATERMARK)
-	if (is_direct)
-		return check_low_promotion_threshold(obj->size());
-	
-	if (direct_promotion)
-		return obj->is_marked_move_h2();
-
-	return false;
-#else
-	return obj->is_marked_move_h2();
-#endif
-}
-		
-void TeraHeap::set_direct_promotion(size_t old_live, size_t max_old_gen_size) {
-	direct_promotion = ((float) old_live / (float) max_old_gen_size) >= 0.85 ? true : false;
-}
-
-bool TeraHeap::is_direct_promote() {
-	return direct_promotion;
-}
-
-#if defined(NOHINT_HIGH_LOW_WATERMARK) || defined(HINT_HIGH_LOW_WATERMARK)
-void TeraHeap::h2_incr_total_marked_obj_size(size_t sz) {
-	total_marked_obj_for_h2 += sz;
-}
-		
-void TeraHeap::h2_reset_total_marked_obj_size() {
-	total_marked_obj_for_h2 = 0;
-}
-		
-bool TeraHeap::check_low_promotion_threshold(size_t sz) {
-	if (h2_low_promotion_threshold == 0 || sz > h2_low_promotion_threshold)
-		return false;
-
-	h2_low_promotion_threshold -= sz;
-	return true;
-}
-
-void TeraHeap::set_low_promotion_threshold() {
-  h2_low_promotion_threshold = total_marked_obj_for_h2 * 0.5;
-}
-#endif
 
 int TeraHeap::h2_continuous_regions(HeapWord *addr){
   assert(is_in_h2(addr), "Error");
