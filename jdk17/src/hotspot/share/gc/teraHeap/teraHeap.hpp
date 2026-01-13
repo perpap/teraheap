@@ -3,7 +3,6 @@
 
 #include "gc/parallel/objectStartArray.hpp"
 #include "gc/shared/collectedHeap.inline.hpp"
-// #include "gc/teraHeap//teraTimers.hpp"
 #include "utilities/stack.inline.hpp"
 //#include "gc/parallel/psCompactionManager.hpp"
 #include "memory/sharedDefines.h"
@@ -13,14 +12,8 @@
 
 #include <regions.h>
 
-#ifdef BACK_REF_STAT
-#include <map>
-#include <tr1/tuple>
-#endif
-
 //class ParCompactionManager;
 class PSCardTable;
-
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
@@ -46,35 +39,7 @@ private:
   // We drain this stack in the compaction phase of a Full GC.
   static Stack<HeapRegion *, mtGC> _tc_humongous_stack;
 
-#ifdef TERA_TIMERS
-  TeraTimers *teraTimer;
-#endif
-
   TeraStatistics *tera_stats;
-
-
-  /*-----------------------------------------------
-   * Statistics of TeraHeap
-   *---------------------------------------------*/
-  static uint64_t total_objects; //< Total number of objects located in TeraHeap
-  static uint64_t total_objects_size; //< Total number of objects size
-
-  static uint64_t fwd_ptrs_per_fgc;    //< Total number of forward ptrs per FGC
-  static uint64_t back_ptrs_per_fgc;   //< Total number of back ptrs per FGC
-  static uint64_t trans_per_fgc;       //< Total number of objects transfered to
-                                       //< TeraHeap per FGC
-  static uint64_t tc_ct_trav_time[16]; //< Time to traverse TeraCards card table
-  static uint64_t heap_ct_trav_time[16]; //< Time to traverse heap card tables
-
-  static uint64_t back_ptrs_per_mgc; //< Total number of back ptrs per MGC
-
-  double* thr_time_alloc_h2;
-  double* thr_time_copy_h2;
-
-  static size_t total_h2_humongous;
-
-  static uint64_t
-      obj_distr_size[3]; //< Object size distribution between B, KB, MB
 
   static long int cur_obj_group_id; //<We save the current object
                                     // group id for tera-marked
@@ -114,26 +79,6 @@ private:
                                     // to H2 without waiting any hint
                                     // from the framework
  
-#ifdef BACK_REF_STAT
-  // This histogram keeps internally statistics for the backward
-  // references (H2 to H1)
-  std::map<oop *, std::tr1::tuple<int, int, int> > histogram;
-  oop *back_ref_obj;
-#endif
-
-#ifdef FWD_REF_STAT
-  // This histogram keeps internally statistics for the forward references
-  // (H1 to H2) per object
-  std::map<oop, int> fwd_ref_histo;
-  
-  // Print the histogram
-  void h2_print_fwd_ref_stat();
-#endif
-
-  void h2_count_marked_objects();
-
-  void h2_reset_marked_objects();
-
 public:
   // Constructor
   TeraHeap();
@@ -195,26 +140,6 @@ public:
   // Deallocate the humongous region stack
   void h2_clear_humongous_stack();
 
-  // Keep for each thread with 'tid' the 'total time' that needed to
-  // traverse the TeraHeap card table.
-  // Each thread writes the time in a table based on each ID and then we
-  // take the maximum time from all the threads as the total time.
-  void h2_back_ref_traversal_time(unsigned int tid, uint64_t total_time);
-
-  // Keep for each thread with 'tid' the 'total time' that needed to
-  // traverse the Heap card table.
-  // Each thread writes the time in a table based on each ID and then we
-  // take the maximum time from all the threads as the total time.
-  void h1_old_to_young_traversal_time(unsigned int tid, uint64_t total_time);
-  
-  // Print the statistics of TeraHeap at the end of each minorGC
-  // Will print:
-  //	- the time to traverse the TeraHeap dirty card tables
-  //	- the time to traverse the Heap dirty card tables
-  //	- TODO number of dirty cards in TeraHeap
-  //	- TODO number of dirty cards in Heap
-  void print_minor_gc_statistics();
-
   // Give advise to kernel to expect page references in sequential order
   void h2_enable_seq_faults();
 
@@ -246,9 +171,6 @@ public:
   // kept alive.
   oop* h2_get_next_back_reference();
 
-  // Increase forward ptrs from JVM heap to TeraHeap
-  void h2_increase_fwd_ref();
-
   // Update backward reference stacks that we use in marking and
   // pointer adjustment phases of major GC.
   void h2_push_backward_reference(void *p, oop o);
@@ -262,20 +184,6 @@ public:
 
   // Get the next humongous region from the stack to move it to H2
   HeapRegion* h2_get_next_humongous_region();
-
-  // Init the statistics counters of TeraHeap to zero when a Full GC
-  // starts
-  void h2_init_stats_counters();
-
-  // Print the statistics of TeraHeap at the end of each FGC
-  // Will print:
-  //	- the total forward pointers from the JVM heap to the
-  // TeraHeap
-  //	- the total back pointers from TeraHeap to the JVM heap
-  //	- the total objects that has been transfered to the TeraHeap
-  //	- the current total size of objects in TeraHeap
-  //	- the current total objects that are located in TeraHeap
-  void h2_print_stats();
 
   // Explicit (using systemcall) write 'data' with 'size' to the specific
   // 'offset' in the file.
@@ -366,10 +274,6 @@ public:
   // locality in regions
   void h2_print_objects_per_region(void);
 
-  void mark_live(HeapWord *p);
-
-  void h2_mark_live_objects_per_region();
-
   // Check if backward adjust stack is empty
   bool h2_is_empty_back_ref_stacks();
 
@@ -385,24 +289,6 @@ public:
   // belongs to.
   uint64_t h2_get_region_partId(void *p);
 
-#ifdef BACK_REF_STAT
-  // Add a new entry to the histogram for back reference that start from
-  // 'obj' and results in H1 (new or old generation).
-  // Use this function with a single GC thread
-  void h2_update_back_ref_stats(bool is_old, bool is_tera_cache);
-
-  void h2_enable_back_ref_traversal(oop *obj);
-
-  // Print the histogram
-  void h2_print_back_ref_stats();
-#endif
-
-#ifdef FWD_REF_STAT
-  // Add a new entry to the histogram for forward reference that start from
-  // H1 and results in 'obj' in H2
-  void h2_add_fwd_ref_stat(oop obj);
-#endif
-		
   // Set non promote label value
   void set_non_promote_tag(long val);
 
@@ -455,11 +341,6 @@ public:
   // Check if the group of regions in H2 is enabled
   bool is_h2_group_enabled();
 
-#ifdef TERA_TIMERS
-  TeraTimers* getTeraTimer();
-#endif
-
-
   // Tera statistics for objects that we move to H2, forward references,
   // and backward references.
   TeraStatistics* get_tera_stats();
@@ -467,44 +348,6 @@ public:
   // ------------------
   // Utility functions
   // ------------------
-
-  uint get_total_objs() { return total_objects; }
-  uint get_total_objs_size() { return total_objects_size; }
-
-  double get_max_thr_time_alloc_h2() {
-    double max_time = 0.0;
-    for (uint i = 0; i < ParallelGCThreads; i++) {
-      double time = thr_time_alloc_h2[i];
-      if (time > max_time) {
-        max_time = time;
-      }
-    }
-
-    return max_time;
-  }
-
-  double get_max_thr_time_copy_h2() {
-    double max_time = 0.0;
-    for (uint i = 0; i < ParallelGCThreads; i++) {
-      double time = thr_time_copy_h2[i];
-      if (time > max_time) {
-        max_time = time;
-      }
-    }
-
-    return max_time;
-  }
-
-  void thr_add_time_alloc_h2(uint thread_id, double time) {
-    thr_time_alloc_h2[thread_id] += time;
-  }
-
-  void thr_add_time_copy_h2(uint thread_id, double time) {
-    thr_time_copy_h2[thread_id] += time;
-  }
-
-  void stat_h2_humongous_add() { total_h2_humongous++; }
-  size_t stat_h2_humongous_get() { return total_h2_humongous; }
 
   // Make every card of H2 dirty (used for debugging)
   void dirty_all_cards(CardTable *th_card_table);

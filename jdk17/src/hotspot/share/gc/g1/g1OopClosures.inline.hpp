@@ -177,12 +177,10 @@ inline void ScanH2ObjClosure::do_oop_work(T* p) {
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj));
     return;
   }
-  
 
-  //HERE : h2 -> (h1 in or out the cset)
-  if(TeraHeapStatistics)
+  // HERE : h2 -> (h1 in or out the cset)
+  if (TeraHeapStatistics)
     Universe::teraHeap()->get_tera_stats()->add_back_ref();
-
 
   const G1HeapRegionAttr region_attr = _g1h->region_attr(obj);
   if (region_attr.is_in_cset()) {

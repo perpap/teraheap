@@ -2413,7 +2413,7 @@ void G1CollectedHeap::tera_scan_cards() {
                                             collection_set()->optional_region_length());
   ScanH2CardTable scan_h2(&per_thread_states, num_workers);
 
-  if( TeraHeapStatistics ) {
+  if (TeraHeapStatistics) {
     Tickspan task_time = run_task_timed(&scan_h2);
     Universe::teraHeap()->get_tera_stats()->record_h2_scan_time( (task_time.seconds() * 1000.0) );
   } else {
@@ -3027,17 +3027,17 @@ bool G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_
     return false;
   }
 
-  if( EnableTeraHeap && TeraHeapStatistics ){
+  if (EnableTeraHeap && TeraHeapStatistics) {
     Universe::teraHeap()->get_tera_stats()->set_is_in_mix(collector_state()->in_mixed_phase());
 
     do_collection_pause_at_safepoint_helper(target_pause_time_ms); 
 
-    Universe::teraHeap()->get_tera_stats()->record_h2_allocate_time(Universe::teraHeap()->get_max_thr_time_alloc_h2());
-    Universe::teraHeap()->get_tera_stats()->record_h2_copy_time(Universe::teraHeap()->get_max_thr_time_copy_h2());
+    Universe::teraHeap()->get_tera_stats()->record_h2_max_allocate_time();
+    Universe::teraHeap()->get_tera_stats()->record_h2_max_copy_time();
 
     Universe::teraHeap()->get_tera_stats()->print_gc_stats();
 
-    Universe::teraHeap()->h2_init_stats_counters();
+    Universe::teraHeap()->get_tera_stats()->reset_counters();
   }else{
     do_collection_pause_at_safepoint_helper(target_pause_time_ms); 
   }
@@ -3206,17 +3206,17 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
         
 
 #ifdef TERA_CARDS
-        if( EnableTeraHeap ){          
-            ScanH2CardTable scan_h2(&per_thread_states,
-                                    workers()->active_workers());
+        if (EnableTeraHeap) {
+          ScanH2CardTable scan_h2(&per_thread_states,
+                                  workers()->active_workers());
 
-            Tickspan task_time = run_task_timed(&scan_h2);
+          Tickspan task_time = run_task_timed(&scan_h2);
 
-            if( TeraHeapStatistics )
-              Universe::teraHeap()->get_tera_stats()->record_h2_scan_time( (task_time.seconds() * 1000.0) );
+          if (TeraHeapStatistics)
+            Universe::teraHeap()->get_tera_stats()->record_h2_scan_time( (task_time.seconds() * 1000.0) );
         }
 #endif
- 
+
         // Actually do the work...        
         evacuate_initial_collection_set(&per_thread_states, may_do_optional_evacuation);
 

@@ -674,7 +674,7 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
       h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz );
 
       Tickspan time = Ticks::now() - start;
-      Universe::teraHeap()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+      Universe::teraHeap()->get_tera_stats()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
       h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz );
     }
@@ -693,7 +693,9 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
     if (forward_ptr != NULL) {
       // TODO: undo allocation
       G1CollectedHeap::heap()->fill_with_dummy_object(h2_obj_addr, h2_obj_addr + word_sz, true);
-      Universe::teraHeap()->get_tera_stats()->add_h2_waste(word_sz);
+
+      if (TeraHeapStatistics)
+        Universe::teraHeap()->get_tera_stats()->add_h2_waste(word_sz);
 
     #ifdef TERA_DEBUG
       fprintf(stderr, "[INFO] filled with dummy object\n");
@@ -708,7 +710,7 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
       Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
 
       Tickspan time = Ticks::now() - start;
-      Universe::teraHeap()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+      Universe::teraHeap()->get_tera_stats()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
       Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
     }

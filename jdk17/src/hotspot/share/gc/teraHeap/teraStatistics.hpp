@@ -8,16 +8,33 @@
   #include <sys/resource.h>
 #endif // RUSAGE_MUTATOR
 
+#ifdef BACK_REF_STAT
+#include <map>
+#include <tr1/tuple>
+#endif
+
+// A class with all the statistics for TeraHeap
+// NOTE: many counters and metrics are not used, however
+//    they may be required for debugging later therefore,
+//    we leave them here for later usage.
 class TeraStatistics: public CHeapObj<mtInternal> {
 private:
   long  total_objects_moved;               
   long  total_objects_size; 
+  long  forward_ref;
   long  backward_ref;
+
+  // Total humongous transferred
+  size_t total_h2_humongous;
 
   // time to scan h2 card table
   double h2_card_table_scan_time_ms;
   // time for evacuation to be completed
   double evac_time_ms;
+
+  double* thr_time_alloc_h2;
+  double* thr_time_copy_h2;
+
   // total time of allocation to H2
   double h2_allocate_ms;
 
@@ -30,6 +47,9 @@ private:
   // In words
   uint h2_waste_space;
 
+  // Object size distribution between B, KB, MB
+  uint64_t obj_distr_size[3];
+
 #ifdef RUSAGE_MUTATOR
   time_t last_mutator_system_time_s;
   long last_mutator_major_page_faults;
@@ -40,9 +60,25 @@ private:
   long mutator_minor_page_faults;
 #endif // RUSAGE_MUTATOR
 
+#ifdef BACK_REF_STAT
+  // This histogram keeps internally statistics for the backward
+  // references (H2 to H1)
+  std::map<oop *, std::tr1::tuple<int, int, int> > histogram;
+  oop *back_ref_obj;
+#endif
+
+#ifdef FWD_REF_STAT
+  // This histogram keeps internally statistics for the forward references
+  // (H1 to H2) per object
+  std::map<oop, int> fwd_ref_histo;
+#endif
+
 public:
 
   TeraStatistics();
+
+  // Initialize necessary counters back to their default values
+  void reset_counters();
 
   // Increase by one the counter that shows the total number of
   // objects that are moved to H2. Increase by 'size' the counter that shows
@@ -51,9 +87,27 @@ public:
   void add_object(long size);
 
 
-  // Increase by one the number of backward references per full GC;
+  // Increase by one the number of forward references per GC;
+  void add_fwd_ref();
+
+  // Increase by one the number of backward references per GC;
   void add_back_ref();
 
+  // Increase the number of humongous objects transferred to H2
+  void add_h2_humongous();
+
+  // Get the number of humongous objects transferred to H2
+  size_t get_h2_humongous();
+
+  // Add the time it took for a thread to make an allocation in H2
+  void thr_add_time_alloc_h2(uint thread_id, double time);
+
+  // Add the time it took for a thread to make a copy to H2
+  void thr_add_time_copy_h2(uint thread_id, double time);
+
+  // Increase the appropriate counter for the distribution
+  // NOTE: call when adding objects to H2
+  void add_obj_size_distribution(size_t size);
 
   // Print the statistics of TeraHeap at the end of each FGC
   // Will print:
@@ -72,12 +126,12 @@ public:
     evac_time_ms = time;
   }
 
-  void record_h2_allocate_time(double time) {
-    h2_allocate_ms = time;
+  void record_h2_max_allocate_time() {
+    h2_allocate_ms = get_max_thr_time_alloc_h2();
   }
 
-  void record_h2_copy_time(double time) {
-    h2_copy_ms = time;
+  void record_h2_max_copy_time() {
+    h2_copy_ms = get_max_thr_time_copy_h2();
   }
 
   void set_is_in_mix(bool is_mixed_gc) {
@@ -144,6 +198,34 @@ public:
   void report_rusage();
 
 #endif // RUSAGE_MUTATOR
+
+#ifdef BACK_REF_STAT
+  // Add a new entry to the histogram for back reference that start from
+  // 'obj' and results in H1 (new or old generation).
+  // Use this function with a single GC thread
+  void h2_update_back_ref_stats(bool is_old, bool is_tera_cache);
+
+  void h2_enable_back_ref_traversal(oop *obj);
+
+  // Print the histogram
+  void h2_print_back_ref_stats();
+#endif
+
+#ifdef FWD_REF_STAT
+  // Add a new entry to the histogram for forward reference that start from
+  // H1 and results in 'obj' in H2
+  void h2_add_fwd_ref_stat(oop obj);
+  
+  // Print the histogram
+  void h2_print_fwd_ref_stat();
+#endif
+
+private:
+
+  double get_max_thr_time_alloc_h2();
+
+  double get_max_thr_time_copy_h2();
+
 };
 
 #endif // SHARE_GC_TERAHEAP_TERASTATISTICS_HPP
