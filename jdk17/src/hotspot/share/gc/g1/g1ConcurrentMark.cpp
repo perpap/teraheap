@@ -861,13 +861,13 @@ void G1ConcurrentMark::scan_root_region(const MemRegion* region, uint worker_id)
     oop obj = cast_to_oop(curr);
 
 #ifdef TERA_CONC_MARKING
-    if(EnableTeraHeap){
-      if(obj->is_marked_move_h2()){   
-        cl.set_parent_tera(true, obj->get_obj_group_id(), obj->get_obj_part_id() );
-      }else{
+    if (EnableTeraHeap) {
+      if (obj->is_marked_move_h2()) {
+        cl.set_parent_tera(true, obj->get_obj_group_id(), obj->get_obj_part_id());
+      } else {
         cl.set_parent_tera(false,0,0);
       }
-    }    
+    }
 #endif
 
     int size = obj->oop_iterate_size(&cl);
@@ -1010,16 +1010,16 @@ class G1UpdateRemSetTrackingBeforeRebuildTask : public AbstractGangTask {
         size_t const live_bytes = _cm->live_bytes(hr->hrm_index());
 
 #ifdef TERA_CONC_MARKING
-        if(EnableTeraHeap){
-          selected_for_rebuild = tracking_policy->update_before_rebuild(hr, live_bytes, _cm->live_bytes_excluding_h2(hr->hrm_index()) );
-        }else{
+        if (EnableTeraHeap) {
+          selected_for_rebuild = tracking_policy->update_before_rebuild(hr, live_bytes, _cm->live_bytes_excluding_h2(hr->hrm_index()));
+        } else {
           selected_for_rebuild = tracking_policy->update_before_rebuild(hr, live_bytes);
         }
 #else
         selected_for_rebuild = tracking_policy->update_before_rebuild(hr, live_bytes);
 #endif
-
       }
+
       if (selected_for_rebuild) {
         _num_regions_selected_for_rebuild++;
       }
@@ -1043,9 +1043,9 @@ class G1UpdateRemSetTrackingBeforeRebuildTask : public AbstractGangTask {
 #ifdef TERA_CONC_MARKING
       size_t const h2_marked_words = _cm->h2_live_words(region_idx);
 
-      DEBUG_ONLY( 
-        if( EnableTeraHeap && h2_marked_words > 0 ){       
-            assert( h2_marked_words == marked_words , 
+      DEBUG_ONLY(
+        if (EnableTeraHeap && h2_marked_words > 0) {       
+            assert( h2_marked_words == marked_words ,
               "Humongous object should have same h2_marked_words (" SIZE_FORMAT ") with marked_words (" SIZE_FORMAT ")", 
               h2_marked_words, marked_words
             );
@@ -1097,16 +1097,14 @@ class G1UpdateRemSetTrackingBeforeRebuildTask : public AbstractGangTask {
         log_trace(gc, marking)("Adding " SIZE_FORMAT " words to region %u (%s)", marked_words, region_idx, hr->get_type_str());
         
 #ifdef TERA_CONC_MARKING
-        if( EnableTeraHeap ){
+        if (EnableTeraHeap) {
           add_marked_bytes_and_note_end(hr, _cm->live_bytes(region_idx) , _cm->h2_live_bytes(region_idx) );
-        }else{
+        } else {
           add_marked_bytes_and_note_end(hr, _cm->live_bytes(region_idx));
         }
 #else
         add_marked_bytes_and_note_end(hr, _cm->live_bytes(region_idx));
 #endif
-
-
       }
     }
 

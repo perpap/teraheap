@@ -361,11 +361,10 @@ public:
 #ifdef TERA_CONC_MARKING
     // known_live_bytes = h1 live + h2 live
     // the reclaimable space for this region is: garbage + h2 live bytes
-    if(EnableTeraHeap)
+    if (EnableTeraHeap)
       return capacity() - (known_live_bytes - _h2_marked_bytes);
     else
       return capacity() - known_live_bytes;
-
 #else
     return capacity() - known_live_bytes;
 #endif
@@ -656,3 +655,4 @@ public:
 };
 
 #endif // SHARE_GC_G1_HEAPREGION_HPP
+

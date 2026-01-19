@@ -58,11 +58,12 @@ JRT_LEAF(void, G1BarrierSetRuntime::write_ref_field_post_entry(volatile G1CardTa
                                                                JavaThread* thread))
 
   DEBUG_ONLY(
-    if( EnableTeraHeap ){
-    BarrierSet *bs = BarrierSet::barrier_set();
-    CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-    assert(Universe::heap()->is_in(ctbs->card_table()->addr_for((CardValue*)card_addr) ) , "should not be called at an h2 card" );
-  })
+    if (EnableTeraHeap) {
+      BarrierSet *bs = BarrierSet::barrier_set();
+      CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
+      assert(Universe::heap()->is_in(ctbs->card_table()->addr_for((CardValue*)card_addr)), "should not be called at an h2 card");
+    }
+  )
 
   G1DirtyCardQueue& queue = G1ThreadLocalData::dirty_card_queue(thread);
   G1BarrierSet::dirty_card_queue_set().enqueue(queue, card_addr);

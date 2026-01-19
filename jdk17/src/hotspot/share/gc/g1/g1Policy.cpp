@@ -914,11 +914,10 @@ size_t G1Policy::predict_bytes_to_copy(HeapRegion* hr) const {
    
     //bytes to copy in H1
     //the other bytes are reclaimamble bytes = garbage + h2 live bytes
-    if(EnableTeraHeap)
+    if (EnableTeraHeap)
       bytes_to_copy = hr->max_live_bytes() - hr->h2_marked_bytes();
-    else 
+    else
       bytes_to_copy = hr->max_live_bytes();
-
 #else
     bytes_to_copy = hr->max_live_bytes();
 #endif

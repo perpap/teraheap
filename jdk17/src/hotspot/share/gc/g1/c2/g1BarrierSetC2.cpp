@@ -467,7 +467,7 @@ void G1BarrierSetC2::post_barrier(GraphKit* kit,
   Node* card_adr = __ AddP(no_base, byte_map_base_node(kit), card_offset );
 
 #ifdef TERA_C2
-  if(EnableTeraHeap){
+  if (EnableTeraHeap) {
 
 #ifdef C2_ONLY_LEAF_CALL
     const TypeFunc *tera_tf = h2_wb_post_Type();

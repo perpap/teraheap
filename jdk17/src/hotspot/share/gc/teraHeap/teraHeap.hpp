@@ -4,23 +4,21 @@
 #include "gc/parallel/objectStartArray.hpp"
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "utilities/stack.inline.hpp"
-//#include "gc/parallel/psCompactionManager.hpp"
 #include "memory/sharedDefines.h"
 #include "oops/oop.hpp"
 #include "gc/teraHeap/teraStatistics.hpp"
 
-
+// Allocator functions
 #include <regions.h>
 
-//class ParCompactionManager;
 class PSCardTable;
 
 class TeraHeap: public CHeapObj<mtInternal> {
 private:
-  static char *_start_addr; // TeraHeap start address of mmap region
-  static char *_stop_addr;  // TeraHeap ends address of mmap region
-  ObjectStartArray _start_array; // Keeps track of where objects
-                                        // start in a 2^CARD_SEGMENT_SIZE block
+  static char *_start_addr;       // TeraHeap start address of mmap region
+  static char *_stop_addr;        // TeraHeap ends address of mmap region
+  ObjectStartArray _start_array;  // Keeps track of where objects
+                                  // start in a 2^CARD_SEGMENT_SIZE block
 
   /*-----------------------------------------------
    * Stacks
@@ -38,30 +36,22 @@ private:
   // Stack to keep the humongous objects that are marked to move to H2.
   // We drain this stack in the compaction phase of a Full GC.
   static Stack<HeapRegion *, mtGC> _tc_humongous_stack;
+  /*---------------------------------------------*/
 
   TeraStatistics *tera_stats;
-
-  static long int cur_obj_group_id; //<We save the current object
-                                    // group id for tera-marked
-                                    // object to promote this id
-                                    // to their reference objects
-  static long int cur_obj_part_id;  //<We save the current object
-                                    // partition id for tera-marked
-                                    // object to promote this id
-                                    // to their reference objects
 
   HeapWord **h1_addr_arr;
   HeapWord **h2_addr_arr;
 
-  HeapWord *obj_h1_addr;            // We need to check this
-                                    // object that will be moved
-                                    // to H2 if it has back ptrs
-                                    // to H1
+  HeapWord *obj_h1_addr;  // We need to check this
+                          // object that will be moved
+                          // to H2 if it has back ptrs
+                          // to H1
 
-  HeapWord *obj_h2_addr;            // We need to check this
-                                    // object that will be moved
-                                    // to H2 if it has back ptrs
-                                    // to H1
+  HeapWord *obj_h2_addr;  // We need to check this
+                          // object that will be moved
+                          // to H2 if it has back ptrs
+                          // to H1
 
 public:
   // Constructor
@@ -94,7 +84,6 @@ public:
   // end address of the last allocated object in the last region of
   // H2.
   char *h2_top_addr(void);
-
 
   // Check if H2 is empty.
   // Return true if H2 is empty, false otherwise
@@ -239,20 +228,6 @@ public:
   // `obj2` region
   void group_regions(HeapWord *obj1, HeapWord *obj2);
 
-  // We save the current object group 'id' for tera-marked object to
-  // promote this 'id' to its reference objects
-  void set_cur_obj_group_id(long int id);
-
-  // Get the saved current object group id
-  long int get_cur_obj_group_id(void);
-
-  // We save the current object partition 'id' for tera-marked object to
-  // promote this 'id' to its reference objects
-  void set_cur_obj_part_id(long int id);
-
-  // Get the saved current object partition id
-  long int get_cur_obj_part_id(void);
-
   // Iterate over all objects in each region and print their states
   // This function is for debugging purposes to understand and fix the
   // locality in regions
@@ -304,9 +279,9 @@ public:
   // ------------------
   // Utility functions
   // ------------------
-
   // Make every card of H2 dirty (used for debugging)
   void dirty_all_cards(CardTable *th_card_table);
+  // ------------------
 };
 
 #endif

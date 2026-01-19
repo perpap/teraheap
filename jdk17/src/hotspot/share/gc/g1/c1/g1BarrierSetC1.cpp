@@ -193,8 +193,6 @@ void G1BarrierSetC1::post_barrier(LIRAccess& access, LIR_OprDesc* addr, LIR_OprD
 			ShouldNotReachHere();
 	}
 #endif
-
-
   // IF addr IN H1
 
   // xor_res = addr XOR new_var

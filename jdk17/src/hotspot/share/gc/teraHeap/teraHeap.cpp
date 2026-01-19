@@ -17,9 +17,6 @@ Stack<oop *, mtGC> TeraHeap::_tc_stack;
 Stack<oop *, mtGC> TeraHeap::_tc_adjust_stack;
 Stack<HeapRegion *, mtGC> TeraHeap::_tc_humongous_stack;
 
-// long int TeraHeap::cur_obj_group_id;
-// long int TeraHeap::cur_obj_part_id;
-
 #ifdef DBG_LOST_REGION
 static size_t page_size;
 static int times = 0;
@@ -505,28 +502,6 @@ char* TeraHeap::h2_add_object(oop obj, size_t size) {
 
 	return pos;
 }
-
-// We save the current object group 'id' for tera-marked object to
-// promote this 'id' to its reference objects
-// void TeraHeap::set_cur_obj_group_id(long int id) {
-// 	cur_obj_group_id = id;
-// }
-
-// // Get the saved current object group id 
-// long int TeraHeap::get_cur_obj_group_id(void) {
-// 	return cur_obj_group_id;
-// }
-
-// We save the current object partition 'id' for tera-marked object to
-// promote this 'id' to its reference objects
-// void TeraHeap::set_cur_obj_part_id(long int id) {
-// 	cur_obj_part_id = id;
-// }
-
-// // Get the saved current object partition id 
-// long int TeraHeap::get_cur_obj_part_id(void) {
-// 	return cur_obj_part_id;
-// }
 
 // If obj is in a different H2 region than the region enabled, they
 // are grouped (single-threaded)
