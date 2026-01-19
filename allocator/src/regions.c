@@ -15,8 +15,8 @@
 #include "../include/asyncIO.h"
 #include "../include/segments.h"
 
-#define HEAPWORD (8)                       // In the JVM the heap is aligned to 8 words
-#define HEADER_SIZE (32)                   // Header size of the Dummy object	
+#define HEAPWORD (8)      // In the JVM the heap is aligned to 8 words
+#define HEADER_SIZE (32)  // Header size of the Dummy object	
 #define align_size_up_(size, alignment) (((size) + ((alignment) - 1)) & ~((alignment) - 1))
 
 char dev[150] = { '\0' };
@@ -121,7 +121,6 @@ void init(uint64_t align, const char *h2_file_path, uint64_t h2_file_size) {
 	req_init();
 }
 
-
 // Return the start address of the memory allocation pool
 char* start_addr_mem_pool() {
 	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");
@@ -138,7 +137,7 @@ char* stop_addr_mem_pool() {
 size_t mem_pool_size() {
 	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");
 #if ANONYMOUS
-    return V_SPACE;
+  return V_SPACE;
 #else
 	return dev_size;
 #endif
@@ -175,7 +174,7 @@ char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
   pthread_mutex_unlock(&tc_mem_pool_lock);
 
 	assertf(prev_allocation_ptr <= tc_mem_pool.cur_alloc_ptr, 
-			"Error alloc ptr: Prev = %p, Cur = %p", prev_allocation_ptr, tc_mem_pool.cur_alloc_ptr);
+         "Error alloc ptr: Prev = %p, Cur = %p", prev_allocation_ptr, tc_mem_pool.cur_alloc_ptr);
 
 	// Alighn to 8 words the pointer (TODO: CHANGE TO ASSERTION)
 	if ((uint64_t) tc_mem_pool.cur_alloc_ptr % HEAPWORD != 0) {
@@ -190,8 +189,8 @@ char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 // NOTE: Does not require lock as it is not called during updates
 char* cur_alloc_ptr() {
 	assertf(tc_mem_pool.cur_alloc_ptr >= tc_mem_pool.start_address
-			&& tc_mem_pool.cur_alloc_ptr < tc_mem_pool.stop_address,
-			"Allocation pointer out-of-bound")
+         && tc_mem_pool.cur_alloc_ptr < tc_mem_pool.stop_address,
+         "Allocation pointer out-of-bound")
 
 	return tc_mem_pool.cur_alloc_ptr;
 }
@@ -243,7 +242,6 @@ void r_write(char *data, char *offset, size_t size) {
 // system call without memcpy.
 // Do not use r_awrite with r_write
 void r_awrite(char *data, char *offset, size_t size) {
-	
 	uint64_t diff = offset - tc_mem_pool.mmap_start;
 
 	req_add(fd, data, size * HEAPWORD, diff);

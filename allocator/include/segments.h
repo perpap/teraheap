@@ -6,15 +6,15 @@
 #include <stdbool.h>
 
 #define ANONYMOUS 0
-#define PR_BUFFER 1						
+#define PR_BUFFER 1
 #define PR_BUFFER_SIZE (2*1024LU*1024) /* Promotion buffer size */
 #define HeapWordSize 8				   /* Java heap allignment */
 /* Objects that are grater than this threshold we write them directly using
  * async I/O. For objects less than this threshold we use the promotion buffer.
  * THRESHOLD should always be less than the PR_BUFFER_SIZE*/
-#define THRESHOLD (1*1024LU*1024)	   
+#define THRESHOLD (1*1024LU*1024)
 
-struct offset{
+struct offset {
   uint64_t offset;
   struct offset *next;
 };
@@ -35,7 +35,7 @@ struct pr_buffer {
 /*
  * The struct for tera_group array
  */
-struct tera_group{
+struct tera_group {
     struct region *region;
     struct tera_group *next;
 };
@@ -43,7 +43,7 @@ struct tera_group{
 /*
  * The struct for regions
  */
-struct region{
+struct region {
     char *start_address;
     char *last_allocated_end;
     char *last_allocated_start;
@@ -51,7 +51,7 @@ struct region{
     struct tera_group *dependency_list;
 #if ANONYMOUS
   struct offset *offset_list;
-  size_t size_mapped; 
+  size_t size_mapped;
 #endif
 #if PR_BUFFER
     struct pr_buffer *pr_buffer;
@@ -68,16 +68,18 @@ void init_regions();
 
 /*
  * Finds an empty regions and returns its starting address
- * Arguments: size: the size of the object we want to allocate in
- * Bytes
+ * Arguments:
+ * - size: the size of the object we want to allocate in
+ *         Bytes
  */
 char* new_region(size_t size);
 
 /*
  * Returns the address of the allocated object
- * Arguments: size: the size of the object in Bytes
- * rdd_id: The id of the rdd which the object belongs
- * part_id: The id of the partition that the object belongs
+ * Arguments:
+ * - size: the size of the object in Bytes
+ * - rdd_id: The id of the rdd which the object belongs
+ * - part_id: The id of the partition that the object belongs
  */
 char* allocate_to_region(size_t size, uint64_t rdd_id, uint64_t partition_id);
 
@@ -90,15 +92,17 @@ int new_group();
 
 /*
  * Merges two groups of regions that already exist
- * Arguments: group1: the id of the first tera_group
- * group2:the id of the second tera_group
+ * Arguments:
+ * - group1: the id of the first tera_group
+ * - group2: the id of the second tera_group
  */
 void merge_groups(int group1, int group2);
 
 /*
  * Connects two regions in a tera_group
- * Arguments: obj1: the object that references the other
- * obj2: the object that is referenced (order does not matter)
+ * Arguments:
+ * - obj1: the object that references the other
+ * - obj2: the object that is referenced (order does not matter)
  */
 void references(char *obj1, char *obj2);
 
@@ -115,7 +119,8 @@ void reset_used();
 /*
  * Marks the region that contains this obj as used and increases tera_group
  * counter (if it belongs to a tera_group)
- * Arguments: obj:the object that is alive
+ * Arguments:
+ * - obj: the object that is alive
  */
 #ifdef DBG_LOST_REGION
 void mark_used(char *obj, char *from, uint gc_number);
@@ -177,7 +182,8 @@ void disable_region_groups(void);
 
 /*
  * function that connects two regions in a tera_group
- * arguments: obj: the object that must be checked to be groupped with the region_enabled
+ * arguments:
+ * - obj: the object that must be checked to be groupped with the region_enabled
  */
 void check_for_group(char *obj);
 
