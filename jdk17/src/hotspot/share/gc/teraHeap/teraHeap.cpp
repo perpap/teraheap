@@ -242,7 +242,7 @@ void TeraHeap::h2_push_backward_reference(void *p, oop o) {
 
 // Add humongous region that are marked to move to H2 in a
 // seperate stack to move them during the compaction phase.
-void TeraHeap::h2_push_humongous_region(void *p) {
+void TeraHeap::h2_push_humongous_start(void *p) {
   MutexLocker x(tera_heap_lock);
   _tc_humongous_stack.push((HeapRegion *) p);
   assert(!_tc_humongous_stack.is_empty(), "Sanity Check");
@@ -326,8 +326,8 @@ oop* TeraHeap::h2_adjust_next_back_reference() {
   return (!_tc_adjust_stack.is_empty() ? _tc_adjust_stack.pop() : NULL);
 }
 
-// Get the next humongous region from the stack to move it to H2
-HeapRegion* TeraHeap::h2_get_next_humongous_region() {
+// Get the next humongous starting region from the stack to move the whole object to H2
+HeapRegion *TeraHeap::h2_get_next_humongous_start() {
   return (!_tc_humongous_stack.is_empty() ? _tc_humongous_stack.pop() : NULL);
 }
 

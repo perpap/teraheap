@@ -277,7 +277,7 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(H
   guarantee(!obj->is_forwarded(), "Object already forwarded humongous to h2 from fgc!\n");
 
   obj->forward_to(cast_to_oop(h2_address));
-  Universe::teraHeap()->h2_push_humongous_region((void *) hr);
+  Universe::teraHeap()->h2_push_humongous_start((void *)hr);
 }
 
 void G1FullGCPrepareTask::prepare_serial_compaction() {

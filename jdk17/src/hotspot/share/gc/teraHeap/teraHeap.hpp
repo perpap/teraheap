@@ -133,15 +133,16 @@ public:
   // pointer adjustment phases of major GC.
   void h2_push_backward_reference(void *p, oop o);
 
-  // Add humongous region that are marked to move to H2 in a
-  // seperate stack to move them during the compaction phase.
-  void h2_push_humongous_region(void *p);
+  // Add the first humongous region of a humongous object
+  // that is marked to move to H2 in a seperate stack to
+  // move them during the compaction phase.
+  void h2_push_humongous_start(void *p);
 
   // Get the next backward reference from the stack to adjust
   oop* h2_adjust_next_back_reference();
 
-  // Get the next humongous region from the stack to move it to H2
-  HeapRegion* h2_get_next_humongous_region();
+  // Get the next humongous starting region from the stack to move the whole object to H2
+  HeapRegion *h2_get_next_humongous_start();
 
   // Explicit (using systemcall) write 'data' with 'size' to the specific
   // 'offset' in the file.

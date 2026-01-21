@@ -155,7 +155,8 @@ void G1FullGCCompactTask::work(uint worker_id) {
 
   // Drain stack to move humongous
   if (EnableTeraHeap && worker_id == 0) {
-    HeapRegion *hum_region = Universe::teraHeap()->h2_get_next_humongous_region();
+    HeapRegion *hum_region =
+        Universe::teraHeap()->h2_get_next_humongous_start();
     while (hum_region) {
       if (TeraHeapStatistics)
         Universe::teraHeap()->get_tera_stats()->add_h2_humongous();
@@ -172,7 +173,7 @@ void G1FullGCCompactTask::work(uint worker_id) {
         hum_region = next;
       } while (hum_region != nullptr);
 
-      hum_region = Universe::teraHeap()->h2_get_next_humongous_region();
+      hum_region = Universe::teraHeap()->h2_get_next_humongous_start();
     }
   }
 
