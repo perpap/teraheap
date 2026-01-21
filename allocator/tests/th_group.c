@@ -21,6 +21,8 @@
 #define CARD_SIZE ((uint64_t) (1 << 9))
 #define PAGE_SIZE ((uint64_t) (1 << 12))
 
+#define GB 1024LU * 1024 * 1024
+
 //this test needs 2MB region size
 int main() {
   char *obj1, *obj2, *obj3; char *obj4; char *obj5; char *obj6;
@@ -28,7 +30,7 @@ int main() {
   char *obj8;
   char *obj9;
   // Init allocator
-  init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 64);
+  init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 64 * GB);
 
   //obj1 should be in region 0
   obj1 = allocate(1, 0, 0);
