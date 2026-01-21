@@ -67,7 +67,7 @@ void init_regions() {
   fprintf(stderr, "Total num of regions:%d\n", (int32_t) region_array_size);
 #endif
 
-  for (i = 0; i < region_array_size ; i++) {
+  for (i = 0; i < region_array_size; i++) {
     region_array[i].start_address             = (i == 0) ? start_addr_mem_pool() : (region_array[i - 1].start_address + (uint64_t) REGION_SIZE);
     region_array[i].used                      = 0;
     region_array[i].last_allocated_end        = region_array[i].start_address;

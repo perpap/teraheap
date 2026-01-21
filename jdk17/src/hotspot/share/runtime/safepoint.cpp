@@ -938,10 +938,10 @@ void ThreadSafepointState::handle_polling_page_exception() {
       assert(oopDesc::is_oop_or_null(result), "must be oop");
       return_value = Handle(self, result);
 
-#ifdef TERA_MAINTENANCE 
-      if(EnableTeraHeap)
+#ifdef TERA_MAINTENANCE
+      if (EnableTeraHeap)
         assert(Universe::heap()->is_in_or_null(result) ||
-        Universe::is_in_h2_or_null(result) , "must be heap pointer");
+               Universe::is_in_h2_or_null(result), "must be heap pointer");
       else
         assert(Universe::heap()->is_in_or_null(result), "must be heap pointer");
 #else

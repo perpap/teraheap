@@ -126,7 +126,7 @@
 
 #define IN_TERA_CACHE     2147483561  //< This object is located in TeraHeap
 
-#define INIT_TF				    2035	  //< Initial object state
+#define INIT_TF				    2035    //< Initial object state
 
 #define INIT_TF_HEX			  0x7f3U  //< Initial object state
 

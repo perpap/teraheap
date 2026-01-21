@@ -158,7 +158,7 @@ void TeraHeap::h2_enable_rand_faults() {
 // Check if the first object `obj` in the H2 region is valid. If not
 // that depicts that the region is empty
 bool TeraHeap::check_if_valid_object(HeapWord *obj) {
-    return is_before_last_object((char *)obj);
+  return is_before_last_object((char *)obj);
 }
 
 // Traverses all objects in H2 to check if they are valid.
@@ -199,22 +199,22 @@ bool TeraHeap::check_if_valid_h2() {
 // Returns the ending address of the last object in the region obj
 // belongs to
 HeapWord* TeraHeap::get_last_object_end(HeapWord *obj) {
-    return (HeapWord*)get_last_object((char *) obj);
+  return (HeapWord*) get_last_object((char *) obj);
 }
 
 // Checks if the address of obj is the beginning of a region
 bool TeraHeap::is_start_of_region(HeapWord *obj) {
-    return is_region_start((char *) obj);
+  return is_region_start((char *) obj);
 }
 
 // Retrurn the start address of the first object of the secific region
-HeapWord *TeraHeap::get_first_object_in_region(HeapWord *addr){
-    return (HeapWord*) get_first_object((char*)addr);
+HeapWord *TeraHeap::get_first_object_in_region(HeapWord *addr) {
+  return (HeapWord*) get_first_object((char*)addr);
 }
 
 // Add a new entry to `obj1` region dependency list that reference
 // `obj2` region
-void TeraHeap::group_regions(HeapWord *obj1, HeapWord *obj2){
+void TeraHeap::group_regions(HeapWord *obj1, HeapWord *obj2) {
 	if (is_in_the_same_group((char *) obj1, (char *) obj2)) 
 		return;
 	MutexLocker x(tera_heap_group_lock);
@@ -254,7 +254,7 @@ void TeraHeap::h2_reset_used_field(void) {
 }
 
 // Prints all the region groups
-void TeraHeap::print_region_groups(void){
+void TeraHeap::print_region_groups(void) {
   print_groups();
 }
 
@@ -291,22 +291,22 @@ void TeraHeap::h2_print_objects_per_region() {
 #endif // DBG_LOST_REGION
 
 // Frees all unused regions
-void TeraHeap::free_unused_regions(void){
-    // fprintf(stderr, "[WARNING] Free is disabled!\n");
-    struct region_list *ptr = free_regions();
-    struct region_list *prev = NULL;
-    while (ptr != NULL){
-      _start_array.th_region_reset((HeapWord*)ptr->start,(HeapWord*)ptr->end);
+void TeraHeap::free_unused_regions(void) {
+  // fprintf(stderr, "[WARNING] Free is disabled!\n");
+  struct region_list *ptr = free_regions();
+  struct region_list *prev = NULL;
+  while (ptr != NULL) {
+    _start_array.th_region_reset((HeapWord*) ptr->start, (HeapWord*) ptr->end);
 
 #ifdef DBG_PROTECT_FREE_REGIONS
-      make_region_inaccessible(ptr->start, GCId::current());
+    make_region_inaccessible(ptr->start, GCId::current());
 #endif // DBG_PROTECT_FREE_REGIONS
 
-      prev = ptr;
-      ptr = ptr->next;
+    prev = ptr;
+    ptr = ptr->next;
 
-      free(prev);
-    }
+    free(prev);
+  }
 }
 
 // Pop the objects that are in `_th_stack` and mark them as live
@@ -317,8 +317,8 @@ oop* TeraHeap::h2_get_next_back_reference() {
 }
 
 // Prints all active regions
-void TeraHeap::print_h2_active_regions(void){
-    print_used_regions();
+void TeraHeap::print_h2_active_regions(void) {
+  print_used_regions();
 }
 
 // Get the next backward reference from the stack to adjust
@@ -332,7 +332,7 @@ HeapRegion *TeraHeap::h2_get_next_humongous_start() {
 }
 
 // Enables groupping with region of obj (single-threaded)
-void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr){
+void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr) { 
   enable_region_groups((char*) new_addr);
 
 	obj_h1_addr = old_addr;
@@ -340,7 +340,7 @@ void TeraHeap::enable_groups(HeapWord *old_addr, HeapWord* new_addr){
 }
 
 // Disables region groupping (single-threaded)
-void TeraHeap::disable_groups(void){
+void TeraHeap::disable_groups(void) {
   disable_region_groups();
 
 	obj_h1_addr = NULL;
@@ -348,7 +348,7 @@ void TeraHeap::disable_groups(void){
 }
 
 // Enable region groupping (multi-threaded)
-void TeraHeap::thread_enable_groups(uint thread_id, HeapWord *old_addr, HeapWord* new_addr){
+void TeraHeap::thread_enable_groups(uint thread_id, HeapWord *old_addr, HeapWord* new_addr) {
   if (!EnableTeraHeap)
     return;
   assert(h1_addr_arr[thread_id] == NULL && h2_addr_arr[thread_id] == NULL, "Thread %d corrupted group state.", thread_id);
@@ -358,7 +358,7 @@ void TeraHeap::thread_enable_groups(uint thread_id, HeapWord *old_addr, HeapWord
 }
 
 // Disables region groupping (multi-threaded)
-void TeraHeap::thread_disable_groups(uint thread_id){
+void TeraHeap::thread_disable_groups(uint thread_id) {
   if (!EnableTeraHeap)
     return;
 	h1_addr_arr[thread_id] = NULL;
@@ -390,13 +390,13 @@ void TeraHeap::h2_write(char *data, char *offset, size_t size) {
 void TeraHeap::h2_awrite(char *data, char *offset, size_t size) {
 	r_awrite(data, offset, size);
 }
-		
+
 // We need to ensure that all the writes in TeraHeap using asynchronous
 // I/O have been completed succesfully.
 int TeraHeap::h2_areq_completed() {
 	return r_areq_completed();
 }
-		
+
 // Fsync writes in TeraHeap
 // We need to make an fsync when we use fastmap
 void TeraHeap::h2_fsync() {
@@ -546,7 +546,7 @@ bool TeraHeap::is_metadata(oop obj) {
   return false;
 }
 
-int TeraHeap::h2_continuous_regions(HeapWord *addr){
+int TeraHeap::h2_continuous_regions(HeapWord *addr) {
   assert(is_in_h2(addr), "Error");
   return get_num_of_continuous_regions((char *)addr);
 }

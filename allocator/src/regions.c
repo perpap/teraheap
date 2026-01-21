@@ -82,7 +82,7 @@ void init(uint64_t align, const char *h2_file_path, uint64_t h2_file_size) {
   fd = -1;
 
 #if ANONYMOUS
-	// Anonymous mmap
+  // Anonymous mmap
   fd = open(DEV, O_RDWR);
   th_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
 #else
@@ -139,14 +139,14 @@ size_t mem_pool_size() {
 #if ANONYMOUS
   return V_SPACE;
 #else
-	return dev_size;
+  return dev_size;
 #endif
 }
 
 char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
-	char* alloc_ptr = NULL;
+  char* alloc_ptr = NULL;
 
-	assertf(size > 0, "Object should be > 0");
+  assertf(size > 0, "Object should be > 0");
 
   alloc_ptr = allocate_to_region(size * HEAPWORD, rdd_id, partition_id);
 
@@ -185,7 +185,7 @@ char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
                  -HEAPWORD);
   }
 
-	return alloc_ptr;
+  return alloc_ptr;
 }
 
 // Return the current allocation pointer
@@ -247,7 +247,7 @@ void r_write(char *data, char *offset, size_t size) {
 void r_awrite(char *data, char *offset, size_t size) {
   uint64_t diff = offset - th_mem_pool.mmap_start;
 
-	req_add(fd, data, size * HEAPWORD, diff);
+  req_add(fd, data, size * HEAPWORD, diff);
 }
 	
 // Check if all the asynchronous requestes have been completed

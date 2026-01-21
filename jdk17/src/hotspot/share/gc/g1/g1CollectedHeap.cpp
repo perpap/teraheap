@@ -150,7 +150,7 @@ public:
 
 
 #ifdef TERA_AVOID_FULL_GC
-  bool G1CollectedHeap::mix_gc_happened=false;
+  bool G1CollectedHeap::mix_gc_happened = false;
 #endif
 
 // INVARIANTS/NOTES

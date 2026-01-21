@@ -73,13 +73,13 @@ public:
 
   // Get object start array for h2
   ObjectStartArray *h2_start_array() { return &_start_array; }
-  
+
   // Return H2 start address
   char *h2_start_addr(void);
 
   // Return H2 stop address
   char *h2_end_addr(void);
-  
+
   // Get the top allocated address of the H2. This address depicts the
   // end address of the last allocated object in the last region of
   // H2.
@@ -94,7 +94,7 @@ public:
 
   // Deallocate the backward references stacks
   void h2_clear_back_ref_stacks();
-  
+
   // Deallocate the humongous region stack
   void h2_clear_humongous_stack();
 
@@ -103,7 +103,7 @@ public:
 
   // Give advise to kernel to expect page references in random order
   void h2_enable_rand_faults();
-  
+
   // Check if the first object `obj` in the H2 region is valid. If not
   // that depicts that the region is empty
   bool check_if_valid_object(HeapWord *obj);
@@ -117,7 +117,7 @@ public:
 
   // Checks if the address of obj is the beginning of a region
   bool is_start_of_region(HeapWord *obj);
-  
+
   // Retrurn the start address of the first object of the secific region
   HeapWord *get_first_object_in_region(HeapWord *addr);
 
