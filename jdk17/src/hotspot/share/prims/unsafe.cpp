@@ -880,7 +880,7 @@ UNSAFE_ENTRY(void, Unsafe_h2TagAndMoveRoot(JNIEnv *env, jobject unsafe, jobject 
   
   oop o = JNIHandles::resolve_non_null(obj);
 
-  // If the object is already in TeraCache then do not mark its teraflag
+  // If the object is already in TeraHeap then do not mark its teraflag
   if (Universe::teraHeap()->is_in_h2(o))
     return;
 

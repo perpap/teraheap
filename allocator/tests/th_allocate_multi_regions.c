@@ -1,7 +1,7 @@
 
 /***************************************************
 *
-* file: tc_allocate.c
+* file: th_allocate.c
 *
 * @Author:   Iacovos G. Kolokasis
 * @Author:   Giannos Evdorou

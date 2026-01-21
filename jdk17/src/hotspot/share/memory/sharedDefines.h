@@ -69,7 +69,7 @@
                                   // accesses
 
 #define TERA_CARD_SIZE			 13   // This is the size of each card in
-                                  // TeraCache card table. The size is in bit
+                                  // TeraHeap card table. The size is in bit
                                   // e.g 9 = 512bytes
                                   // 2^13 = 8K = 8*1024
 
@@ -121,10 +121,10 @@
 #define DUMMY_H2_ADDRESS  256     //< Mark that object took address.
 //                                // NOTE: will be removed.
 
-#define TERA_TO_OLD		    328	    //< Pointer from TeraCache to Old Gen. Move
-  // this object to TeraCache
+#define TERA_TO_OLD 	    328     //< Pointer from TeraHeap to Old Gen. Move
+                                  // this object to TeraHeap
 
-#define IN_TERA_CACHE     2147483561	//< This object is located in TeraCache
+#define IN_TERA_CACHE     2147483561  //< This object is located in TeraHeap
 
 #define INIT_TF				    2035	  //< Initial object state
 

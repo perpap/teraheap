@@ -13,9 +13,9 @@
 char *TeraHeap::_start_addr = NULL;
 char *TeraHeap::_stop_addr = NULL;
 
-Stack<oop *, mtGC> TeraHeap::_tc_stack;
-Stack<oop *, mtGC> TeraHeap::_tc_adjust_stack;
-Stack<HeapRegion *, mtGC> TeraHeap::_tc_humongous_stack;
+Stack<oop *, mtGC> TeraHeap::_th_stack;
+Stack<oop *, mtGC> TeraHeap::_th_adjust_stack;
+Stack<HeapRegion *, mtGC> TeraHeap::_th_humongous_stack;
 
 #ifdef DBG_LOST_REGION
 static size_t page_size;
@@ -128,13 +128,13 @@ bool TeraHeap::is_in_h2(const void* p) {
 void TeraHeap::h2_clear_back_ref_stacks() {
 	// if (TeraHeapStatistics)
 	// 	back_ptrs_per_mgc = 0;
-		
-	_tc_adjust_stack.clear(true);
-	_tc_stack.clear(true);
+
+  _th_adjust_stack.clear(true);
+  _th_stack.clear(true);
 }
 
 void TeraHeap::h2_clear_humongous_stack() {
-  _tc_humongous_stack.clear(true);
+  _th_humongous_stack.clear(true);
 }
 
 // Give advise to kernel to expect page references in sequential order
@@ -233,19 +233,19 @@ void TeraHeap::h2_push_backward_reference(void *p, oop o) {
   if (TeraHeapStatistics)
     Universe::teraHeap()->get_tera_stats()->add_back_ref();
 
-	_tc_stack.push((oop *)p);
-	_tc_adjust_stack.push((oop *)p);
-	
-	assert(!_tc_stack.is_empty(), "Sanity Check");
-	assert(!_tc_adjust_stack.is_empty(), "Sanity Check");
+  _th_stack.push((oop *)p);
+  _th_adjust_stack.push((oop *)p);
+
+  assert(!_th_stack.is_empty(), "Sanity Check");
+  assert(!_th_adjust_stack.is_empty(), "Sanity Check");
 }
 
 // Add humongous region that are marked to move to H2 in a
 // seperate stack to move them during the compaction phase.
 void TeraHeap::h2_push_humongous_start(void *p) {
   MutexLocker x(tera_heap_lock);
-  _tc_humongous_stack.push((HeapRegion *) p);
-  assert(!_tc_humongous_stack.is_empty(), "Sanity Check");
+  _th_humongous_stack.push((HeapRegion *)p);
+  assert(!_th_humongous_stack.is_empty(), "Sanity Check");
 }
 
 // Resets the used field of all regions in H2
@@ -309,11 +309,11 @@ void TeraHeap::free_unused_regions(void){
     }
 }
 
-// Pop the objects that are in `_tc_stack` and mark them as live
+// Pop the objects that are in `_th_stack` and mark them as live
 // object. These objects are located in the Java Heap and we need to
 // ensure that they will be kept alive.
 oop* TeraHeap::h2_get_next_back_reference() {
-  return (_tc_stack.is_empty() ? NULL : _tc_stack.pop());
+  return (_th_stack.is_empty() ? NULL : _th_stack.pop());
 }
 
 // Prints all active regions
@@ -323,12 +323,12 @@ void TeraHeap::print_h2_active_regions(void){
 
 // Get the next backward reference from the stack to adjust
 oop* TeraHeap::h2_adjust_next_back_reference() {
-  return (!_tc_adjust_stack.is_empty() ? _tc_adjust_stack.pop() : NULL);
+  return (!_th_adjust_stack.is_empty() ? _th_adjust_stack.pop() : NULL);
 }
 
 // Get the next humongous starting region from the stack to move the whole object to H2
 HeapRegion *TeraHeap::h2_get_next_humongous_start() {
-  return (!_tc_humongous_stack.is_empty() ? _tc_humongous_stack.pop() : NULL);
+  return (!_th_humongous_stack.is_empty() ? _th_humongous_stack.pop() : NULL);
 }
 
 // Enables groupping with region of obj (single-threaded)
@@ -405,7 +405,7 @@ void TeraHeap::h2_fsync() {
 
 // Check if backward adjust stack is empty
 bool TeraHeap::h2_is_empty_back_ref_stacks() {
-	return _tc_adjust_stack.is_empty();
+  return _th_adjust_stack.is_empty();
 }
 
 // Get the group Id of the objects that belongs to this region. We
@@ -469,7 +469,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field) {
 		return;
 	}
 
-  // If it is an already backward pointer popped from tc_adjust_stack
+  // If it is an already backward pointer popped from th_adjust_stack
   // then do not mark the card as dirty because it is already marked
   // from minor gc.
 	if (obj_h1_addr == NULL) 
@@ -502,7 +502,7 @@ void TeraHeap::thread_group_region_enabled(uint thread_id, HeapWord *obj, void *
 		return;
 	}
 
-  // If it is an already backward pointer popped from tc_adjust_stack
+  // If it is an already backward pointer popped from th_adjust_stack
   // then do not mark the card as dirty because it is already marked
   // from minor gc.
 	if (h1_addr_arr[thread_id] == NULL) 
@@ -605,7 +605,7 @@ void TeraHeap::h2_complete_transfers() {
 #elif defined(ASYNC) && !defined(PR_BUFFER)
   while(!h2_areq_completed());
 #elif defined(FMAP)
-  tc_fsync();
+  th_fsync();
 #endif
 }
   

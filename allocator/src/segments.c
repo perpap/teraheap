@@ -901,7 +901,7 @@ void flush_buffer(uint64_t seg) {
 
 	assertf(buf->size <= PR_BUFFER_SIZE, "Sanity check");
 
-	// Write the buffer to TeraCache
+	// Write the buffer to TeraHeap
 	r_awrite(buf->buffer, buf->first_obj_addr, buf->size / HeapWordSize);
 
 	buf->alloc_ptr = buf->buffer;

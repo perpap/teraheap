@@ -176,7 +176,7 @@ void ObjectStartArray::th_set_covered_region(MemRegion mr) {
   HeapWord* low_bound  = mr.start();
   HeapWord* high_bound = mr.end();
   assert((uintptr_t(low_bound)  & (th_block_size - 1))  == 0, "heap must start at block boundary");
-  //assert((uintptr_t(high_bound) & (tc_block_size - 1))  == 0, "heap must end at block boundary");
+  //assert((uintptr_t(high_bound) & (th_block_size - 1))  == 0, "heap must end at block boundary");
 
   size_t requested_blocks_size_in_bytes = mr.word_size() / th_block_size_in_words * sizeof(int);
 

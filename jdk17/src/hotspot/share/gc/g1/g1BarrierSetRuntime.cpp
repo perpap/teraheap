@@ -90,7 +90,7 @@ JRT_LEAF(void, G1BarrierSetRuntime::h2_wb_post(void* obj))
 #else
 
   assert(sizeof(*ct->th_byte_map_base()) == sizeof(jbyte), "adjust users of this code");
-  assert(ct->th_byte_map_base() != NULL, "TeraCache card table is NULL");
+  assert(ct->th_byte_map_base() != NULL, "TeraHeap card table is NULL");
   assert(Universe::teraHeap()->is_in_h2(obj), "Objects is out of reserved space %p | is in H1 = %d", 
          (HeapWord*)obj, Universe::heap()->is_in(obj));
 		

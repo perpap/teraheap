@@ -26,16 +26,16 @@ private:
   // Stack to keep back pointers (Objects that are pointed out of
   // TeraHeap objects) to mark them as alive durin mark_and_push phase of
   // the Full GC.
-  static Stack<oop *, mtGC> _tc_stack;
+  static Stack<oop *, mtGC> _th_stack;
 
   // Stack to keep the element addresses of objects that are located in
   // TeraHeap and point to objects in the heap. We adjust these pointers
   // during adjust phase of the Full GC.
-  static Stack<oop *, mtGC> _tc_adjust_stack;
+  static Stack<oop *, mtGC> _th_adjust_stack;
 
   // Stack to keep the humongous objects that are marked to move to H2.
   // We drain this stack in the compaction phase of a Full GC.
-  static Stack<HeapRegion *, mtGC> _tc_humongous_stack;
+  static Stack<HeapRegion *, mtGC> _th_humongous_stack;
   /*---------------------------------------------*/
 
   TeraStatistics *tera_stats;
@@ -124,7 +124,7 @@ public:
   // Add new object in the region
   char *h2_add_object(oop obj, size_t size);
 
-  // Pop the objects that are in `_tc_stack`. These objects are
+  // Pop the objects that are in `_th_stack`. These objects are
   // located in the Java Heap and we need to ensure that they will be
   // kept alive.
   oop* h2_get_next_back_reference();

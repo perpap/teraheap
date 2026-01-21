@@ -3180,7 +3180,7 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
 
 #ifdef TERA_MAINTENANCE
         if (EnableTeraHeap) {      
-          // Give advise to kernel to prefetch pages for TeraCache random
+          // Give advise to kernel to prefetch pages for TeraHeap random
           Universe::teraHeap()->h2_enable_rand_faults();
 
           if (collector_state()->in_concurrent_start_gc()) {
