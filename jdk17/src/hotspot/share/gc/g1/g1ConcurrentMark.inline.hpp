@@ -42,7 +42,7 @@
 
 inline bool G1CMIsAliveClosure::do_object_b(oop obj) {
 #ifdef TERA_MAINTENANCE
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 1
@@ -67,12 +67,12 @@ inline bool G1CMSubjectToDiscoveryClosure::do_object_b(oop obj) {
   }
 
 #ifdef TERA_MAINTENANCE 
-  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::is_in_h2(obj), "Weak refs should not be transfered in H2"); )
+  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::teraHeap()->is_in_h2(obj), "Weak refs should not be transfered in H2"); )
 #endif
 
 #ifdef TERA_MAINTENANCE
   // TODO: check if requires modification/removal
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 2
@@ -231,7 +231,7 @@ inline void G1CMTask::process_grey_task_entry(G1TaskQueueEntry task_entry) {
       //If obj is in H2
       //  (1) set H2 region live bit
       //  (2) Fence heap traversal to H2
-      if (EnableTeraHeap && Universe::is_in_h2(obj)) {    
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {    
       #ifdef DBG_LOST_REGION
         const char *name = "G1CMTask::process_grey_task_entry";
         Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
@@ -289,7 +289,7 @@ inline void G1CMTask::process_grey_task_entry(G1TaskQueueEntry task_entry) {
 inline size_t G1CMTask::scan_objArray(objArrayOop obj, MemRegion mr) {
 
 #ifdef TERA_ASSERT
-  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::is_in_h2(obj), "H2 objects should have been filtered out"); )
+  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::teraHeap()->is_in_h2(obj), "H2 objects should have been filtered out"); )
 #endif
 
 #ifdef TERA_CONC_MARKING
@@ -359,7 +359,7 @@ inline bool G1CMTask::make_reference_grey(oop obj) {
   //  (1) set H2 region live bit
   //  (2) Fence heap traversal to H2
   //  return false (did not add anything to the bitmap)
-  if (EnableTeraHeap && Universe::is_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     const char *name = "G1CMTask::make_reference_grey";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);

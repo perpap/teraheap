@@ -235,7 +235,7 @@ ciObject* ciObjectFactory::get(oop key) {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(
       if (EnableTeraHeap) {
-        assert(Universe::heap()->is_in(key) || Universe::is_in_h2(key), "must be");
+        assert(Universe::heap()->is_in(key) || Universe::teraHeap()->is_in_h2(key), "must be");
       } else {
         assert(Universe::heap()->is_in(key), "must be");
       });
@@ -258,7 +258,7 @@ ciObject* ciObjectFactory::get(oop key) {
   DEBUG_ONLY(
       if (EnableTeraHeap) {
         assert(Universe::heap()->is_in(new_object->get_oop()) ||
-               Universe::is_in_h2(new_object->get_oop()), "must be");
+               Universe::teraHeap()->is_in_h2(new_object->get_oop()), "must be");
       } else {
         assert(Universe::heap()->is_in(new_object->get_oop()), "must be");
       });
@@ -656,7 +656,7 @@ ciObjectFactory::NonPermObject* &ciObjectFactory::find_non_perm(oop key) {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(
       if (EnableTeraHeap) {
-        assert(Universe::heap()->is_in(key) || Universe::is_in_h2(key), "must be");
+        assert(Universe::heap()->is_in(key) || Universe::teraHeap()->is_in_h2(key), "must be");
       } else {
         assert(Universe::heap()->is_in(key), "must be");
       });

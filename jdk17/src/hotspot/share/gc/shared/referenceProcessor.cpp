@@ -257,7 +257,7 @@ void DiscoveredListIterator::load_ptrs(DEBUG_ONLY(bool allow_null_referent)) {
   debug_only(
       if (EnableTeraHeap) {
       assert(Universe::heap()->is_in_or_null(_referent)
-             || Universe::teraHeap()->is_obj_in_h2(_referent),
+             || Universe::teraHeap()->is_in_h2(_referent),
              "Wrong oop found in java.lang.Reference object");
     } else {
       assert(Universe::heap()->is_in_or_null(_referent),

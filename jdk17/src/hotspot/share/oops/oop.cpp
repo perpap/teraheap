@@ -102,7 +102,7 @@ intptr_t oopDesc::slow_identity_hash() {
 bool oopDesc::is_oop(oop obj, bool ignore_mark_word) {
 #ifdef TERA_MAINTENANCE
   if (EnableTeraHeap) {
-    if (!Universe::heap()->is_oop(obj) && !Universe::is_in_h2(obj)) {
+    if (!Universe::heap()->is_oop(obj) && !Universe::teraHeap()->is_in_h2(obj)) {
       return false;
     }
   
@@ -235,8 +235,8 @@ void oopDesc::verify_forwardee(oop forwardee) {
 #ifdef INCLUDE_CDS_JAVA_HEAP
 #ifdef TERA_ASSERT
 
-  assert(  Universe::is_in_heap(forwardee) || ( EnableTeraHeap && Universe::is_in_h2(forwardee) ), "forwarding outside the reserved heaps (H1, H2)" );
-  
+  assert(Universe::is_in_heap(forwardee) || ( EnableTeraHeap && Universe::teraHeap()->is_in_h2(forwardee)), "forwarding outside the reserved heaps (H1, H2)");
+
   DEBUG_ONLY( 
      if ( Universe::is_in_heap(forwardee) )
         assert( !HeapShared::is_archived_object(forwardee) && !HeapShared::is_archived_object(this), 

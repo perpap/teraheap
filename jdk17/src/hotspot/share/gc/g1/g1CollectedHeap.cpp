@@ -2506,7 +2506,7 @@ bool G1CollectedHeap::supports_concurrent_gc_breakpoints() const {
 
 bool G1CollectedHeap::is_archived_object(oop object) const {
 #ifdef TERA_MAINTENANCE 
-  if (EnableTeraHeap && Universe::is_in_h2(object))
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(object))
     return false;
 #endif
 
@@ -3365,7 +3365,7 @@ void G1CollectedHeap::complete_cleaning(BoolObjectClosure* is_alive,
 bool G1STWIsAliveClosure::do_object_b(oop p) {
 
 #ifdef TERA_MAINTENANCE
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(p)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(p)) {
   #ifdef DBG_LOST_REGION
     // 8
     const char *name = "G1STWIsAliveClosure::do_object_b";
@@ -3383,7 +3383,7 @@ bool G1STWIsAliveClosure::do_object_b(oop p) {
 bool G1STWSubjectToDiscoveryClosure::do_object_b(oop obj) {
 
 #ifdef TERA_MAINTENANCE 
-  if (EnableTeraHeap && Universe::is_in_h2(obj))
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj))
     return false;
 #endif
 
@@ -3392,7 +3392,7 @@ bool G1STWSubjectToDiscoveryClosure::do_object_b(oop obj) {
 
 #ifdef TERA_MAINTENANCE
   // TODO: check if requires modification
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // 9
     const char *name = "G1STWSubjectToDiscoveryClosure::do_object_b";
@@ -3419,7 +3419,7 @@ public:
     assert(obj != NULL, "the caller should have filtered out NULL values");
 
 #ifdef TERA_MAINTENANCE
-    if( EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj) ) {
+    if( EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj) ) {
     #ifdef DBG_LOST_REGION
       // 10
       const char *name = "G1KeepAliveClosure::do_oop";
@@ -4458,7 +4458,7 @@ class RegisterNMethodOopClosure: public OopClosure {
 #if defined TERA_C1 || defined TERA_C2
       // if the nmethod is pointing to an h2 obj
       // no need to include the nmethod in the rem set (bcs there are no rem sets in h2)
-      if (EnableTeraHeap && Universe::is_in_h2(obj)) return;
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) return;
 #endif
 
       HeapRegion* hr = _g1h->heap_region_containing(obj);
@@ -4492,7 +4492,7 @@ class UnregisterNMethodOopClosure: public OopClosure {
 #if defined TERA_C1 || defined TERA_C2
       // if the nmethod is pointing to an h2 obj
       // no need to unregister the nmethod from the rem set (bcs there are no rem sets in h2)
-      if (EnableTeraHeap && Universe::is_in_h2(obj)) return;
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) return;
 #endif
 
       HeapRegion* hr = _g1h->heap_region_containing(obj);

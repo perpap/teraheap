@@ -155,7 +155,7 @@ inline bool G1CollectedHeap::is_in_cset(oop obj) {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(
   if (EnableTeraHeap)
-    assert(!Universe::is_in_h2(obj), "Should not be in h2");
+    assert(!Universe::teraHeap()->is_in_h2(obj), "Should not be in h2");
   )
 #endif  
   return is_in_cset(cast_from_oop<HeapWord*>(obj));
@@ -165,7 +165,7 @@ inline bool G1CollectedHeap::is_in_cset(HeapWord* addr) {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(
   if (EnableTeraHeap)
-    assert(!Universe::is_in_h2(cast_to_oop(addr)), "Should not be in h2");
+    assert(!Universe::teraHeap()->is_in_h2(addr), "Should not be in h2");
   )
 #endif  
   return _region_attr.is_in_cset(addr);
@@ -179,7 +179,7 @@ bool G1CollectedHeap::is_in_cset_or_humongous(const oop obj) {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(
   if (EnableTeraHeap)
-    assert(!Universe::is_in_h2(obj), "Should not be in h2");
+    assert(!Universe::teraHeap()->is_in_h2(obj), "Should not be in h2");
   )
 #endif  
   return _region_attr.is_in_cset_or_humongous(cast_from_oop<HeapWord*>(obj));
@@ -189,7 +189,7 @@ G1HeapRegionAttr G1CollectedHeap::region_attr(const void* addr) const {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(
   if (EnableTeraHeap)
-    assert(!Universe::is_in_h2(cast_to_oop(addr)), "Should not be in h2");
+    assert(!Universe::teraHeap()->is_in_h2(addr), "Should not be in h2");
   )
 #endif  
   return _region_attr.at((HeapWord*)addr);
@@ -319,7 +319,7 @@ inline bool G1CollectedHeap::is_in_young(const oop obj) {
   }
 
 #ifdef TERA_MAINTENANCE 
-  if (EnableTeraHeap && Universe::is_in_h2(obj))
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj))
     return false;
 #endif
 

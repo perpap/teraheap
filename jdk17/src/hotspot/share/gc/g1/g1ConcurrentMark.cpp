@@ -1697,7 +1697,7 @@ public:
   bool do_object_b(oop obj) {
 #ifdef TERA_MAINTENANCE
     // TODO: check if requires modification
-    if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+    if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
     #ifdef DBG_LOST_REGION
       // TODO: should we mark region live here? --> caused error again
       // 3

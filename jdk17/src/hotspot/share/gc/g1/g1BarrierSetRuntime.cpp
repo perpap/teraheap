@@ -79,10 +79,10 @@ JRT_LEAF(void, G1BarrierSetRuntime::h2_wb_post(void* obj))
 #ifdef C2_ONLY_LEAF_CALL
   assert(ct->th_byte_map_base() != NULL, "TeraHeap card table is NULL");
   assert(ct->byte_map_base() != NULL, "Heap card table is NULL");
-  assert(Universe::teraHeap()->is_field_in_h2(obj) || Universe::heap()->is_in(obj),
+  assert(Universe::teraHeap()->is_in_h2(obj) || Universe::heap()->is_in(obj),
         "Objects is out of reserved space %p", (HeapWord *) obj);
 
-	if (Universe::teraHeap()->is_field_in_h2(obj))
+	if (Universe::teraHeap()->is_in_h2(obj))
 		ct->th_byte_map_base()[uintptr_t(obj) >> CardTable::th_card_shift] = CardTable::dirty_card_val();
 	else
 		ct->byte_map_base()[uintptr_t(obj) >> CardTable::card_shift] = CardTable::dirty_card_val();
@@ -91,7 +91,7 @@ JRT_LEAF(void, G1BarrierSetRuntime::h2_wb_post(void* obj))
 
   assert(sizeof(*ct->th_byte_map_base()) == sizeof(jbyte), "adjust users of this code");
   assert(ct->th_byte_map_base() != NULL, "TeraCache card table is NULL");
-  assert(Universe::teraHeap()->is_field_in_h2(obj), "Objects is out of reserved space %p | is in H1 = %d", 
+  assert(Universe::teraHeap()->is_in_h2(obj), "Objects is out of reserved space %p | is in H1 = %d", 
          (HeapWord*)obj, Universe::heap()->is_in(obj));
 		
 	ct->th_byte_map_base()[uintptr_t(obj) >> CardTable::th_card_shift] = CardTable::dirty_card_val();

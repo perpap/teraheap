@@ -55,7 +55,7 @@ inline void G1BarrierSet::write_ref_field_post(T* field, oop new_val) {
   if (EnableTeraHeap) {
     //h2->h1 : back ref found => dirty h2 card
     //h2->h2 : update dependency list => dirty h2 card, and when we scan it during the gc, dependency list will be updated
-    if (Universe::is_field_in_h2((void*) field)) {
+    if (Universe::is_in_h2(field)) {
       byte =  _th_card_table->byte_for(field);
       *byte = CardTable::dirty_card_val();
     } else {

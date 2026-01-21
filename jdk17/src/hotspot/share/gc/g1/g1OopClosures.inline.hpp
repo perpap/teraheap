@@ -47,7 +47,7 @@ inline void G1ScanClosureBase::prefetch_and_push(T* p, const oop obj) {
    
 #ifdef TERA_ASSERT
       //assert( obj is not in H2 )
-      DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::is_in_h2(obj), "H2 objects should have been filtered out"); )
+      DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::teraHeap()->is_in_h2(obj), "H2 objects should have been filtered out"); )
 #endif
   
   // We're not going to even bother checking whether the object is
@@ -82,8 +82,8 @@ inline void G1ScanClosureBase::handle_non_cset_obj_common(G1HeapRegionAttr const
 template <class T>
 inline void G1ScanClosureBase::handle_non_cset_obj_common_tera(G1HeapRegionAttr const region_attr, T* p, oop const obj) {
   assert(EnableTeraHeap 
-         && Universe::is_field_in_h2((void*) p)
-         && !Universe::is_in_h2(obj)  , "Sanity check");
+         && Universe::teraHeap()->is_in_h2(p)
+         && !Universe::teraHeap()->is_in_h2(obj), "Sanity check");
 
   assert(!_g1h->card_table()->is_in_young(obj) , "obj should be in old");
 
@@ -112,12 +112,12 @@ inline void G1ScanEvacuatedObjClosure::do_oop_work(T* p) {
   }
   
   oop obj = CompressedOops::decode_not_null(heap_oop);
-  assert(  !Universe::is_field_in_h2(p) , "Parent is an h2 obj. wrong closure");
+  assert(!Universe::teraHeap()->is_in_h2(p), "Parent is an h2 obj. wrong closure");
 
 
 #ifdef TERA_MAINTENANCE
   // h1->h2 : Fence
-  if (EnableTeraHeap && Universe::is_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // 5
     const char *name = "G1ScanEvacuatedObjClosure::do_oop_work";
@@ -169,11 +169,11 @@ inline void ScanH2ObjClosure::do_oop_work(T* p) {
   
   oop obj = CompressedOops::decode_not_null(heap_oop);
 
-  assert( Universe::is_field_in_h2(p) , "Parent must be an h2 obj. wrong closure");
+  assert(Universe::teraHeap()->is_in_h2(p), "Parent must be an h2 obj. wrong closure");
 
 
   // h2->h2 : Fence, Update dependency list
-  if (EnableTeraHeap && Universe::is_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj));
     return;
   }
@@ -221,7 +221,7 @@ inline void G1RootRegionScanClosure::do_oop_work(T* p) {
       //If obj is in H2
       //  (1) set H2 region live bit
       //  (2) Fence heap traversal to H2
-      if (EnableTeraHeap && Universe::is_in_h2(obj)) {    
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {    
       #ifdef DBG_LOST_REGION
         const char *name = "G1RootRegionScanClosure::do_oop_work";
         Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
@@ -252,7 +252,7 @@ inline static void check_obj_during_refinement(T* p, oop const obj) {
   // p is found during dirty card scanning
   // it may point to an obj in H2 (H1->H2)
   // but this should already be filtered out by the calling function
-  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::is_in_h2(obj), "H2 objects should have been filtered out"); )
+  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::teraHeap()->is_in_h2(obj), "H2 objects should have been filtered out"); )
 #endif
   
 
@@ -283,7 +283,7 @@ inline void G1ConcurrentRefineOopClosure::do_oop_work(T* p) {
   oop obj = CompressedOops::decode_not_null(o);
 
 #ifdef TERA_MAINTENANCE
-  if (EnableTeraHeap && Universe::is_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // 6
     const char *name = "G1ConcurrentRefineOopClosure::do_oop_work";
@@ -333,7 +333,7 @@ inline void G1ScanCardClosure::do_oop_work(T* p) {
   //  (1) set H2 region live bit 
   //  (2) Fence heap traversal to H2
 #ifdef TERA_MAINTENANCE
-  if (EnableTeraHeap && Universe::is_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 4
@@ -344,10 +344,10 @@ inline void G1ScanCardClosure::do_oop_work(T* p) {
     return;
   }
 
-  if( !Universe::is_field_in_h2((void*) p) )    
+  if (!Universe::teraHeap()->is_in_h2(p))
     check_obj_during_refinement(p, obj);
   
-  assert(Universe::is_field_in_h2((void*) p) || !_g1h->is_in_cset((HeapWord*)p),
+  assert(Universe::teraHeap()->is_in_h2(p) || !_g1h->is_in_cset((HeapWord*)p),
       "Oop originates from " PTR_FORMAT " (region: %u) which is in the collection set.",
       p2i(p), _g1h->addr_to_region((HeapWord*)p));  
   
@@ -396,7 +396,7 @@ inline void H2ToH1Closure::do_oop_work(T* p) {
   
 
   // h2->h2
-  if (Universe::is_in_h2(obj)) {
+  if (Universe::teraHeap()->is_in_h2(obj)) {
 
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj));
     if( should_mark ) {
@@ -457,7 +457,7 @@ inline void G1ScanRSForOptionalClosure::do_oop_work(T* p) {
 
 #ifdef TERA_MAINTENANCE
   // h2->h1
-  if (EnableTeraHeap && Universe::is_field_in_h2((void*) p)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(p)) {
     _scan_cl->do_oop_work(p);
     _scan_cl->trim_queue_partially();
 
@@ -481,7 +481,7 @@ inline void G1ScanRSForOptionalClosure::do_oop_work(T* p) {
 void G1ParCopyHelper::do_cld_barrier(oop new_obj) {
 
 #ifdef TERA_MAINTENANCE
-  if (EnableTeraHeap && Universe::is_in_h2(new_obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(new_obj)) {
   #ifdef DBG_LOST_REGION
     // 7
     const char *name = "G1ParCopyHelper::do_cld_barrier";
@@ -524,7 +524,7 @@ void G1ParCopyClosure<barrier, should_mark>::do_oop_work(T* p) {
   //  (1) if (should_mark) set H2 region live bit
   //  (2) Fence heap traversal to H2
 #ifdef TERA_MAINTENANCE  
-  if (EnableTeraHeap && Universe::is_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
     //set H2 region live bit
     if (should_mark) {
     #ifdef DBG_LOST_REGION
@@ -612,7 +612,7 @@ template <class T> void G1RebuildRemSetClosure::do_oop_work(T* p) {
   // no need to update the rem set of pointed region
   // bcs its an H2 region, and it does not have a rem set
 
-  if (EnableTeraHeap && Universe::is_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     const char *name = "G1RebuildRemSetClosure::do_oop_work";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);

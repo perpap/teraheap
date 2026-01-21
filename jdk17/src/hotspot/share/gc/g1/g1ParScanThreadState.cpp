@@ -148,7 +148,7 @@ void G1ParScanThreadState::verify_task(narrowOop* task) const {
 
 #ifdef TERA_ASSERT
   assert(_g1h->is_in_reserved(p)
-         || (EnableTeraHeap && Universe::is_in_h2(p)),
+         || (EnableTeraHeap && Universe::teraHeap()->is_in_h2(p)),
          "task=" PTR_FORMAT " p=" PTR_FORMAT, p2i(task), p2i(p));
 #else
   assert(_g1h->is_in_reserved(p),
@@ -162,7 +162,7 @@ void G1ParScanThreadState::verify_task(oop* task) const {
 
 #ifdef TERA_ASSERT
   assert(_g1h->is_in_reserved(p)
-         || (EnableTeraHeap && Universe::is_in_h2(p)),
+         || (EnableTeraHeap && Universe::teraHeap()->is_in_h2(p)),
          "task=" PTR_FORMAT " p=" PTR_FORMAT, p2i(task), p2i(p));
 #else
   assert(_g1h->is_in_reserved(p),
@@ -199,7 +199,7 @@ void G1ParScanThreadState::do_oop_evac(T* p) {
 
 #ifdef TERA_MAINTENANCE
   // In this case somebody else already did all the work (move obj to h2 and adjust its reference ptr)
-  if (EnableTeraHeap && Universe::is_in_h2(obj))
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj))
     return; 
 #endif
 
@@ -248,13 +248,13 @@ void G1ParScanThreadState::do_oop_evac(T* p) {
   if (EnableTeraHeap) {
 #ifdef TERA_CARDS
     // h2 -> h1/h2 (newly evacuated)
-    if (Universe::is_field_in_h2((void*) p)) {
+    if (Universe::teraHeap()->is_in_h2(p)) {
       th_ref_update( p, obj, region_attr );
       return;    // we dont keep h2 incoming ptrs in the rem sets
     }
 #endif
     // If obj is in H2, we dont have to update any rem set (H2 doesnt have rem sets)
-    if (Universe::is_in_h2(obj))
+    if (Universe::teraHeap()->is_in_h2(obj))
       return;
   }
 #endif
@@ -298,7 +298,7 @@ void G1ParScanThreadState::do_partial_array(PartialArrayScanTask task) {
 
 #ifdef TERA_EVAC_MOVE
   //check if array is forwarded in h2
-  if (EnableTeraHeap && Universe::is_in_h2(to_array)) {    
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(to_array)) {    
     G1ScanInYoungSetter x(&_scanner, true );
 
     to_array->oop_iterate_range(&_tera_scanner,
@@ -345,9 +345,9 @@ void G1ParScanThreadState::start_partial_objarray(G1HeapRegionAttr dest_attr,
   }
 
 #ifdef TERA_EVAC_MOVE
-  assert( !Universe::is_in_h2(from_obj) , "h2 objects should not be moved in evacuations");
+  assert(!Universe::teraHeap()->is_in_h2(from_obj), "h2 objects should not be moved in evacuations");
 
-  if (EnableTeraHeap && Universe::is_in_h2(to_array)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(to_array)) {
     to_array->oop_iterate_range(&_tera_scanner, 0, step._index);
     return;
   }
@@ -673,7 +673,7 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
     }
 
     assert(h2_obj_addr != NULL, "when we get here, allocation should have succeeded");
-    assert(Universe::is_in_h2( cast_to_oop(h2_obj_addr) ), "Pointer from H2 is not valid");
+    assert(Universe::teraHeap()->is_in_h2(h2_obj_addr), "Pointer from H2 is not valid");
     
     h2_obj = cast_to_oop(h2_obj_addr);
     
@@ -754,9 +754,9 @@ template <class T>
 void G1ParScanThreadState::th_ref_update(T*p, oop obj, G1HeapRegionAttr region_attr ){
  
   assert(EnableTeraHeap, "tera heap should be enabled for this function to be called");
-  assert( Universe::is_field_in_h2((void*) p) , "references coming from h1 should have been filtered out" );
+  assert(Universe::teraHeap()->is_in_h2(p), "references coming from h1 should have been filtered out");
   
-  if( Universe::teraHeap()->is_obj_in_h2(obj) ) {
+  if (Universe::teraHeap()->is_in_h2(obj)) {
     //p (h2) -> obj (h2)
     //check for dependency list update
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj)); //this has a lock

@@ -110,55 +110,9 @@ bool TeraHeap::h2_is_empty() {
 	return r_is_empty();
 }
 
-// Check if an object `ptr` belongs to the TeraHeap. If the object belongs
-// then the function returns true, either it returns false.
-bool TeraHeap::is_obj_in_h2(oop ptr) {
-#ifdef DBG_LOST_REGION
-  if ((cast_from_oop<HeapWord *>(ptr) >= (HeapWord *)_start_addr) && (cast_from_oop<HeapWord *>(ptr) < (HeapWord *)_stop_addr)) {
-    mark_used_region(cast_from_oop<HeapWord*>(ptr), (char *) "debug");
-    return true;
-  }
-  return false;
-    //--- Debug ^
-#endif // DBG_LOST_REGION
-	return (cast_from_oop<HeapWord *>(ptr) >= (HeapWord *)_start_addr)     // if greater than start address
-			&& (cast_from_oop<HeapWord *>(ptr) < (HeapWord *)_stop_addr);  // if smaller than stop address
-}
-
-// Check if an object `p` belongs to TeraHeap. If the object bolongs to
-// TeraHeap then the function returns true, either it returns false.
-bool TeraHeap::is_in_h2(HeapWord *p) {
-#ifdef DBG_LOST_REGION
-  if (p >= (HeapWord *)_start_addr && p < (HeapWord *)_stop_addr) {
-    mark_used_region(p, (char *) "debug");
-    return true;
-  }
-  return false;
-    //--- Debug ^
-#endif // DBG_LOST_REGION
-	return p >= (HeapWord *)_start_addr && p < (HeapWord *)_stop_addr;
-}
-
-// Check if an object `p` belongs to TeraHeap. If the object bolongs to
-// TeraHeap then the function returns true, either it returns false.
+// Check if a pointer belongs to the TeraHeap.
 bool TeraHeap::is_in_h2(const void* p) {
-	const char* cp = (char *)p;
-#ifdef DBG_LOST_REGION
-    //--- Debug v
-  if (cp >= _start_addr && cp < _stop_addr) {
-    mark_used_region(cast_from_oop<HeapWord*>(cast_to_oop(p)), (char *) "debug");
-    return true;
-  }
-  return false;
-    //--- Debug ^
-#endif // DBG_LOST_REGION
-	return cp >= _start_addr && cp < _stop_addr;
-}
-
-// Check if an object `p` belongs to TeraHeap. If the object bolongs to
-// TeraHeap then the function returns true, either it returns false.
-bool TeraHeap::is_field_in_h2(void *p) {
-	char* const cp = (char *)p;
+	const char* cp = (const char *) p;
 #ifdef DBG_LOST_REGION
     //--- Debug v
   if (cp >= _start_addr && cp < _stop_addr) {
@@ -510,7 +464,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field) {
 	if (obj_h2_addr == NULL) 
 		return;
 
-	if (is_obj_in_h2(cast_to_oop(obj))) {
+	if (is_in_h2(obj)) {
 		check_for_group((char*) obj);
 		return;
 	}
@@ -532,7 +486,7 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field) {
 	assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(obj_h1_addr)->size()),
 			"Diff out of range: %lu", diff);
 	HeapWord *h2_obj_field = obj_h2_addr + diff;
-	assert(is_field_in_h2((void *) h2_obj_field), "Shoud be in H2");
+	assert(is_in_h2(h2_obj_field), "Shoud be in H2");
 
 	ct->th_write_ref_field(h2_obj_field);
 }
@@ -543,7 +497,7 @@ void TeraHeap::thread_group_region_enabled(uint thread_id, HeapWord *obj, void *
 	if (h2_addr_arr[thread_id] == NULL) 
 		return;
 
-	if (is_obj_in_h2(cast_to_oop(obj))) {
+	if (is_in_h2(obj)) {
     Universe::teraHeap()->group_regions(h2_addr_arr[thread_id], obj); //this has a lock
 		return;
 	}
@@ -564,7 +518,7 @@ void TeraHeap::thread_group_region_enabled(uint thread_id, HeapWord *obj, void *
 	assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(h1_addr_arr[thread_id])->size()),
 			"Diff out of range: %lu", diff);
 	HeapWord *h2_obj_field = h2_addr_arr[thread_id] + diff;
-	assert(is_field_in_h2((void *) h2_addr_arr[thread_id]), "Shoud be in H2");
+	assert(is_in_h2(h2_addr_arr[thread_id]), "Shoud be in H2");
 
 	ct->th_write_ref_field(h2_obj_field);
 }

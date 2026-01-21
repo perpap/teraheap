@@ -88,25 +88,10 @@ public:
   // Check if H2 is empty.
   // Return true if H2 is empty, false otherwise
   bool h2_is_empty(void);
-  
-  // Check if an object `ptr` belongs to the TeraHeap. If the object belongs
-  // then the function returns true, otherwise it returns false.
-  bool is_in_h2(const void* p);
-  
-  // Check if an object `ptr` belongs to the TeraHeap. If the object belongs
-  // then the function returns true, otherwise it returns false.
-  bool is_obj_in_h2(oop ptr);
-  
-  // Check if reference `p` which depicts the field of the object
-  // belongs to TeraHeap. If the object belongs then the function
-  // returns true, otherwise it returns false.
-  bool is_in_h2(HeapWord *p);
 
-  // Check if reference `p` which depicts the field of the object
-  // belongs to TeraHeap. If the object belongs then the function
-  // returns true, otherwise it returns false.
-  bool is_field_in_h2(void *p);
-  
+  // Check if a pointer belongs to the TeraHeap.
+  bool is_in_h2(const void* p);
+
   // Deallocate the backward references stacks
   void h2_clear_back_ref_stacks();
   

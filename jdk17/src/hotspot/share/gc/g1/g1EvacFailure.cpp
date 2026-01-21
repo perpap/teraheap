@@ -66,7 +66,8 @@ public:
     }
     
 #ifdef TERA_MAINTENANCE
-    if( Universe::is_in_h2((void*) o) ) return;
+    if (Universe::teraHeap()->is_in_h2((const void*) o))
+      return;
 #endif
 
     if (HeapRegion::is_in_same_region(p, CompressedOops::decode(o))) {

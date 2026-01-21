@@ -63,7 +63,7 @@ public:
     oop obj = *p;
 
 #ifdef TERA_MAINTENANCE
-    if (EnableTeraHeap && obj != NULL && Universe::is_in_h2(obj)) {
+    if (EnableTeraHeap && obj != NULL && Universe::teraHeap()->is_in_h2(obj)) {
       // TODO: check if requires modification
     #ifdef DBG_LOST_REGION
       const char *name = "CountingClosure::do_oop";

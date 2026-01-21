@@ -717,7 +717,7 @@ void DerivedPointerTable::add(derived_pointer* derived_loc, oop *base_loc) {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(if (EnableTeraHeap) {
                assert(Universe::heap()->is_in_or_null(*base_loc)
-                      || Universe::teraHeap()->is_obj_in_h2(*base_loc), "not an oop");
+                      || Universe::teraHeap()->is_in_h2(*base_loc), "not an oop");
              } else {
                assert(Universe::heap()->is_in_or_null(*base_loc), "not an oop");
              })
@@ -762,7 +762,7 @@ void DerivedPointerTable::update_pointers() {
 #ifdef TERA_ASSERT
      DEBUG_ONLY(if (EnableTeraHeap) {
                   assert(Universe::heap()->is_in_or_null(base) || 
-                         Universe::teraHeap()->is_obj_in_h2(base), "must be an oop");
+                         Universe::teraHeap()->is_in_h2(base), "must be an oop");
                 } else {
                   assert(Universe::heap()->is_in_or_null(base), "must be an oop");
                 })

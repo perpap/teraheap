@@ -3689,7 +3689,7 @@ class VerifyFieldClosure: public BasicOopIterateClosure {
     oop obj = RawAccess<>::oop_load(p);
 
 #ifdef TERA_MAINTENANCE
-    if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj))
+    if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj))
       return;
 #endif
 

@@ -69,7 +69,7 @@ inline bool G1FullCollector::h2_should_trace(T* p) {
 
   oop obj = CompressedOops::decode_not_null(heap_oop);
 
-  if (Universe::teraHeap()->is_obj_in_h2(obj)) {
+  if (Universe::teraHeap()->is_in_h2(obj)) {
     // Group regions if the references belong to two individual groups
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord *>(obj));
     return false;
@@ -78,7 +78,7 @@ inline bool G1FullCollector::h2_should_trace(T* p) {
   G1CollectedHeap *g1h = G1CollectedHeap::heap();
 
   assert(g1h->is_in_young(cast_to_oop(heap_oop)) ||
-         Universe::teraHeap()->is_field_in_h2((void *) p), "Error in h2_should_trace");
+         Universe::teraHeap()->is_in_h2(p), "Error in h2_should_trace");
 
   Universe::teraHeap()->h2_push_backward_reference((void *)p, obj);
 
