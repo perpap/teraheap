@@ -206,7 +206,7 @@ public:
         _whole_heap.contains(p) || _th_whole_heap.contains(p),
             "Attempt to access p = " PTR_FORMAT
             " out of bounds of card marking arrays _whole_heap = [" PTR_FORMAT
-            "," PTR_FORMAT "] and _tc_whole_heap = [" PTR_FORMAT "," PTR_FORMAT
+            "," PTR_FORMAT "] and _th_whole_heap = [" PTR_FORMAT "," PTR_FORMAT
             "]",
             p2i(p), p2i(_whole_heap.start()), p2i(_whole_heap.end()),
             p2i(_th_whole_heap.start()), p2i(_th_whole_heap.end()));
@@ -223,7 +223,7 @@ public:
       CardValue *result = &_th_byte_map_base[uintptr_t(p) >> th_card_shift];
 
       assert(result >= _th_byte_map && result < _th_byte_map + _th_byte_map_size,
-             "out of bounds accessor for tc_card marking array");
+             "out of bounds accessor for th_card marking array");
 
       return result;
     }

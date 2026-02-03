@@ -15,7 +15,7 @@ void req_init() {
 	int i;
 
   pthread_mutex_init(&request_lock, NULL);
-	
+
 	for (i = 0; i < MAX_REQS; i++) {
 		request[i].state = 0;
 #if MALLOC_ON

@@ -66,12 +66,14 @@ public:
     }
     
 #ifdef TERA_MAINTENANCE
-    if( Universe::is_in_h2((void*) o) ) return;
+    if (Universe::teraHeap()->is_in_h2((const void*) o))
+      return;
 #endif
 
     if (HeapRegion::is_in_same_region(p, CompressedOops::decode(o))) {
       return;
     }
+
     size_t card_index = _ct->index_for(p);
     if (card_index != _last_enqueued_card) {
       _rdc_local_qset->enqueue(_ct->byte_for_index(card_index));

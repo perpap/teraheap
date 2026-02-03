@@ -90,7 +90,7 @@ CardTable::CardTable(MemRegion whole_heap, MemRegion th_whole_heap) :
   assert((uintptr_t(_th_whole_heap.start()) & (th_card_size - 1)) == 0,
          "heap must start at card boundary");  
   assert(th_card_size <= (1 << TERA_CARD_SIZE),
-         "TeraCache card_size  must be less equall %d", (1 << TERA_CARD_SIZE));
+         "TeraHeap card_size  must be less equall %d", (1 << TERA_CARD_SIZE));
 }
 
 #endif // TERA_CARDS

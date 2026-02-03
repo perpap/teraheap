@@ -51,20 +51,16 @@ inline void G1BarrierSet::write_ref_field_post(T* field, oop new_val) {
 
 #ifdef TERA_INTERPRETER
   volatile CardValue* byte;
-  if( EnableTeraHeap ){
 
+  if (EnableTeraHeap) {
     //h2->h1 : back ref found => dirty h2 card
     //h2->h2 : update dependency list => dirty h2 card, and when we scan it during the gc, dependency list will be updated
-    if( Universe::is_field_in_h2( (void*) field) ){
-     
+    if (Universe::is_in_h2(field)) {
       byte =  _th_card_table->byte_for(field);
       *byte = CardTable::dirty_card_val();
-
-    }else{
-    
-
+    } else {
       //h1->h2 : forward pointer (no need to dirty any card)
-      if ( Universe::is_in_h2(new_val) ) return;
+      if (Universe::is_in_h2(new_val)) return;
 
       //h1->h1 : h1 card talbe, dirty card => scan to find outgoing ref and update rem sets
       byte =  _card_table->byte_for(field);
@@ -72,29 +68,21 @@ inline void G1BarrierSet::write_ref_field_post(T* field, oop new_val) {
         // Take a slow path for cards in old
         write_ref_field_post_slow(byte);
       }
-      
- 
     }
-
-
-  }else{
+  } else {
     byte =  _card_table->byte_for(field);
     if (*byte != G1CardTable::g1_young_card_val()) {
       // Take a slow path for cards in old
       write_ref_field_post_slow(byte);
     }
   }
-
 #else
-  
   volatile CardValue* byte = _card_table->byte_for(field);
   if (*byte != G1CardTable::g1_young_card_val()) {
     // Take a slow path for cards in old
     write_ref_field_post_slow(byte);
   }
 #endif
-
-  
 }
 
 inline void G1BarrierSet::enqueue_if_weak(DecoratorSet decorators, oop value) {

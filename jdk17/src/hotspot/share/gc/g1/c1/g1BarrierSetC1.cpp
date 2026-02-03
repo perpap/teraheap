@@ -117,7 +117,7 @@ void G1BarrierSetC1::post_barrier(LIRAccess& access, LIR_OprDesc* addr, LIR_OprD
 
 
 #ifdef TERA_C1
-  // These registers are used for TeraCache and TeraCard tables
+  // These registers are used for TeraHeap and TeraCard tables
   CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(BarrierSet::barrier_set());
   CardTable* ct = ctbs->th_card_table(); 
 	LIR_Const* tera_card_table_base = NULL;
@@ -165,8 +165,8 @@ void G1BarrierSetC1::post_barrier(LIRAccess& access, LIR_OprDesc* addr, LIR_OprD
   LabelObj* L = new LabelObj();
 	LabelObj* M = new LabelObj();
 
-	// Check if the object belongs to TeraCache or in the heap. If it belongs to
-	// TeraCache then jump to mark the tera card tables, otherwise continue to
+	// Check if the object belongs to TeraHeap or in the heap. If it belongs to
+	// TeraHeap then jump to mark the tera card tables, otherwise continue to
 	// mark the heap card tables.
   if (EnableTeraHeap) {
 		LIR_Opr h2_start_addr = gen->new_register(T_LONG);
@@ -193,8 +193,6 @@ void G1BarrierSetC1::post_barrier(LIRAccess& access, LIR_OprDesc* addr, LIR_OprD
 			ShouldNotReachHere();
 	}
 #endif
-
-
   // IF addr IN H1
 
   // xor_res = addr XOR new_var
@@ -234,7 +232,7 @@ void G1BarrierSetC1::post_barrier(LIRAccess& access, LIR_OprDesc* addr, LIR_OprD
 
 
 #ifdef TERA_C1
-	// Mark teracache card tables
+	// Mark TeraHeap card tables
 	if (EnableTeraHeap) {
 
 		__ branch(lir_cond_always, L->label());

@@ -314,12 +314,7 @@ class Universe: AllStatic {
   DEBUG_ONLY(static bool is_in_heap_or_null(const void* p) { return p == NULL || is_in_heap(p); })
 
   static bool is_in_h2(const void* p);
-  static bool is_in_h2(HeapWord *p);
-  static bool is_in_h2(const oop obj);
- 
   DEBUG_ONLY(static bool is_in_h2_or_null(const oop obj) { return obj == NULL || is_in_h2(obj); })
-
-  static bool is_field_in_h2(void* p);
 
   // Reserve Java heap and determine CompressedOops mode
   static ReservedHeapSpace reserve_heap(size_t heap_size, size_t alignment);

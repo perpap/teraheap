@@ -11,15 +11,15 @@ extern "C" {
 
 	// Application-defined structure for tracking I/O requests
 	struct ioRequest {    
-		int            state;	// Status of request
+		int          state;	  // Status of request
 		char *		   buffer;  // Internal buffer
-		struct aiocb   aiocbp;	// Asynchronous I/O control block
+		struct aiocb aiocbp;	// Asynchronous I/O control block
 #if !MALLOC_ON
-		size_t         size;
+		size_t       size;
 #endif
 	};
 
-    extern struct ioRequest request[MAX_REQS];
+  extern struct ioRequest request[MAX_REQS];
 
 	// Initialize the array of I/O requests for the asynchronous I/O
 	void	req_init(void);

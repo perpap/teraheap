@@ -12,45 +12,45 @@ include ./Makefile_common.mk
 include ./makefile.colors
 
 #rules
-.PHONY: all lib tc_allocate tc_group tc_free tc_sync tc_async clean distclean test depedencies
+.PHONY: all lib th_allocate th_group th_free th_sync th_async clean distclean test depedencies
 
-all: tc_allocate tc_group tc_free tc_sync tc_async tc_multi_region
+all: th_allocate th_group th_free th_sync th_async th_multi_region
 
 lib: $(REGIONSLIBRARY)
 
-tc_allocate: $(TC_ALLOCATE_EXE)
+th_allocate: $(TH_ALLOCATE_EXE)
 
-tc_group: $(TC_GROUP_EXE)
+th_group: $(TH_GROUP_EXE)
 
-tc_free: $(TC_FREE_EXE)
+th_free: $(TH_FREE_EXE)
 
-tc_sync: $(TC_SYNC_EXE)
+th_sync: $(TH_SYNC_EXE)
 
-tc_async: $(TC_ASYNC_EXE)
+th_async: $(TH_ASYNC_EXE)
 
-tc_multi_region: $(TC_ALLOCATE_MULTI_REGION_EXE)
+th_multi_region: $(TH_ALLOCATE_MULTI_REGION_EXE)
 
-$(TC_ALLOCATE_MULTI_REGION_EXE): $(TC_ALLOCATE_MULTI_REGION) $(REGIONSLIBRARY)
+$(TH_ALLOCATE_MULTI_REGION_EXE): $(TH_ALLOCATE_MULTI_REGION) $(REGIONSLIBRARY)
 	@echo -e '[$(BYELLOW)LNK$(RESET)]' $^
 	@$(CC) $< $(REGIONSLIBRARY) $(OFLAG) $@ 
 
-$(TC_ALLOCATE_EXE): $(TC_ALLOCATE_OBJ) $(REGIONSLIBRARY)
+$(TH_ALLOCATE_EXE): $(TH_ALLOCATE_OBJ) $(REGIONSLIBRARY)
 	@echo -e '[$(BYELLOW)LNK$(RESET)]' $^
 	@$(CC) $< $(REGIONSLIBRARY) $(OFLAG) $@ 
 
-$(TC_GROUP_EXE): $(TC_GROUP_OBJ) $(REGIONSLIBRARY)
+$(TH_GROUP_EXE): $(TH_GROUP_OBJ) $(REGIONSLIBRARY)
 	@echo -e '[$(BYELLOW)LNK$(RESET)]' $^
 	@$(CC) $< $(REGIONSLIBRARY) $(OFLAG) $@ 
 
-$(TC_FREE_EXE): $(TC_FREE_OBJ) $(REGIONSLIBRARY)
+$(TH_FREE_EXE): $(TH_FREE_OBJ) $(REGIONSLIBRARY)
 	@echo -e '[$(BYELLOW)LNK$(RESET)]' $^
 	@$(CC) $< $(REGIONSLIBRARY) $(OFLAG) $@ 
 
-$(TC_SYNC_EXE): $(TC_SYNC_OBJ) $(REGIONSLIBRARY)
+$(TH_SYNC_EXE): $(TH_SYNC_OBJ) $(REGIONSLIBRARY)
 	@echo -e '[$(BYELLOW)LNK$(RESET)]' $^
 	@$(CC) $< $(REGIONSLIBRARY) $(OFLAG) $@ 
 
-$(TC_ASYNC_EXE): $(TC_ASYNC_OBJ) $(REGIONSLIBRARY)
+$(TH_ASYNC_EXE): $(TH_ASYNC_OBJ) $(REGIONSLIBRARY)
 	@echo -e '[$(BYELLOW)LNK$(RESET)]' $^
 	@$(CC) $< $(REGIONSLIBRARY) $(OFLAG) $@ 
 
@@ -87,12 +87,12 @@ uninstall:
 	@rm $(INSTALL_PREFIX)/include/regions.h
 
 clean:
-	@echo -e '[$(BRED)RM$(RESET)]' $(TC_ALLOCATE_OBJ) $(TC_SYNC_OBJ) $(TC_ASYNC_OBJ) $(TC_GROUP_OBJ) $(TC_FREE_OBJ)
-	@$(RM) $(LIBREGIONSOBJS) $(TC_ALLOCATE_OBJ) $(TC_SYNC_OBJ) $(TC_ASYNC_OBJ) $(TC_GROUP_OBJ) $(TC_FREE_OBJ) $(TC_ALLOCATE_MULTI_REGION)
+	@echo -e '[$(BRED)RM$(RESET)]' $(TH_ALLOCATE_OBJ) $(TH_SYNC_OBJ) $(TH_ASYNC_OBJ) $(TH_GROUP_OBJ) $(TH_FREE_OBJ)
+	@$(RM) $(LIBREGIONSOBJS) $(TH_ALLOCATE_OBJ) $(TH_SYNC_OBJ) $(TH_ASYNC_OBJ) $(TH_GROUP_OBJ) $(TH_FREE_OBJ) $(TH_ALLOCATE_MULTI_REGION)
 
 distclean: clean
-	@echo -e '[$(BRED)RM$(RESET)]' $(TC_ALLOCATE_EXE) $(TC_SYNC_EXE) $(TC_ASYNC_EXE) $(TC_GROUP_EXE) $(TC_FREE_EXE)
-	@$(RM) $(TC_ALLOCATE_EXE) $(TC_SYNC_EXE) $(TC_ASYNC_EXE) $(TC_GROUP_EXE) $(TC_FREE_EXE) $(TC_ALLOCATE_MULTI_REGION_EXE)
+	@echo -e '[$(BRED)RM$(RESET)]' $(TH_ALLOCATE_EXE) $(TH_SYNC_EXE) $(TH_ASYNC_EXE) $(TH_GROUP_EXE) $(TH_FREE_EXE)
+	@$(RM) $(TH_ALLOCATE_EXE) $(TH_SYNC_EXE) $(TH_ASYNC_EXE) $(TH_GROUP_EXE) $(TH_FREE_EXE) $(TH_ALLOCATE_MULTI_REGION_EXE)
 	@echo -e '[$(BRED)RM$(RESET)]' $(REGIONSLIBRARY)
 	@$(RM) $(REGIONSLIBRARY)
 	@echo -e '[$(BRED)RM$(RESET)]' $(LIBDIR)

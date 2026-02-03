@@ -79,7 +79,7 @@ size_t G1FullGCCompactTask::G1CompactRegionClosure::apply(oop obj) {
       Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
 
       Tickspan time = Ticks::now() - start;
-      Universe::teraHeap()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+      Universe::teraHeap()->get_tera_stats()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
     } else {
       obj->init_mark();
       Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
@@ -134,7 +134,7 @@ void G1FullGCCompactTask::h2_move_humongous(HeapRegion* hr, uint worker_id) {
     Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
 
     Tickspan time = Ticks::now() - start;
-    Universe::teraHeap()->thr_add_time_copy_h2(worker_id, TimeHelper::counter_to_millis(time.value()));
+    Universe::teraHeap()->get_tera_stats()->thr_add_time_copy_h2(worker_id, TimeHelper::counter_to_millis(time.value()));
   } else {
     obj->init_mark();
     Universe::teraHeap()->h2_move_obj(obj_addr, destination, size, true /* in fgc */);
@@ -155,9 +155,12 @@ void G1FullGCCompactTask::work(uint worker_id) {
 
   // Drain stack to move humongous
   if (EnableTeraHeap && worker_id == 0) {
-    HeapRegion *hum_region = Universe::teraHeap()->h2_get_next_humongous_region();
+    HeapRegion *hum_region =
+        Universe::teraHeap()->h2_get_next_humongous_start();
     while (hum_region) {
-      Universe::teraHeap()->stat_h2_humongous_add();
+      if (TeraHeapStatistics)
+        Universe::teraHeap()->get_tera_stats()->add_h2_humongous();
+
       h2_move_humongous(hum_region, worker_id);
 
       G1CollectedHeap* g1h = G1CollectedHeap::heap();
@@ -170,7 +173,7 @@ void G1FullGCCompactTask::work(uint worker_id) {
         hum_region = next;
       } while (hum_region != nullptr);
 
-      hum_region = Universe::teraHeap()->h2_get_next_humongous_region();
+      hum_region = Universe::teraHeap()->h2_get_next_humongous_start();
     }
   }
 

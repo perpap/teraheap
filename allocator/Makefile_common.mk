@@ -25,19 +25,19 @@ LIBHEADERS =  $(INCLUDEDIR)/regions.h $(INCLUDEDIR)/asyncIO.h $(INCLUDEDIR)/segm
 LIBREGIONSOBJS = $(SRCDIR)/regions.o $(SRCDIR)/asyncIO.o $(SRCDIR)/segments.o
 REGIONSLIBRARY = $(LIBDIR)/libregions.so
 
-TC_ALLOCATE_OBJ = $(TESTDIR)/tc_allocate.o
-TC_GROUP_OBJ = $(TESTDIR)/tc_group.o
-TC_FREE_OBJ = $(TESTDIR)/tc_free.o
-TC_SYNC_OBJ = $(TESTDIR)/tc_sync_write.o
-TC_ASYNC_OBJ = $(TESTDIR)/tc_async_write.o
-TC_ALLOCATE_MULTI_REGION = $(TESTDIR)/tc_allocate_multi_regions.o
+TH_ALLOCATE_OBJ = $(TESTDIR)/th_allocate.o
+TH_GROUP_OBJ = $(TESTDIR)/th_group.o
+TH_FREE_OBJ = $(TESTDIR)/th_free.o
+TH_SYNC_OBJ = $(TESTDIR)/th_sync_write.o
+TH_ASYNC_OBJ = $(TESTDIR)/th_async_write.o
+TH_ALLOCATE_MULTI_REGION = $(TESTDIR)/th_allocate_multi_regions.o
 
-TC_ALLOCATE_EXE = tc_allocate.bin
-TC_GROUP_EXE = tc_group.bin
-TC_FREE_EXE = tc_free.bin
-TC_SYNC_EXE = tc_sync_write.bin
-TC_ASYNC_EXE = tc_async_write.bin
-TC_ALLOCATE_MULTI_REGION_EXE = tc_allocate_multi_regions.bin
+TH_ALLOCATE_EXE = th_allocate.bin
+TH_GROUP_EXE = th_group.bin
+TH_FREE_EXE = th_free.bin
+TH_SYNC_EXE = th_sync_write.bin
+TH_ASYNC_EXE = th_async_write.bin
+TH_ALLOCATE_MULTI_REGION_EXE = th_allocate_multi_regions.bin
 
 CC = gcc
 

@@ -135,22 +135,22 @@ public:
   { }
 
   void work(uint worker_id) {
-    if ( ! EnableTeraHeap ) return;
-    if ( Universe::teraHeap()->h2_is_empty() ) return;
+    if (!EnableTeraHeap) return;
+    if (Universe::teraHeap()->h2_is_empty()) return;
     
     G1ParScanThreadState* pss = _per_thread_states->state_for_worker(worker_id);
     
     TERA_REMOVE( ResourceMark rm; )//so you can print c_strings
 
     H2ToH1Closure cl(_g1h, pss, worker_id);
-    _g1h->th_card_table()->h2_scavenge_contents_parallel( &cl, worker_id, _num_workers, _g1h->collector_state()->th_should_scan_old_cards() );
+    _g1h->th_card_table()->h2_scavenge_contents_parallel(&cl, worker_id, _num_workers, _g1h->collector_state()->th_should_scan_old_cards());
   }
 };
 #endif
 
 
 #ifdef TERA_AVOID_FULL_GC
-  bool G1CollectedHeap::mix_gc_happened=false;
+  bool G1CollectedHeap::mix_gc_happened = false;
 #endif
 
 // INVARIANTS/NOTES
@@ -1152,17 +1152,16 @@ bool G1CollectedHeap::do_full_collection(bool explicit_gc,
   }
 
 #ifdef TERA_AVOID_FULL_GC
-    if(EnableTeraHeap){
-      if( mix_gc_happened == true ){
-        return false;
-      }
+  if (EnableTeraHeap) {
+    if (mix_gc_happened == true) {
+      return false;
     }
+  }
 #endif
 
-
   const bool do_clear_all_soft_refs = clear_all_soft_refs ||
-      soft_ref_policy()->should_clear_all_soft_refs();
-  
+    soft_ref_policy()->should_clear_all_soft_refs();
+
   G1FullCollector collector(this, explicit_gc, do_clear_all_soft_refs, do_maximum_compaction);
   GCTraceTime(Info, gc) tm("Pause Full", NULL, gc_cause(), true);
 
@@ -1696,31 +1695,32 @@ jint G1CollectedHeap::initialize() {
 #ifdef TERA_CARDS
   //tera card table
   if (EnableTeraHeap) {
-
-	  _tera_heap_reserved = MemRegion(
-			  (HeapWord*)Universe::teraHeap()->h2_start_addr(),
-			  (HeapWord*)Universe::teraHeap()->h2_end_addr());
+    _tera_heap_reserved = MemRegion(
+      (HeapWord*)Universe::teraHeap()->h2_start_addr(),
+      (HeapWord*)Universe::teraHeap()->h2_end_addr());
 
     if (!(_tera_heap_reserved.start() >= _reserved.end()))
       vm_shutdown_during_initialization(
-          "H2 should be in greater addresses than H1");
+        "H2 should be in greater addresses than H1");
 
     _th_card_table = new PSCardTable( MemRegion() , _tera_heap_reserved);
     _th_card_table->th_card_table_initialize();  
 
     //clean all the cards 
     _th_card_table->th_clean_cards(
-				  (HeapWord *) Universe::teraHeap()->h2_start_addr(), 
-				  (HeapWord *) Universe::teraHeap()->h2_end_addr() - 1);
-    
+      (HeapWord *) Universe::teraHeap()->h2_start_addr(), 
+      (HeapWord *) Universe::teraHeap()->h2_end_addr() - 1);
+
     Universe::teraHeap()->h2_start_array()->th_initialize(_tera_heap_reserved);
-	  Universe::teraHeap()->h2_start_array()->th_set_covered_region(_tera_heap_reserved);
+    Universe::teraHeap()->h2_start_array()->th_set_covered_region(_tera_heap_reserved);
 
     bs = new G1BarrierSet(ct, (CardTable*) _th_card_table);
-
-  }else
-#endif
+  } else {
     bs = new G1BarrierSet(ct);
+  }
+#else
+  bs = new G1BarrierSet(ct);
+#endif
   
   bs->initialize();
   assert(bs->is_a(BarrierSet::G1BarrierSet), "sanity");
@@ -2413,7 +2413,7 @@ void G1CollectedHeap::tera_scan_cards() {
                                             collection_set()->optional_region_length());
   ScanH2CardTable scan_h2(&per_thread_states, num_workers);
 
-  if( TeraHeapStatistics ) {
+  if (TeraHeapStatistics) {
     Tickspan task_time = run_task_timed(&scan_h2);
     Universe::teraHeap()->get_tera_stats()->record_h2_scan_time( (task_time.seconds() * 1000.0) );
   } else {
@@ -2505,9 +2505,9 @@ bool G1CollectedHeap::supports_concurrent_gc_breakpoints() const {
 }
 
 bool G1CollectedHeap::is_archived_object(oop object) const {
-  
 #ifdef TERA_MAINTENANCE 
-  if( EnableTeraHeap && Universe::is_in_h2(object) ) return false;
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(object))
+    return false;
 #endif
 
   return object != NULL && heap_region_containing(object)->is_archive();
@@ -3027,18 +3027,18 @@ bool G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_
     return false;
   }
 
-  if( EnableTeraHeap && TeraHeapStatistics ){
+  if (EnableTeraHeap && TeraHeapStatistics) {
     Universe::teraHeap()->get_tera_stats()->set_is_in_mix(collector_state()->in_mixed_phase());
 
     do_collection_pause_at_safepoint_helper(target_pause_time_ms); 
 
-    Universe::teraHeap()->get_tera_stats()->record_h2_allocate_time(Universe::teraHeap()->get_max_thr_time_alloc_h2());
-    Universe::teraHeap()->get_tera_stats()->record_h2_copy_time(Universe::teraHeap()->get_max_thr_time_copy_h2());
+    Universe::teraHeap()->get_tera_stats()->record_h2_max_allocate_time();
+    Universe::teraHeap()->get_tera_stats()->record_h2_max_copy_time();
 
     Universe::teraHeap()->get_tera_stats()->print_gc_stats();
 
-    Universe::teraHeap()->h2_init_stats_counters();
-  }else{
+    Universe::teraHeap()->get_tera_stats()->reset_counters();
+  } else {
     do_collection_pause_at_safepoint_helper(target_pause_time_ms); 
   }
 
@@ -3173,16 +3173,17 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
         _allocator->release_mutator_alloc_regions();
 
 #ifdef TERA_AVOID_FULL_GC
-      if( collector_state()->in_mixed_phase()  ) mix_gc_happened = true;
+        if (collector_state()->in_mixed_phase())
+          mix_gc_happened = true;
 #endif
 
 
 #ifdef TERA_MAINTENANCE
         if (EnableTeraHeap) {      
-          // Give advise to kernel to prefetch pages for TeraCache random
+          // Give advise to kernel to prefetch pages for TeraHeap random
           Universe::teraHeap()->h2_enable_rand_faults();
 
-          if( collector_state()->in_concurrent_start_gc() ){
+          if (collector_state()->in_concurrent_start_gc()) {
           #ifdef DBG_LOST_REGION
             // Reset the used field of all regions
             // NOTE: propably this should not be commented out
@@ -3206,17 +3207,17 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
         
 
 #ifdef TERA_CARDS
-        if( EnableTeraHeap ){          
-            ScanH2CardTable scan_h2(&per_thread_states,
-                                    workers()->active_workers());
+        if (EnableTeraHeap) {
+          ScanH2CardTable scan_h2(&per_thread_states,
+                                  workers()->active_workers());
 
-            Tickspan task_time = run_task_timed(&scan_h2);
+          Tickspan task_time = run_task_timed(&scan_h2);
 
-            if( TeraHeapStatistics )
-              Universe::teraHeap()->get_tera_stats()->record_h2_scan_time( (task_time.seconds() * 1000.0) );
+          if (TeraHeapStatistics)
+            Universe::teraHeap()->get_tera_stats()->record_h2_scan_time( (task_time.seconds() * 1000.0) );
         }
 #endif
- 
+
         // Actually do the work...        
         evacuate_initial_collection_set(&per_thread_states, may_do_optional_evacuation);
 
@@ -3364,7 +3365,7 @@ void G1CollectedHeap::complete_cleaning(BoolObjectClosure* is_alive,
 bool G1STWIsAliveClosure::do_object_b(oop p) {
 
 #ifdef TERA_MAINTENANCE
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(p)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(p)) {
   #ifdef DBG_LOST_REGION
     // 8
     const char *name = "G1STWIsAliveClosure::do_object_b";
@@ -3382,7 +3383,8 @@ bool G1STWIsAliveClosure::do_object_b(oop p) {
 bool G1STWSubjectToDiscoveryClosure::do_object_b(oop obj) {
 
 #ifdef TERA_MAINTENANCE 
-  if( EnableTeraHeap && Universe::is_in_h2(obj) ) return false;
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj))
+    return false;
 #endif
 
   assert(obj != NULL, "must not be NULL");
@@ -3390,7 +3392,7 @@ bool G1STWSubjectToDiscoveryClosure::do_object_b(oop obj) {
 
 #ifdef TERA_MAINTENANCE
   // TODO: check if requires modification
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // 9
     const char *name = "G1STWSubjectToDiscoveryClosure::do_object_b";
@@ -3417,7 +3419,7 @@ public:
     assert(obj != NULL, "the caller should have filtered out NULL values");
 
 #ifdef TERA_MAINTENANCE
-    if( EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj) ) {
+    if( EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj) ) {
     #ifdef DBG_LOST_REGION
       // 10
       const char *name = "G1KeepAliveClosure::do_oop";
@@ -4456,7 +4458,7 @@ class RegisterNMethodOopClosure: public OopClosure {
 #if defined TERA_C1 || defined TERA_C2
       // if the nmethod is pointing to an h2 obj
       // no need to include the nmethod in the rem set (bcs there are no rem sets in h2)
-      if(EnableTeraHeap && Universe::is_in_h2(obj)) return;
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) return;
 #endif
 
       HeapRegion* hr = _g1h->heap_region_containing(obj);
@@ -4490,7 +4492,7 @@ class UnregisterNMethodOopClosure: public OopClosure {
 #if defined TERA_C1 || defined TERA_C2
       // if the nmethod is pointing to an h2 obj
       // no need to unregister the nmethod from the rem set (bcs there are no rem sets in h2)
-      if(EnableTeraHeap && Universe::is_in_h2(obj)) return;
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) return;
 #endif
 
       HeapRegion* hr = _g1h->heap_region_containing(obj);

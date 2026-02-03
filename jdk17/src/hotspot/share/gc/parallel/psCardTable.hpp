@@ -77,9 +77,9 @@ class PSCardTable: public CardTable {
                                   uint stripe_total);
 
 #ifdef TERA_CARDS
-  // Scavenge support for TeraCache
+  // Scavenge support for TeraHeap
   // 'is_young' field shows if we use this function during minor gc or
-  // we use this function only to trace dirty objects of TeraCache
+  // we use this function only to trace dirty objects of TeraHeap
   
   
   void h2_scavenge_contents_parallel( H2ToH1Closure* cl,
@@ -158,7 +158,7 @@ class PSCardTable: public CardTable {
 #ifdef TERA_CARDS
     if (EnableTeraHeap) {
       // Check if the address belongs to the address range of the Old Generation
-      // or in the TeraCache
+      // or in the TeraHeap
       return ((addr >= _byte_map) && (addr < _byte_map + _byte_map_size))
       ||
       ((addr >= _th_byte_map) && (addr < _th_byte_map + _th_byte_map_size));

@@ -467,22 +467,22 @@ void G1BarrierSetC2::post_barrier(GraphKit* kit,
   Node* card_adr = __ AddP(no_base, byte_map_base_node(kit), card_offset );
 
 #ifdef TERA_C2
-  if(EnableTeraHeap){
+  if (EnableTeraHeap) {
 
 #ifdef C2_ONLY_LEAF_CALL
     const TypeFunc *tera_tf = h2_wb_post_Type();
     __ make_leaf_call(tera_tf, CAST_FROM_FN_PTR(address, G1BarrierSetRuntime::h2_wb_post), "h2_wb_post", adr);
 #else
 
-    Node* tc_adr = __ makecon(
+    Node* th_adr = __ makecon(
         TypeRawPtr::make((address)Universe::teraHeap()->h2_start_addr()));
     
-    Node* tc_cast = __ CastPX(__ ctrl(), tc_adr);
+    Node* th_cast = __ CastPX(__ ctrl(), th_adr);
     
     assert(adr->bottom_type()->isa_ptr() != NULL, "Error");
-    assert(tc_adr->bottom_type()->isa_ptr() != NULL, "Error");
+    assert(th_adr->bottom_type()->isa_ptr() != NULL, "Error");
     
-    Node* t = kit->gvn().transform(new SubXNode(cast, tc_cast));
+    Node* t = kit->gvn().transform(new SubXNode(cast, th_cast));
     
 
     //if ( obj start addr - teraheap start  <  0 ) then obj is in H1

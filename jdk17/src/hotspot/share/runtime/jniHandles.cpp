@@ -472,7 +472,7 @@ jobject JNIHandleBlock::allocate_handle(oop obj, AllocFailType alloc_failmode) {
 #ifdef TERA_ASSERT
   DEBUG_ONLY(
       if (EnableTeraHeap) {
-        assert(Universe::heap()->is_in(obj) || Universe::is_in_h2(obj), "sanity check");
+        assert(Universe::heap()->is_in(obj) || Universe::teraHeap()->is_in_h2(obj), "sanity check");
       } else {
         assert(Universe::heap()->is_in(obj), "sanity check");
       });

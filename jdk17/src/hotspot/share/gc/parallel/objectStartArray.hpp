@@ -181,7 +181,7 @@ class ObjectStartArray : public CHeapObj<mtGC> {
 #ifdef TERA_CARDS
   // This method is in lieu of a constructor, so that this class can be
   // embedded inline in other classes.
-  // This function is used for teraCache
+  // This function is used for TeraHeap
   void th_initialize(MemRegion reserved_region);
 #endif // TERA_CARDS
 
@@ -246,7 +246,7 @@ class ObjectStartArray : public CHeapObj<mtGC> {
   bool object_starts_in_range(HeapWord* start_addr, HeapWord* end_addr) const;
 
 #ifdef TERA_CARDS
-  // Return true if an object starts in the range of teracache addresses.
+  // Return true if an object starts in the range of TeraHeap addresses.
   // If an object starts at an address corresponding to
   // "start", the method will return true.
   bool th_object_starts_in_range(HeapWord* start_addr, HeapWord* end_addr) const;

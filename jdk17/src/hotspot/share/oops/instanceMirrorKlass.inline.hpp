@@ -48,9 +48,9 @@ void InstanceMirrorKlass::oop_oop_iterate_statics(oop obj, OopClosureType* closu
 template <typename T, class OopClosureType>
 void InstanceMirrorKlass::oop_oop_iterate(oop obj, OopClosureType* closure) {
   InstanceKlass::oop_oop_iterate<T>(obj, closure);
-  
+ 
 #ifdef TERA_ASSERT
-  DEBUG_ONLY(if (EnableTeraHeap) { assert(!Universe::is_in_h2(obj), "Object is in TeraCache"); })
+  DEBUG_ONLY(if (EnableTeraHeap) { assert(!Universe::is_in_h2(obj), "Object is in TeraHeap"); })
 #endif
 
   if (Devirtualizer::do_metadata(closure)) {

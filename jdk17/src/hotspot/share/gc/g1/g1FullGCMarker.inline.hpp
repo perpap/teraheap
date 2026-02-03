@@ -93,7 +93,7 @@ template <class T> inline void G1FullGCMarker::mark_and_push(T* p) {
     oop obj = CompressedOops::decode_not_null(heap_oop);
 
     // Fencing scan in H2 and mark region as live.
-    if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+    if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
 
 #ifdef TERA_DBG_PHASES
       stdprint << "### Phase 1 fencing reference to obj " << obj << "\n";

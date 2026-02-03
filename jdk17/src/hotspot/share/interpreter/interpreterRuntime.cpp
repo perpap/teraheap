@@ -768,7 +768,7 @@ JRT_LEAF(void, InterpreterRuntime::monitorexit(BasicObjectLock* elem))
 #ifdef  TERA_ASSERT
 DEBUG_ONLY(if (EnableTeraHeap) { 
              assert(Universe::heap()->is_in(obj) ||
-                    Universe::teraHeap()->is_obj_in_h2(obj),
+                    Universe::teraHeap()->is_in_h2(obj),
                     "must be NULL or an object");
            } else {
              assert(Universe::heap()->is_in(obj), "must be an object");

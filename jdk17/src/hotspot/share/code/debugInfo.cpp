@@ -247,7 +247,7 @@ void ConstantOopWriteValue::write_on(DebugInfoWriteStream* stream) {
 #ifdef TERA_ASSERT
     DEBUG_ONLY(
         if (EnableTeraHeap) {
-          assert(JNIHandles::resolve(value()) == NULL || Universe::heap()->is_in(JNIHandles::resolve(value())) || Universe::is_in_h2(JNIHandles::resolve(value())), "Should be in heap");
+          assert(JNIHandles::resolve(value()) == NULL || Universe::heap()->is_in(JNIHandles::resolve(value())) || Universe::teraHeap()->is_in_h2(JNIHandles::resolve(value())), "Should be in heap");
         } else {
           assert(JNIHandles::resolve(value()) == NULL || Universe::heap()->is_in(JNIHandles::resolve(value())), "Should be in heap");
         });

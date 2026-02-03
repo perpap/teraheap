@@ -880,35 +880,14 @@ UNSAFE_ENTRY(void, Unsafe_h2TagAndMoveRoot(JNIEnv *env, jobject unsafe, jobject 
   
   oop o = JNIHandles::resolve_non_null(obj);
 
-  // If the object is already in TeraCache then do not mark its teraflag
-  if (Universe::is_in_h2(o))
+  // If the object is already in TeraHeap then do not mark its teraflag
+  if (Universe::teraHeap()->is_in_h2(o))
     return;
 
   // Initialize object's teraflag
   o->mark_move_h2(label, partId);
 
 } UNSAFE_END
-
-
-UNSAFE_ENTRY(void, Unsafe_h2TagRoot(JNIEnv *env, jobject unsafe, jobject obj, jlong label, jlong partId)){  
-  if (!EnableTeraHeap) return;
-  
-  oop o = JNIHandles::resolve_non_null(obj);
-
-  // If the object is already in TeraCache then do not mark its teraflag
-  if (Universe::is_in_h2(o)) return;
-  if( Universe::teraHeap()->is_metadata(o) ) return;
-
-  // Initialize object's teraflag
-  o->mark_move_h2(Universe::teraHeap()->get_non_promote_tag(), partId);
-} UNSAFE_END
-
-UNSAFE_ENTRY(void, Unsafe_h2Move(JNIEnv *env, jobject unsafe, jlong label)) {    
-  if (!EnableTeraHeap) return;
-  Universe::teraHeap()->set_promote_tag(label);
-  Universe::teraHeap()->set_non_promote_tag(label+1);
-} UNSAFE_END
-
 
 
 //dummy function for debugging
@@ -991,8 +970,6 @@ static JNINativeMethod jdk_internal_misc_Unsafe_methods[] = {
 
     /*-------TERA HEAP----------*/
     {CC "h2TagAndMoveRoot",     CC "(" OBJ "JJ)V",  FN_PTR(Unsafe_h2TagAndMoveRoot)},
-    {CC "h2TagRoot",            CC "(" OBJ "JJ)V",  FN_PTR(Unsafe_h2TagRoot)},
-    {CC "h2Move",               CC "(J)V",          FN_PTR(Unsafe_h2Move)},
     {CC "inH2",                 CC "(" OBJ ")Z",    FN_PTR(Unsafe_inH2)},
     {CC "is_marked_move_h2",    CC "(" OBJ ")Z",    FN_PTR(Unsafe_is_marked_moved_h2)},
     {CC "dummy_has_h2_address", CC "(" OBJ ")Z",    FN_PTR(Unsafe_dummy_has_h2_address)},

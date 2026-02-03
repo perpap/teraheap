@@ -1,7 +1,7 @@
 
 /***************************************************
 *
-* file: tc_allocate.c
+* file: th_allocate.c
 *
 * @Author:   Iacovos G. Kolokasis
 * @Author:   Giannos Evdorou
@@ -27,12 +27,14 @@
 #define SIZE_1MB (131072)
 #define SIZE_2MB (262144)
 
+#define GB 1024LU * 1024 * 1024
+
 //this test needs 256MB region size
 int main() {
   char *obj1, *obj2, *obj3, *obj4, *obj5, *obj6;
 
   // Init allocator
-  init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 64);
+  init(CARD_SIZE * PAGE_SIZE, "/mnt/fmap/", 64 * GB);
 
   //obj1 should be in region 0
   obj1 = allocate(1, 0, 0);

@@ -15,8 +15,8 @@
 #include "../include/asyncIO.h"
 #include "../include/segments.h"
 
-#define HEAPWORD (8)                       // In the JVM the heap is aligned to 8 words
-#define HEADER_SIZE (32)                   // Header size of the Dummy object	
+#define HEAPWORD (8)      // In the JVM the heap is aligned to 8 words
+#define HEADER_SIZE (32)  // Header size of the Dummy object	
 #define align_size_up_(size, alignment) (((size) + ((alignment) - 1)) & ~((alignment) - 1))
 
 char dev[150] = { '\0' };
@@ -27,8 +27,8 @@ uint64_t max_rdd_id = 0;
 
 // Global lock to prevent multiple threads
 // from updating global variables.
-pthread_mutex_t tc_mem_pool_lock;
-volatile struct _mem_pool tc_mem_pool;
+pthread_mutex_t th_mem_pool_lock;
+volatile struct _mem_pool th_mem_pool;
 int fd;
 
 intptr_t align_size_up(intptr_t size, intptr_t alignment) {
@@ -82,29 +82,29 @@ void init(uint64_t align, const char *h2_file_path, uint64_t h2_file_size) {
   fd = -1;
 
 #if ANONYMOUS
-	// Anonymous mmap
+  // Anonymous mmap
   fd = open(DEV, O_RDWR);
-	tc_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+  th_mem_pool.mmap_start = mmap(0, V_SPACE, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
 #else
   dev_size = h2_file_size;
   create_file(h2_file_path, dev_size);
   // Memory-mapped a file over a storage device
-  tc_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  th_mem_pool.mmap_start = mmap(0, dev_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 #endif
 
-	assertf(tc_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
+  assertf(th_mem_pool.mmap_start != MAP_FAILED, "Mapping Failed");
 
-	// Card table in JVM needs the start address of TeraCache to be align up
-	tc_mem_pool.start_address = (char *) align_ptr_up(tc_mem_pool.mmap_start, align);
-	tc_mem_pool.cur_alloc_ptr = tc_mem_pool.start_address;
-	tc_mem_pool.size = 0;
+  // Card table in JVM needs the start address of TeraHeap to be align up
+  th_mem_pool.start_address = (char *) align_ptr_up(th_mem_pool.mmap_start, align);
+  th_mem_pool.cur_alloc_ptr = th_mem_pool.start_address;
+  th_mem_pool.size = 0;
 
 #if ANONYMOUS
-	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + V_SPACE;
-  printf("Start address:%p\n",tc_mem_pool.start_address);
-  printf("Stop address:%p\n",tc_mem_pool.stop_address);
+  th_mem_pool.stop_address = th_mem_pool.mmap_start + V_SPACE;
+  printf("Start address: %p\n", th_mem_pool.start_address);
+  printf("Stop address: %p\n", th_mem_pool.stop_address);
 #else
-	tc_mem_pool.stop_address = tc_mem_pool.mmap_start + dev_size;
+  th_mem_pool.stop_address = th_mem_pool.mmap_start + dev_size;
 #endif
 
   region_array_size = dev_size / REGION_SIZE;
@@ -115,39 +115,38 @@ void init(uint64_t align, const char *h2_file_path, uint64_t h2_file_size) {
 
   max_rdd_id = region_array_size / MAX_PARTITIONS;
 
-  pthread_mutex_init(&tc_mem_pool_lock, NULL);
+  pthread_mutex_init(&th_mem_pool_lock, NULL);
 
   init_regions();
 	req_init();
 }
 
-
 // Return the start address of the memory allocation pool
 char* start_addr_mem_pool() {
-	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");
-	return tc_mem_pool.start_address;
+  assertf(th_mem_pool.start_address != NULL, "Start address is NULL");
+  return th_mem_pool.start_address;
 }
 
 // Return the last address of the memory allocation pool
 char* stop_addr_mem_pool() {
-	assertf(tc_mem_pool.stop_address != NULL, "Stop address is NULL");
-	return tc_mem_pool.stop_address;
+  assertf(th_mem_pool.stop_address != NULL, "Stop address is NULL");
+  return th_mem_pool.stop_address;
 }
 
 // Return the `size` of the memory allocation pool
 size_t mem_pool_size() {
-	assertf(tc_mem_pool.start_address != NULL, "Start address is NULL");
+  assertf(th_mem_pool.start_address != NULL, "Start address is NULL");
 #if ANONYMOUS
-    return V_SPACE;
+  return V_SPACE;
 #else
-	return dev_size;
+  return dev_size;
 #endif
 }
 
 char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
-	char* alloc_ptr = NULL;
+  char* alloc_ptr = NULL;
 
-	assertf(size > 0, "Object should be > 0");
+  assertf(size > 0, "Object should be > 0");
 
   alloc_ptr = allocate_to_region(size * HEAPWORD, rdd_id, partition_id);
 
@@ -162,66 +161,69 @@ char* allocate(size_t size, uint64_t rdd_id, uint64_t partition_id) {
 
   char *cur_allocation_ptr = (char *) (((uint64_t) alloc_ptr) + size * HEAPWORD);
 
-  pthread_mutex_lock(&tc_mem_pool_lock);
+  pthread_mutex_lock(&th_mem_pool_lock);
 
-  char* prev_allocation_ptr = tc_mem_pool.cur_alloc_ptr;
+  char *prev_allocation_ptr = th_mem_pool.cur_alloc_ptr;
 
-  tc_mem_pool.size += size;
+  th_mem_pool.size += size;
 
-	if (cur_allocation_ptr > prev_allocation_ptr) {
-    tc_mem_pool.cur_alloc_ptr = cur_allocation_ptr;
+  if (cur_allocation_ptr > prev_allocation_ptr) {
+    th_mem_pool.cur_alloc_ptr = cur_allocation_ptr;
   }
 
-  pthread_mutex_unlock(&tc_mem_pool_lock);
+  pthread_mutex_unlock(&th_mem_pool_lock);
 
-	assertf(prev_allocation_ptr <= tc_mem_pool.cur_alloc_ptr, 
-			"Error alloc ptr: Prev = %p, Cur = %p", prev_allocation_ptr, tc_mem_pool.cur_alloc_ptr);
+  assertf(prev_allocation_ptr <= th_mem_pool.cur_alloc_ptr,
+          "Error alloc ptr: Prev = %p, Cur = %p", prev_allocation_ptr,
+          th_mem_pool.cur_alloc_ptr);
 
-	// Alighn to 8 words the pointer (TODO: CHANGE TO ASSERTION)
-	if ((uint64_t) tc_mem_pool.cur_alloc_ptr % HEAPWORD != 0) {
+  // Alighn to 8 words the pointer (TODO: CHANGE TO ASSERTION)
+  if ((uint64_t)th_mem_pool.cur_alloc_ptr % HEAPWORD != 0) {
     fprintf(stderr, "[INFO] alignment");
-    tc_mem_pool.cur_alloc_ptr = (char *)((((uint64_t)tc_mem_pool.cur_alloc_ptr) + (HEAPWORD - 1)) & -HEAPWORD);
+    th_mem_pool.cur_alloc_ptr =
+        (char *)((((uint64_t)th_mem_pool.cur_alloc_ptr) + (HEAPWORD - 1)) &
+                 -HEAPWORD);
   }
 
-	return alloc_ptr;
+  return alloc_ptr;
 }
 
 // Return the current allocation pointer
 // NOTE: Does not require lock as it is not called during updates
 char* cur_alloc_ptr() {
-	assertf(tc_mem_pool.cur_alloc_ptr >= tc_mem_pool.start_address
-			&& tc_mem_pool.cur_alloc_ptr < tc_mem_pool.stop_address,
-			"Allocation pointer out-of-bound")
+  assertf(th_mem_pool.cur_alloc_ptr >= th_mem_pool.start_address &&
+          th_mem_pool.cur_alloc_ptr < th_mem_pool.stop_address,
+          "Allocation pointer out-of-bound")
 
-	return tc_mem_pool.cur_alloc_ptr;
+  return th_mem_pool.cur_alloc_ptr;
 }
 
 // Return 'true' if the allocator is empty, 'false' otherwise.
 // Invariant: Initialize allocator
 // NOTE: Does not require lock as it is not called during updates
 int r_is_empty() {
-	assertf(tc_mem_pool.start_address != NULL, "Allocator should be initialized");
+	assertf(th_mem_pool.start_address != NULL, "Allocator should be initialized");
 
-	return tc_mem_pool.size == 0;
+  return th_mem_pool.size == 0;
 }
 
 // Close allocator and unmap pages
 void r_shutdown(void) {
 	printf("CALL HERE");
-	munmap(tc_mem_pool.mmap_start, dev_size);
+  munmap(th_mem_pool.mmap_start, dev_size);
 }
 
 // Give advise to kernel to expect page references in sequential order.  (Hence,
 // pages in the given range can be aggressively read ahead, and may be freed
 // soon after they are accessed.)
 void r_enable_seq() {
-	madvise(tc_mem_pool.mmap_start, dev_size, MADV_SEQUENTIAL);
+  madvise(th_mem_pool.mmap_start, dev_size, MADV_SEQUENTIAL);
 }
 
 // Give advise to kernel to expect page references in random order (Hence, read
 // ahead may be less useful than normally.)
 void r_enable_rand() {
-	madvise(tc_mem_pool.mmap_start, dev_size, MADV_NORMAL);
+  madvise(th_mem_pool.mmap_start, dev_size, MADV_NORMAL);
 }
 
 // Explicit write 'data' with 'size' in certain 'offset' using system call
@@ -229,13 +231,13 @@ void r_enable_rand() {
 void r_write(char *data, char *offset, size_t size) {
 #ifdef ASSERT
 	ssize_t s_check = 0;
-	uint64_t diff = offset - tc_mem_pool.mmap_start;
+	uint64_t diff = offset - th_mem_pool.mmap_start;
 
 	s_check = pwrite(fd, data, size * HEAPWORD, diff);
 	assertf(s_check == size * HEAPWORD, "Sanity check: s_check = %ld", s_check);
 #else
-	uint64_t diff = offset - tc_mem_pool.mmap_start;
-	pwrite(fd, data, size * HEAPWORD, diff);
+  uint64_t diff = offset - th_mem_pool.mmap_start;
+  pwrite(fd, data, size * HEAPWORD, diff);
 #endif
 }
 	
@@ -243,10 +245,9 @@ void r_write(char *data, char *offset, size_t size) {
 // system call without memcpy.
 // Do not use r_awrite with r_write
 void r_awrite(char *data, char *offset, size_t size) {
-	
-	uint64_t diff = offset - tc_mem_pool.mmap_start;
+  uint64_t diff = offset - th_mem_pool.mmap_start;
 
-	req_add(fd, data, size * HEAPWORD, diff);
+  req_add(fd, data, size * HEAPWORD, diff);
 }
 	
 // Check if all the asynchronous requestes have been completed
@@ -269,13 +270,13 @@ void r_fsync() {
 // This function if for the FastMap hybrid version. Give advise to kernel to
 // serve all the pagefault using regular pages.
 void r_enable_regular_flts(void) {
-	madvise(tc_mem_pool.mmap_start, dev_size, MADV_NOHUGEPAGE);
+  madvise(th_mem_pool.mmap_start, dev_size, MADV_NOHUGEPAGE);
 }
 
 // This function if for the FastMap hybrid version. Give advise to kernel to
 // serve all the pagefault using huge pages.
 void r_enable_huge_flts(void) {
-	madvise(tc_mem_pool.mmap_start, dev_size, MADV_HUGEPAGE);
+  madvise(th_mem_pool.mmap_start, dev_size, MADV_HUGEPAGE);
 }
 
 int verify_top(void) {

@@ -261,22 +261,22 @@ public:
   }
   
   virtual void do_klass(Klass* k){
-    if( EnableTeraHeap ) {
-      metadata_traversal_1=true;
+    if (EnableTeraHeap) {
+      metadata_traversal_1 = true;
       ClaimMetadataVisitingOopIterateClosure::do_klass(k);
-      metadata_traversal_1=false;
-    }else{
+      metadata_traversal_1 = false;
+    } else {
       ClaimMetadataVisitingOopIterateClosure::do_klass(k);
     }
   }
 
 
   void do_cld(ClassLoaderData* cld) {    
-    if( EnableTeraHeap ) {
-      metadata_traversal_2=true;
+    if (EnableTeraHeap) {
+      metadata_traversal_2 = true;
       ClaimMetadataVisitingOopIterateClosure::do_cld(cld);
-      metadata_traversal_2=false;
-    }else{
+      metadata_traversal_2 = false;
+    } else {
       ClaimMetadataVisitingOopIterateClosure::do_cld(cld);
     }
   }

@@ -42,7 +42,7 @@
 
 inline bool G1CMIsAliveClosure::do_object_b(oop obj) {
 #ifdef TERA_MAINTENANCE
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 1
@@ -67,12 +67,12 @@ inline bool G1CMSubjectToDiscoveryClosure::do_object_b(oop obj) {
   }
 
 #ifdef TERA_MAINTENANCE 
-  DEBUG_ONLY( if( EnableTeraHeap ) assert(!Universe::is_in_h2(obj) , "Weak refs should not be transfered in H2" ); )
+  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::teraHeap()->is_in_h2(obj), "Weak refs should not be transfered in H2"); )
 #endif
 
 #ifdef TERA_MAINTENANCE
   // TODO: check if requires modification/removal
-  if (EnableTeraHeap && Universe::teraHeap()->is_obj_in_h2(obj)) {
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 2
@@ -112,8 +112,8 @@ inline bool G1ConcurrentMark::mark_in_next_bitmap(uint const worker_id, HeapRegi
   if (success) {  
 
 #ifdef TERA_CONC_MARKING
-    if( EnableTeraHeap && !Universe::teraHeap()->is_metadata(obj)){
-      if( task(worker_id)->is_tera_traversal() || obj->is_marked_move_h2() ){
+    if (EnableTeraHeap && !Universe::teraHeap()->is_metadata(obj)) {
+      if (task(worker_id)->is_tera_traversal() || obj->is_marked_move_h2()) {
         assert( !Universe::teraHeap()->is_metadata(obj) , "Metadata should have been filtered out");
         add_to_h2_liveness(worker_id, obj, obj->size());
         // return success; 
@@ -226,13 +226,12 @@ inline void G1CMTask::process_grey_task_entry(G1TaskQueueEntry task_entry) {
       _words_scanned += _objArray_processor.process_slice(task_entry.slice());
     } else {
       oop obj = task_entry.obj();
-
       
 #ifdef TERA_MAINTENANCE   
       //If obj is in H2
       //  (1) set H2 region live bit
       //  (2) Fence heap traversal to H2
-      if (EnableTeraHeap && (Universe::is_in_h2(obj))){    
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {    
       #ifdef DBG_LOST_REGION
         const char *name = "G1CMTask::process_grey_task_entry";
         Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
@@ -242,7 +241,7 @@ inline void G1CMTask::process_grey_task_entry(G1TaskQueueEntry task_entry) {
         return;
       }
 #endif
-      
+
       if (G1CMObjArrayProcessor::should_be_sliced(obj)) {
         
           //It's our first encounter with this big object array (so it's the whole array, not a slice of it)
@@ -264,18 +263,18 @@ inline void G1CMTask::process_grey_task_entry(G1TaskQueueEntry task_entry) {
           //If it's an object array, push every obj[i] to the local queue without traversing them 
 
 #ifdef TERA_CONC_MARKING
-          if ( EnableTeraHeap && obj->is_marked_move_h2() ) {
-              
-              //iterate this oop, in tera mode
-              _cm_oop_closure->enable_tera_traversal(obj);    
-              _words_scanned += obj->oop_iterate_size(_cm_oop_closure); 
-              _cm_oop_closure->disable_tera_traversal();
-          }
-          else
+        if (EnableTeraHeap && obj->is_marked_move_h2()) {
+
+          //iterate this oop, in tera mode
+          _cm_oop_closure->enable_tera_traversal(obj);
+          _words_scanned += obj->oop_iterate_size(_cm_oop_closure); 
+          _cm_oop_closure->disable_tera_traversal();
+        } else {
+          _words_scanned += obj->oop_iterate_size(_cm_oop_closure);
+        }
+#else
+        _words_scanned += obj->oop_iterate_size(_cm_oop_closure);
 #endif
-              _words_scanned += obj->oop_iterate_size(_cm_oop_closure);
-
-
       }
     }
   }
@@ -290,22 +289,22 @@ inline void G1CMTask::process_grey_task_entry(G1TaskQueueEntry task_entry) {
 inline size_t G1CMTask::scan_objArray(objArrayOop obj, MemRegion mr) {
 
 #ifdef TERA_ASSERT
-    DEBUG_ONLY( if(EnableTeraHeap) assert( !Universe::is_in_h2(obj) , "H2 objects should have been filtered out"); )
+  DEBUG_ONLY( if (EnableTeraHeap) assert(!Universe::teraHeap()->is_in_h2(obj), "H2 objects should have been filtered out"); )
 #endif
 
 #ifdef TERA_CONC_MARKING
-    if ( EnableTeraHeap && obj->is_marked_move_h2()) {
-        
-        //iterate this oop, in tera mode
-        _cm_oop_closure->enable_tera_traversal(obj); 
-        obj->oop_iterate(_cm_oop_closure, mr);
-        _cm_oop_closure->disable_tera_traversal(); 
-    }
-    else
+  if (EnableTeraHeap && obj->is_marked_move_h2()) {
+    //iterate this oop, in tera mode
+    _cm_oop_closure->enable_tera_traversal(obj); 
+    obj->oop_iterate(_cm_oop_closure, mr);
+    _cm_oop_closure->disable_tera_traversal(); 
+  } else {
+    obj->oop_iterate(_cm_oop_closure, mr);
+  }
+#else
+  obj->oop_iterate(_cm_oop_closure, mr);
 #endif
-        obj->oop_iterate(_cm_oop_closure, mr);
 
-  
   return mr.word_size();
 }
 
@@ -360,7 +359,7 @@ inline bool G1CMTask::make_reference_grey(oop obj) {
   //  (1) set H2 region live bit
   //  (2) Fence heap traversal to H2
   //  return false (did not add anything to the bitmap)
-  if (EnableTeraHeap && (Universe::is_in_h2(obj))){    
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
   #ifdef DBG_LOST_REGION
     const char *name = "G1CMTask::make_reference_grey";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
@@ -378,7 +377,6 @@ inline bool G1CMTask::make_reference_grey(oop obj) {
     return false;
   }
 
-
 #ifdef TERA_CONC_MARKING
 
   //If parent object is going to be moved in h2, then child object is going to be moved too
@@ -394,13 +392,12 @@ inline bool G1CMTask::make_reference_grey(oop obj) {
   //        (1) incease the h2-liveness of that region
 
 
-  if( EnableTeraHeap && is_tera_traversal() ){
-    if ( !obj->is_marked_move_h2() && !Universe::teraHeap()->is_metadata(obj)) {
+  if (EnableTeraHeap && is_tera_traversal()) {
+    if (!obj->is_marked_move_h2() && !Universe::teraHeap()->is_metadata(obj)) {
       assert( !Universe::teraHeap()->is_metadata(obj) , "Metadata should have been already filtered out");
-      
-      obj->mark_move_h2( _cm_oop_closure->get_cur_obj_group_id(),
-                         _cm_oop_closure->get_cur_obj_part_id());
-      
+
+      obj->mark_move_h2(_cm_oop_closure->get_cur_obj_group_id(),
+                        _cm_oop_closure->get_cur_obj_part_id());
     }
   }
 #endif
@@ -440,9 +437,9 @@ inline bool G1CMTask::make_reference_grey(oop obj) {
       push(entry);
     }
   }
+
   return true;
 }
-
 
 template <class T>
 inline bool G1CMTask::deal_with_reference(T* p) {

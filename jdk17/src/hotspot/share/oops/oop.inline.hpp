@@ -89,7 +89,7 @@ bool oopDesc::dummy_has_h2_address() {
   return (_tera_flag & 0xf00) == DUMMY_H2_ADDRESS;
 }
 
-// Mark this object that is located in TeraCache
+// Mark this object that is located in TeraHeap
 void oopDesc::set_in_h2() { 
   uint64_t part_id = (_tera_flag >> 48);
   uint64_t rdd_id  = (_tera_flag >> 32) & 0xffff;

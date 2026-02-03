@@ -51,7 +51,7 @@ HeapWord* ObjectStartArray::object_start(HeapWord* addr) const {
 
 #ifdef TERA_CARDS
   // Optimized for finding the first object that crosses into
-  // a given block in TeraCache. The blocks contain the offset of the last
+  // a given block in TeraHeap. The blocks contain the offset of the last
   // object in that block. Scroll backwards by one, and the first
   // object hit should be at the beginning of the block
 HeapWord* ObjectStartArray::th_object_start(HeapWord* addr) const {

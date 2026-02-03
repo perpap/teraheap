@@ -60,7 +60,7 @@ class oopDesc {
   } _metadata;
 
 #ifdef TERA_FLAG
-  // TeraFlag word is used by the TeraCache. TeraFlag is a 64-bit word and is
+  // TeraFlag word is used by the TeraHeap. TeraFlag is a 64-bit word and is
   // divided in three parts:
   //
   //+-------+----------------------------------------------------------------+
@@ -73,7 +73,7 @@ class oopDesc {
   //| 31-0  | Represent the state of the object                              |
   //+-------+----------------------------------------------------------------+
 
-  volatile int64_t _tera_flag;      //< MarkTeracache objects
+  volatile int64_t _tera_flag;      //< MarkTeraHeap objects
 #endif // TERA_FLAG
 
  public:
@@ -96,7 +96,7 @@ class oopDesc {
   inline void dummy_give_h2_address();
   inline bool dummy_has_h2_address();
 
-  // Mark this object that is located in TeraCache
+  // Mark this object that is located in TeraHeap
   inline void set_in_h2();
 
   // Get the state of the object
