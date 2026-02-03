@@ -26,4 +26,25 @@ public class GC{
   public static void move_to_old(){
     wb.youngGC();
   }
+  
+  public static void cm_start() {
+    Helpers.waitTillCMCFinished(wb, 10);
+
+    System.out.println("=========================================");
+    System.out.println("Concurrent Marking");
+
+    wb.g1StartConcMarkCycle();
+
+    System.out.println("=========================================");
+  }
+  
+  public static void wait_cm() {
+    Helpers.waitTillCMCFinished(wb, 10);
+
+    System.out.println("== CM finished");
+  }
+  
+  public static void young_gc() {
+    wb.youngGC();
+  }
 }
