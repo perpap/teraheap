@@ -921,9 +921,9 @@ UNSAFE_END
 UNSAFE_ENTRY(jboolean, Unsafe_is_in_h2(JNIEnv *env, jobject unsafe, jobject obj)) {
   if (!EnableTeraHeap) return false;
 
-  oop o = JNIHandles::resolve_non_null(obj);
+  oop o = JNIHandles::resolve(obj);
 
-  return Universe::teraHeap()->is_in_h2(o);
+  return (o ==  nullptr) ? false : Universe::teraHeap()->is_in_h2(o);
 }
 UNSAFE_END
 
