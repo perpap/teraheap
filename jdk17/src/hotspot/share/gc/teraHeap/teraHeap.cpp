@@ -231,7 +231,7 @@ void TeraHeap::h2_push_backward_reference(void *p, oop o) {
 #endif // TERA_DBG_PHASES
 
   if (TeraHeapStatistics)
-    Universe::teraHeap()->get_tera_stats()->add_back_ref();
+    tera_stats->add_back_ref();
 
   _th_stack.push((oop *)p);
   _th_adjust_stack.push((oop *)p);
@@ -497,9 +497,9 @@ void TeraHeap::thread_group_region_enabled(uint thread_id, HeapWord *obj, void *
 	if (h2_addr_arr[thread_id] == NULL) 
 		return;
 
-	if (is_in_h2(obj)) {
-    Universe::teraHeap()->group_regions(h2_addr_arr[thread_id], obj); //this has a lock
-		return;
+  if (is_in_h2(obj)) {
+    group_regions(h2_addr_arr[thread_id], obj); //this has a lock
+    return;
 	}
 
   // If it is an already backward pointer popped from th_adjust_stack
