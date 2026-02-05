@@ -361,19 +361,17 @@ void PSCardTable::h2_scavenge_contents_parallel(
   ObjectStartArray* start_array = Universe::teraHeap()->h2_start_array();
   HeapWord* space_top = (HeapWord *)Universe::teraHeap()->h2_top_addr();
 
-  // HeapWord* space_top = (HeapWord *)Universe::teraHeap()->h2_top_addr_snapshot();
-
-  assert(space_top != NULL , "snapshot of the tera heap top should have been taken");
+  assert(space_top != NULL, "snapshot of the teraheap top should have been taken");
   
 	int ssize = TeraStripeSize; // Naked constant!  Default work unit = 8M
 	int dirty_card_count = 0;
-	oop* sp_top = (oop*)space_top;
+	oop* sp_top = (oop *) space_top;
 	CardValue* start_card = byte_for(Universe::teraHeap()->h2_start_addr());
 	CardValue* end_card = byte_for(sp_top - 1) + 1;
 
 	assert(start_card != end_card, "Sanity check");
 
-	 // Preventing scanning objects more than onece
+  // Preventing scanning objects more than onece
 	oop* last_scanned = NULL;
 
 	// In the following loop, in the specified area (currently only H2)

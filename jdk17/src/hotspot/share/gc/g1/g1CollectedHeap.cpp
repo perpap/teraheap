@@ -1703,7 +1703,7 @@ jint G1CollectedHeap::initialize() {
       vm_shutdown_during_initialization(
         "H2 should be in greater addresses than H1");
 
-    _th_card_table = new PSCardTable( MemRegion() , _tera_heap_reserved);
+    _th_card_table = new PSCardTable(MemRegion(), _tera_heap_reserved);
     _th_card_table->th_card_table_initialize();  
 
     //clean all the cards 

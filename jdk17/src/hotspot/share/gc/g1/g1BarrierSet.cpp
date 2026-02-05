@@ -116,7 +116,7 @@ void G1BarrierSet::write_ref_field_post_slow(volatile CardValue* byte) {
     if (EnableTeraHeap) {
       BarrierSet *bs = BarrierSet::barrier_set();
       CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-      assert(Universe::heap()->is_in(ctbs->card_table()->addr_for((CardValue*)byte) ) , "should not be called at an h2 card" );
+      assert(Universe::heap()->is_in(ctbs->card_table()->addr_for((CardValue*)byte)), "should not be called at an h2 card");
     }
   )
 

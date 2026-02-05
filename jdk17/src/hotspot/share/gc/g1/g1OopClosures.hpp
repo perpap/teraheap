@@ -223,7 +223,7 @@ class G1CMOopClosure : public MetadataVisitingOopIterateClosure {
   //its children should be marked too
   bool _h2_flag;
   oop obj_container; //the object that we are currently scanning its fields and metadata
-  bool metadata_traversal_1 , metadata_traversal_2; //dont enable the tera flag when metadata traversal is happening
+  bool metadata_traversal_1, metadata_traversal_2; //dont enable the tera flag when metadata traversal is happening
 #endif
 
 public:
@@ -308,7 +308,7 @@ public:
   virtual void do_oop(narrowOop* p) { do_oop_work(p); }
 
 #ifdef TERA_CONC_MARKING
-  void set_parent_tera( bool is_tera_enabled , uint64_t rdd_id, uint64_t part_id ){  
+  void set_parent_tera(bool is_tera_enabled, uint64_t rdd_id, uint64_t part_id) {  
     _is_tera_enabled = is_tera_enabled; 
     _rdd_id = rdd_id;
     _part_id = part_id;

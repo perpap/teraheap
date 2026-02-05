@@ -266,7 +266,7 @@ void G1ParScanThreadState::do_oop_evac(T* p) {
 
   // p (old) --> obj (old/young)
   // p must be in an old region, in order for the obj-region RemSet to be updated
-  // bcs RemSets only hold infos about old->young , old->old  incoming ptrs
+  // bcs RemSets only hold infos about old->young, old->old  incoming ptrs
   HeapRegion* from = _g1h->heap_region_containing(p);  
   if (!from->is_young()) {
     enqueue_card_if_tracked(_g1h->region_attr(obj), p, obj);
@@ -641,88 +641,89 @@ oop G1ParScanThreadState::copy_to_h2_space(G1HeapRegionAttr region_attr,
 
 MAYBE_INLINE_EVACUATION
 oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr,
-                                                    oop const obj,
-                                                    markWord const old_mark){
-
+                                              oop const obj,
+                                              markWord const old_mark) {
   assert(region_attr.is_in_cset(),
-          "Unexpected region attr type: %s", region_attr.get_type_str());
+         "Unexpected region attr type: %s", region_attr.get_type_str());
 
   Klass* klass = obj->klass();
   const size_t word_sz = obj->size_given_klass(klass);
   HeapWord* h2_obj_addr;
   oop h2_obj;
 
-  {
-    //Two diff refs may point to the same obj that is going to be evacuated in h2.
-    //If both refs are popped and they are now executing do_copy_to_h2_space() for the same obj
-    //then only one will manage to evacuate the obj to h2. The other one when unlocked, will hit this if statment and return
-    if (obj->is_forwarded())
-      return obj->forwardee(); 
+  // Two diff refs may point to the same obj that is going to be evacuated in h2.
+  // If both refs are popped and they are now executing do_copy_to_h2_space() for the same obj
+  // then only one will manage to evacuate the obj to h2. The other one when unlocked, will hit this if statment and return
+  if (obj->is_forwarded())
+    return obj->forwardee(); 
 
-    if (TeraHeapStatistics) {
-      Universe::teraHeap()->get_tera_stats()->add_object( obj->size()*HeapWordSize );
+  // Get H2 address
+  // ----------------------------------
 
-      Ticks start = Ticks::now();
+  if (TeraHeapStatistics) {
+    Universe::teraHeap()->get_tera_stats()->add_object( obj->size()*HeapWordSize );
 
-      h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz );
+    Ticks start = Ticks::now();
 
-      Tickspan time = Ticks::now() - start;
-      Universe::teraHeap()->get_tera_stats()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
-    } else {
-      h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object( obj , word_sz );
-    }
+    h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object(obj, word_sz);
 
-    assert(h2_obj_addr != NULL, "when we get here, allocation should have succeeded");
-    assert(Universe::teraHeap()->is_in_h2(h2_obj_addr), "Pointer from H2 is not valid");
-    
-    h2_obj = cast_to_oop(h2_obj_addr);
-    
-    
-    //returns NULL if succeded (meaning h2_obj_addr is the new location) 
-    //else someone else manage to set the forwarding ptr, to another h2 location. 
-    //Thus it return that new location of h2, which is not h2_obj_addr 
-    const oop forward_ptr = obj->forward_to_atomic( h2_obj, old_mark , memory_order_relaxed);
+    Tickspan time = Ticks::now() - start;
+    Universe::teraHeap()->get_tera_stats()->thr_add_time_alloc_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+  } else {
+    h2_obj_addr = (HeapWord*) Universe::teraHeap()->h2_add_object(obj, word_sz);
+  }
 
-    if (forward_ptr != NULL) {
-      // TODO: undo allocation
-      G1CollectedHeap::heap()->fill_with_dummy_object(h2_obj_addr, h2_obj_addr + word_sz, true);
+  assert(h2_obj_addr != NULL, "when we get here, allocation should have succeeded");
+  assert(Universe::teraHeap()->is_in_h2(h2_obj_addr), "Pointer from H2 is not valid");
+  
+  h2_obj = cast_to_oop(h2_obj_addr);
+  
+  // Forward object to new address
+  // ----------------------------------
 
-      if (TeraHeapStatistics)
-        Universe::teraHeap()->get_tera_stats()->add_h2_waste(word_sz);
+  // returns NULL if succeded (meaning h2_obj_addr is the new location) 
+  // else someone else manage to set the forwarding ptr, to another h2 location. 
+  // Thus it return that new location of h2, which is not h2_obj_addr 
+  const oop forward_ptr = obj->forward_to_atomic(h2_obj, old_mark, memory_order_relaxed);
 
-    #ifdef TERA_DEBUG
-      fprintf(stderr, "[INFO] filled with dummy object\n");
-    #endif // TERA_DEBUG
+  if (forward_ptr != NULL) {
+    // TODO: undo allocation
+    G1CollectedHeap::heap()->fill_with_dummy_object(h2_obj_addr, h2_obj_addr + word_sz, true);
 
-      return forward_ptr;
-    }
+    if (TeraHeapStatistics)
+      Universe::teraHeap()->get_tera_stats()->add_h2_waste(word_sz);
 
-    if (TeraHeapStatistics) {
-      Ticks start = Ticks::now();
+  #ifdef TERA_DEBUG
+    fprintf(stderr, "[INFO] filled with dummy object\n");
+  #endif // TERA_DEBUG
 
-      Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
+    return forward_ptr;
+  }
 
-      Tickspan time = Ticks::now() - start;
-      Universe::teraHeap()->get_tera_stats()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
-    } else {
-      Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
-    }
+  // Copy object to H2
+  // ----------------------------------
 
-    h2_obj->set_mark(old_mark);
+  if (TeraHeapStatistics) {
+    Ticks start = Ticks::now();
 
-  }//destroy mutex. Continue in parallel.
+    Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
 
+    Tickspan time = Ticks::now() - start;
+    Universe::teraHeap()->get_tera_stats()->thr_add_time_copy_h2(_worker_id, TimeHelper::counter_to_millis(time.value()));
+  } else {
+    Universe::teraHeap()->h2_move_obj(cast_from_oop<HeapWord*>(obj), h2_obj_addr, word_sz);
+  }
 
- 
+  h2_obj->set_mark(old_mark);
 
-  //traverse the 1-st level kids
-  //----------------------------------
+  // Traverse the 1-st level kids
+  // ----------------------------------
 
   // Most objects are not arrays, so do one array check rather than
   // checking for each array category for each object.
   if (klass->is_array_klass()) {
     if (klass->is_objArray_klass()) {
-      
+
       G1HeapRegionAttr dest_attr = G1HeapRegionAttr(G1HeapRegionAttr::Young); //@? no need for this line of code      
       start_partial_objarray(dest_attr, obj, h2_obj);
     } else {
@@ -751,11 +752,10 @@ oop G1ParScanThreadState::do_copy_to_h2_space(G1HeapRegionAttr const region_attr
 // (1) for every h2->h1 ref found, we change the h2 card flag to young/old (back refs)
 // (2) for every h2->h2 ref found, we update the dependency list
 template <class T>
-void G1ParScanThreadState::th_ref_update(T*p, oop obj, G1HeapRegionAttr region_attr ){
- 
+void G1ParScanThreadState::th_ref_update(T*p, oop obj, G1HeapRegionAttr region_attr ) {
   assert(EnableTeraHeap, "tera heap should be enabled for this function to be called");
   assert(Universe::teraHeap()->is_in_h2(p), "references coming from h1 should have been filtered out");
-  
+
   if (Universe::teraHeap()->is_in_h2(obj)) {
     //p (h2) -> obj (h2)
     //check for dependency list update
@@ -777,7 +777,7 @@ void G1ParScanThreadState::th_ref_update(T*p, oop obj, G1HeapRegionAttr region_a
   //    it was above TAMPs and thus it was not found during the CM. therefore it doesnt have its tera flag enabled
   //  or in cset but we are in young gc      
 
-  _g1h->th_card_table()->inline_write_ref_field_gc((void*) p, obj, !_ct->is_in_young(obj) ); 
+  _g1h->th_card_table()->inline_write_ref_field_gc((void*) p, obj, !_ct->is_in_young(obj)); 
 }
 #endif
 

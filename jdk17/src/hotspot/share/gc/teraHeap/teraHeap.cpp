@@ -450,7 +450,7 @@ char* TeraHeap::h2_add_object(oop obj, size_t size) {
 
 	pos = allocate(size, (uint64_t)obj->get_obj_group_id(), (uint64_t)obj->get_obj_part_id());
 	
-	assert( (HeapWord *) h2_top_addr() < (HeapWord*) _stop_addr , "H2 is Out of Memory\n" );
+	assert((HeapWord *) h2_top_addr() < (HeapWord*) _stop_addr, "H2 is Out of Memory\n");
 
 	_start_array.th_allocate_block((HeapWord *)pos);
 
