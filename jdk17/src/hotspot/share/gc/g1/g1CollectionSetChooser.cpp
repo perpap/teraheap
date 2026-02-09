@@ -257,15 +257,13 @@ uint G1CollectionSetChooser::calculate_work_chunk_size(uint num_workers, uint nu
 bool G1CollectionSetChooser::should_add(HeapRegion* hr) {
 #ifdef TERA_CONC_MARKING 
   DEBUG_ONLY(
-    if(!EnableTeraHeap) assert(hr->h2_marked_bytes()==0 , "Tera Heap is not enabled. H2 marked objs should not be found");
+    if (!EnableTeraHeap) assert(hr->h2_marked_bytes() == 0, "Tera Heap is not enabled. H2 marked objs should not be found");
   )
 
   return !hr->is_young() &&
          !hr->is_pinned() &&
-         region_occupancy_low_enough_for_evac(hr->live_bytes_excluding_h2() ) &&
+         region_occupancy_low_enough_for_evac(hr->live_bytes_excluding_h2()) &&
          hr->rem_set()->is_complete();
-  
- 
 #else
   return !hr->is_young() &&
          !hr->is_pinned() &&

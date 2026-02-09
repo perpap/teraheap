@@ -90,6 +90,7 @@ inline void G1ScanClosureBase::handle_non_cset_obj_common_tera(G1HeapRegionAttr 
   //h2->h1
   //back ref found: update h2 card table flag
   _g1h->th_card_table()->inline_write_ref_field_gc((void*) p, obj, !(_g1h->is_in_young(obj) || region_attr.is_humongous())); 
+  
   // if h1 obj is in opt cset, remember
   handle_non_cset_obj_common(region_attr,p,obj);
 }
@@ -114,7 +115,6 @@ inline void G1ScanEvacuatedObjClosure::do_oop_work(T* p) {
   oop obj = CompressedOops::decode_not_null(heap_oop);
   assert(!Universe::teraHeap()->is_in_h2(p), "Parent is an h2 obj. wrong closure");
 
-
 #ifdef TERA_MAINTENANCE
   // h1->h2 : Fence
   if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
@@ -127,15 +127,11 @@ inline void G1ScanEvacuatedObjClosure::do_oop_work(T* p) {
   }
 #endif
 
-  
-
   const G1HeapRegionAttr region_attr = _g1h->region_attr(obj);
   if (region_attr.is_in_cset()) {
     // h1 -> h1 (in the cset)    
     prefetch_and_push(p, obj);
-
   } else if (!HeapRegion::is_in_same_region(p, obj)) {
-    
     // h1->h1 (out of cset)
     handle_non_cset_obj_common(region_attr, p, obj);
     
@@ -149,11 +145,10 @@ inline void G1ScanEvacuatedObjClosure::do_oop_work(T* p) {
 
     // _scanning_in_young == False  : evac obj (old) --> obj (old/young)
     // rem set of obj-region needs to be updated
-    // bcs RemSets only hold infos about old->young , old->old  incoming ptrs
+    // bcs RemSets only hold infos about old->young, old->old  incoming ptrs
     _par_scan_state->enqueue_card_if_tracked(region_attr, p, obj);
   }
 }
-
 
 #ifdef TERA_EVAC_MOVE
 //an object was found that needs to be evacuated in h2, and we are now scanning its fields
@@ -171,7 +166,6 @@ inline void ScanH2ObjClosure::do_oop_work(T* p) {
 
   assert(Universe::teraHeap()->is_in_h2(p), "Parent must be an h2 obj. wrong closure");
 
-
   // h2->h2 : Fence, Update dependency list
   if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj));
@@ -186,12 +180,10 @@ inline void ScanH2ObjClosure::do_oop_work(T* p) {
   if (region_attr.is_in_cset()) {
     prefetch_and_push(p, obj); 
   } else {
-    
 #ifdef TERA_CARDS
     // h2 -> (h1 out of cset) : Update h2 card table flag
    handle_non_cset_obj_common_tera(region_attr, p, obj);      
 #endif
-   
   }
 }
 #endif
@@ -211,25 +203,24 @@ inline void G1RootRegionScanClosure::do_oop_work(T* p) {
   }
   oop obj = CompressedOops::decode_not_null(heap_oop);
 
-
 #ifdef TERA_MAINTENANCE     
-      // the root regions are iterated, and every oop found in them
-      // it is also iterated by oop_iterate.
-      // So here we find all the outgoing pointers, from the root regions.
-      // An outgoing pointer may be in H1 old gen or in H2
+  // the root regions are iterated, and every oop found in them
+  // it is also iterated by oop_iterate.
+  // So here we find all the outgoing pointers, from the root regions.
+  // An outgoing pointer may be in H1 old gen or in H2
 
-      //If obj is in H2
-      //  (1) set H2 region live bit
-      //  (2) Fence heap traversal to H2
-      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {    
-      #ifdef DBG_LOST_REGION
-        const char *name = "G1RootRegionScanClosure::do_oop_work";
-        Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
-      #else
-        Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
-      #endif // DBG_LOST_REGION
-        return;
-      }
+  //If obj is in H2
+  //  (1) set H2 region live bit
+  //  (2) Fence heap traversal to H2
+  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {    
+  #ifdef DBG_LOST_REGION
+    const char *name = "G1RootRegionScanClosure::do_oop_work";
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+  #else
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
+  #endif // DBG_LOST_REGION
+    return;
+  }
 #endif
 
 #ifdef TERA_CONC_MARKING  
@@ -393,11 +384,9 @@ inline void H2ToH1Closure::do_oop_work(T* p) {
     return;
   }
   oop obj = CompressedOops::decode_not_null(o);
-  
 
   // h2->h2
   if (Universe::teraHeap()->is_in_h2(obj)) {
-
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj));
     if (should_mark) {
     #ifdef DBG_LOST_REGION
@@ -408,7 +397,6 @@ inline void H2ToH1Closure::do_oop_work(T* p) {
     #endif // DBG_LOST_REGION
     }
 
-    
 		return;	
   }
 
@@ -417,31 +405,29 @@ inline void H2ToH1Closure::do_oop_work(T* p) {
   if (region_attr.is_in_cset()) {
     // h2->h1 (in cset)   
     prefetch_and_push(p, obj);
-   
-  }else{
+  } else {
     // h2->h1 (out of cset)
     // meaning obj is not in young (bcs its excluded from the cset)    
     handle_non_cset_obj_common_tera(region_attr, p, obj);
 	
-    if( should_mark ){
+    if (should_mark) {
       enable_tera_flag( (void*) p, obj);
       mark_object(obj);
     }
-      
   }
 }
 
 void H2ToH1Closure::mark_object(oop obj) {
   assert(!_g1h->heap_region_containing(obj)->in_collection_set(), "should not mark objects in the CSet");
   // TODO: enable this assertion when we mark backrefs to transfer in H2.
-  // assert(obj->is_marked_move_h2() , "The back ref should have already enable the tera flag of the H1 obj");
+  // assert(obj->is_marked_move_h2(), "The back ref should have already enable the tera flag of the H1 obj");
   // mark it as live
   _cm->mark_in_next_bitmap(_worker_id, obj);
 }
 
 void H2ToH1Closure::enable_tera_flag(void *p, oop obj){
    // enable its tera flag
-  if ( !obj->is_marked_move_h2() && !Universe::teraHeap()->is_metadata(obj) ) {   
+  if (!obj->is_marked_move_h2() && !Universe::teraHeap()->is_metadata(obj)) {   
     obj->mark_move_h2(Universe::teraHeap()->h2_get_region_groupId(p),
                       Universe::teraHeap()->h2_get_region_partId(p));
   }

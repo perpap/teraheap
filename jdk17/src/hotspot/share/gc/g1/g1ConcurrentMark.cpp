@@ -1045,10 +1045,10 @@ class G1UpdateRemSetTrackingBeforeRebuildTask : public AbstractGangTask {
 
       DEBUG_ONLY(
         if (EnableTeraHeap && h2_marked_words > 0) {       
-            assert( h2_marked_words == marked_words ,
-              "Humongous object should have same h2_marked_words (" SIZE_FORMAT ") with marked_words (" SIZE_FORMAT ")", 
-              h2_marked_words, marked_words
-            );
+          assert(h2_marked_words == marked_words,
+                 "Humongous object should have same h2_marked_words (" SIZE_FORMAT ") with marked_words (" SIZE_FORMAT ")", 
+                 h2_marked_words, marked_words
+          );
         }
       )
 
@@ -1098,7 +1098,7 @@ class G1UpdateRemSetTrackingBeforeRebuildTask : public AbstractGangTask {
         
 #ifdef TERA_CONC_MARKING
         if (EnableTeraHeap) {
-          add_marked_bytes_and_note_end(hr, _cm->live_bytes(region_idx) , _cm->h2_live_bytes(region_idx) );
+          add_marked_bytes_and_note_end(hr, _cm->live_bytes(region_idx), _cm->h2_live_bytes(region_idx));
         } else {
           add_marked_bytes_and_note_end(hr, _cm->live_bytes(region_idx));
         }
