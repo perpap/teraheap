@@ -42,7 +42,8 @@ public class Test_CM_WeakRef {
       _UNSAFE.h2TagAndMoveRoot(str, 13, 0);
 
       // -------------------------------
-      GC.full_gc();
+      GC.move_to_old();
+      GC.gc();
       // Here: H1: { a } --> H2: { str }
       // -------------------------------
 
@@ -105,7 +106,8 @@ public class Test_CM_WeakRef {
     _UNSAFE.h2TagAndMoveRoot(iarr, 13, 0);
 
     // --------------------------
-    GC.full_gc();
+    GC.move_to_old();
+    GC.gc();
     // iarr should be moved to H2
     // and not corrupt str
     // --------------------------

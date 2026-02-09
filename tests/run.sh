@@ -1,325 +1,202 @@
 #!/usr/bin/env bash
 
-# Use this script to run tests 
-# By default: it runs the java tests of G1 Full GC
+#-e: exit on command failure
+#-u: error on unset variables 
+#-o pipefail: pipelines fail if any command fails
+set -euo pipefail
 
-PARALLEL_GC_THREADS=2
-# REGION_SIZE / 2^(TERA_CARD_SIZE) -> found in sharedDefines.hpp
-STRIPE_SIZE=32768
-H2_SIZE_IN_BYTES=$(echo "100 * 1024 * 1024 * 1024" | bc)
+. ./conf.sh
 
-# JAVA="../jdk17/build/linux-x86_64-server-slowdebug/jdk/bin/java"
-JAVA="../jdk17/build/linux-x86_64-server-release/jdk/bin/java"
-
-# Flag to set which GC the jvm will use
-GC="UseG1GC"
-
+PARALLEL_GC_THREADS=(8)
 ITER=1
- 
-# Java files should be under: ${TESTD}/${EXEC_DIR_NAME}
 TESTD="g1_full_gc"
-EXEC_DIR_NAME="java"
+GC_NAME="G1 Full GC"
+X_FLAGS=()
+SELECTED_TESTS=()
+STOP_ON_FAIL=0
+H1_SZ=0
+H1_H2_SZ=0
+JVM_FLAGS=()
 
-FLAGS="-XX:+EnableTeraHeap \
-  -XX:TeraStripeSize=${STRIPE_SIZE} \
-  -XX:-ClassUnloading \
-  -XX:-UseCompressedOops \
-  -XX:-UseCompressedClassPointers \
-  -XX:AllocateH2At=/mnt/fmap/  \
-  -XX:H2FileSize=${H2_SIZE_IN_BYTES}"
+# Usage
+usage() {
+  local code="${1:-1}"
+  cat >&2 <<'EOF'
+Usage:
+  ./run.sh -n <iterations> [-m <mode>] [-t <gc_threads_csv>] -d [<evac|full>] [-x "<jvm flags>"]... [-s <test1,test2,...>] [-b] [-h]
 
-# Extra flags that may be useful in some cases
-X_FLAGS=""
+Options:
+  -n <iterations>       Number of iterations to run.
+  -m <mode>             Execution mode. One of: all, int, c1, c2, debug, msgbox.
+                        (If omitted, the script should use its default mode which is all.)
+  -t <gc_threads_csv>   Comma-separated list of Parallel GC thread counts (e.g., 1,2,4,8).
+  -d <evac|full>        Select benchmark suite.
+                        (If omitted, the script should run full GC benchmarks.)
+  -x "<jvm flags>"      Extra JVM flags. You can pass multiple flags in one -x string
+                        (space-separated), and you can also repeat -x multiple times.
+                        Example: -x "-XX:+UnlockDiagnosticVMOptions -XX:+PrintCompilation" -x "-Dfoo=bar"
+  -s <tests_csv>        Comma-separated list of specific tests/classes to run.
+                        Example: -s ClassInstance,HashMap
+  -b                    Stop the script on the first test failure.
+  -h                    Show this help and exit.
 
-# NOTE: you can add exclusive tests after check_args
-# If you want to run a single test, you should overwrite EXEC
-# variable after last set.
-EXEC_JAVA=("Array" "Array_List" "Array_List_Int" "List_Large" "MultiList" \
-	"Simple_Lambda" "Extend_Lambda" "Test_Reflection" "Test_Reference" \
-	"HashMap" "Rehashing" "Clone" "Groupping" "MultiHashMap" \
-	"Test_WeakHashMap" "ClassInstance")
+Examples:
+  ./run.sh -n 3 -m c2 -t 1,2,4 -d evac
+  ./run.sh -n 1 -d full -b -s ClassInstance,TriggerImplicitGCs
+  ./run.sh -n 5 -m int -d evac -x "-XX:+UnlockDiagnosticVMOptions -XX:+PrintInterpreter"
+EOF
+  exit "$code"
+}
 
-EXEC_PHASES=("Phase1_MarkOneObject" "Phase1_MarkSubObject" \
-  "Phase2_GiveAddressesFromH2" "Phase3_UpdateReferences" \
-  "SimpleOneObj" "SimpleOneBackward" "FGCAfterCM")
+parse_test_dir() {
+  local val=$1
+
+  case "$val" in
+    "evac")
+      TESTD="g1_evacuations"
+      GC_NAME="G1 Evacuations"
+      EXEC+=( "${ONLY_EVAC_TESTS[@]}" )
+      ;;
+    "full")
+      TESTD="g1_full_gc"
+      GC_NAME="G1 Full GC"
+      EXEC+=( "${ONLY_FULLGC_TESTS[@]}" )
+      ;;
+    *)
+      echo "Error: invalid test dir '$val'. Expected: 'evac' or 'full'." >&2
+      usage 1
+      ;;
+  esac
+}
+
+set_heap_size() {
+  local app=$1
+
+  case "$app" in
+    ClassInstance|TriggerImplicitGCs)
+      H1_SZ=2
+      ;;
+    Array_List)
+      H1_SZ=10
+      ;;
+    HashMap|Array_List_String)
+      H1_SZ=3
+      ;;
+    Test_H2_CM_YoungInterrupt)
+      H1_SZ=4
+      ;;
+    *)
+      H1_SZ=1
+      ;;
+  esac
+      
+  H1_H2_SZ=100
+  H2_SIZE=$(echo $(( (H1_H2_SZ-H1_SZ)*1024*1024*1024 )))
+}
 
 # Export Enviroment Variables
 export_env_vars() {
 	PROJECT_DIR="$(pwd)/.."
 
-	export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LIBRARY_PATH
-	export LD_LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LD_LIBRARY_PATH
-	export PATH=${PROJECT_DIR}/allocator/include/:$PATH
-	export C_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$C_INCLUDE_PATH
-	export CPLUS_INCLUDE_PATH=${PROJECT_DIR}/allocator/include/:$CPLUS_INCLUDE_PATH
+	export LIBRARY_PATH="${PROJECT_DIR}/allocator/lib/:${LIBRARY_PATH:-}"
+	export LD_LIBRARY_PATH="${PROJECT_DIR}/allocator/lib/:${LD_LIBRARY_PATH:-}"
+	export PATH="${PROJECT_DIR}/allocator/include/:${PATH:-}"
+	export C_INCLUDE_PATH="${PROJECT_DIR}/allocator/include/:${C_INCLUDE_PATH:-}"
+	export CPLUS_INCLUDE_PATH="${PROJECT_DIR}/allocator/include/:${CPLUS_INCLUDE_PATH:-}"
 }
 
-clear_env() {
-  echo "Clearing env..."
-  local proj=$(pwd)
-  
-  echo "Clear H2 file..."
-  cd /mnt/fmap
-  rm -f h2-100.heap
-  fallocate -l 100G h2-100.heap
+drop_page_cache() {
+  if ! sudo -n true 2>/dev/null; then
+    echo "Skipping drop_page_cache: no sudo access (or sudo requires a password)." >&2
+    return 0
+  fi
 
-  echo "Droping Caches..."
   sudo sync
   sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
-
-  echo "Done!"
-  cd "$proj"
 }
 
-# Run tests using only interpreter mode
-function interpreter_mode() {
-  local class_file=$1
-  local num_gc_thread=$2
-  local dir=${TESTD}/${EXEC_DIR_NAME}
+set_cmd_jvm_flags() {
+  EXEC_CMD=( "${JAVA}" )
 
-	${JAVA} ${FLAGS} ${X_FLAGS} -server \
-		-XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly -XX:+PrintInterpreter -XX:+PrintNMethods \
-		-Djava.compiler=NONE \
-		-XX:+ShowMessageBoxOnError \
-		-XX:+$GC \
-		-XX:ParallelGCThreads=${num_gc_thread} \
-		-XX:TeraHeapSize=${TERACACHE_SIZE} \
-		-Xmx${MAX}g \
-		-Xms${XMS}g \
-		-XX:+TeraHeapStatistics \
-    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
-		-Xlogth:llarge_teraCache.txt \
-		-XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
-    -cp ./${dir}/bin ${class_file} \
-    > ./${dir}/out/${class_file}_err 2>&1 > ./${dir}/out/${class_file}_out
-}
-
-# Run tests using only C1 compiler
-function c1_mode() {
-  local class_file=$1
-  local num_gc_thread=$2
-  local dir=${TESTD}/${EXEC_DIR_NAME}
-
-  ${JAVA} ${FLAGS} ${X_FLAGS} \
-    -XX:+UnlockDiagnosticVMOptions \
-    -XX:+PrintAssembly -XX:+PrintCompilation -XX:+PrintNMethods -XX:+LogCompilation \
-    -XX:+ShowMessageBoxOnError \
-    -XX:TieredStopAtLevel=3 \
-    -XX:+$GC \
-    -XX:ParallelGCThreads=${num_gc_thread} \
-    -XX:TeraHeapSize=${TERACACHE_SIZE} \
-    -Xmx${MAX}g \
-    -Xms${XMS}g \
-    -XX:+TeraHeapStatistics \
-    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
-    -Xlogth:llarge_teraCache.txt \
-    -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
-    -cp ./${dir}/bin ${class_file} \
-    > ./${dir}/out/${class_file}_err 2>&1 > ./${dir}/out/${class_file}_out
-}
-	 
-# Run tests using C2 compiler
-function c2_mode() {
-  local class_file=$1
-  local num_gc_thread=$2
-  local dir=${TESTD}/${EXEC_DIR_NAME}
-
-  ${JAVA} ${FLAGS} ${X_FLAGS} \
-    -server \
-    -XX:+UnlockDiagnosticVMOptions \
-    -XX:+PrintNMethods -XX:+PrintCompilation -XX:+PrintOptoAssembly -XX:+PrintAssembly \
-    -XX:+LogCompilation \
-    -XX:+ShowMessageBoxOnError \
-    -XX:+$GC \
-    -XX:ParallelGCThreads=${num_gc_thread} \
-    -XX:TeraHeapSize=${TERACACHE_SIZE} \
-    -Xmx${MAX}g \
-    -Xms${XMS}g \
-    -XX:+TeraHeapStatistics \
-    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
-    -Xlogtc:llarge_teraCache.txt \
-    -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
-    -cp ./${dir}/bin ${class_file} \
-    > ./${dir}/out/${class_file}_err 2>&1 > ./${dir}/out/${class_file}_out
-} 
-
-# Run tests using all compilers
-function run_tests() {
-  local class_file=$1
-  local num_gc_thread=$2
-  local dir="${TESTD}/${EXEC_DIR_NAME}"
-
-  ${JAVA} ${FLAGS} ${X_FLAGS} \
-    -server \
-    -XX:+"$GC" \
-    -XX:ParallelGCThreads=${num_gc_thread} \
-    -XX:TeraHeapSize=${TERACACHE_SIZE} \
-    -Xmx${MAX}g \
-    -Xms${XMS}g \
-    -XX:+TeraHeapStatistics \
-    -Xlog:gc*:file=./${dir}/out/${class_file}_gc.log \
-    -Xlogth:llarge_teraCache.txt \
-    -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
-    -cp ./${dir}/bin ${class_file} \
-    > ./${dir}/out/${class_file}_err 2>&1 > ./${dir}/out/${class_file}_out
-}
-
-# Run tests using gdb
-function run_tests_debug() {
-  local class_file=$1
-  local num_gc_thread=$2
-  local dir=${TESTD}/${EXEC_DIR_NAME}
-
-  gdb --args ${JAVA} ${FLAGS} ${X_FLAGS} \
-    -server \
-    -XX:+ShowMessageBoxOnError \
-    -XX:+$GC \
-    -XX:ParallelGCThreads=${num_gc_thread} \
-    -XX:TeraHeapSize=${TERACACHE_SIZE} \
-    -Xmx${MAX}g \
-    -Xms${XMS}g \
-    -XX:+TeraHeapStatistics \
-    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
-    -Xlogth:llarge_teraCache.txt \
-    -XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log \
-    -cp ./${dir}/bin ${class_file}
-}
-
-# Run tests using all compilers
-function run_tests_msg_box() {
-  local class_file=$1
-  local num_gc_thread=$2
-  local dir=${TESTD}/${EXEC_DIR_NAME}
-
-	${JAVA} ${FLAGS} ${X_FLAGS} \
-		-server \
-		-XX:+ShowMessageBoxOnError \
-		-XX:+$GC \
-		-XX:ParallelGCThreads=${num_gc_thread} \
-		-XX:TeraHeapSize=${TERACACHE_SIZE} \
-    -XX:+TeraHeapStatistics \
-		-Xmx${MAX}g \
-		-Xms${XMS}g \
-    -Xlog:gc:file=./${dir}/out/${class_file}_gc.log \
-		-Xlogth:llarge_teraCache.txt -cp ./${dir}/bin ${class_file} \
-    > ./${dir}/out/${class_file}_err 2>&1 > ./${dir}/out/${class_file}_out
-}
-
-# Usage
-usage() {
-  echo
-  echo "Usage:"
-  echo -n "      $0 [option ...] [-h]"
-  echo
-  echo "Options:"
-  echo "      -n  Number of iterations"
-  echo "      -m  Mode (0: Default, 1: Interpreter, 2: C1, 3: C2, 4: gdb, 5: ShowMessageBoxOnError)"
-  echo "      -t  Number of GC threads (2, 4, 8, 16, 32)"
-  echo "      -d  Directory of tests"
-  echo "      -g  GC tests (g1evac: minor/major gc, g1full: full gc, g1: other tests, ps: parallel scavenge gc)"
-  echo "      -h  Show usage"
-  echo
-
-  exit 1
-}
-
-check_args() {
-  # Check if required options are present
-  if [[ -z "$MODE" || "${#PARALLEL_GC_THREADS[@]}" -eq 0 ]]; then
-    echo "Usage: $0 -m <mode> -t <#gcThreads,#gcThreads,#gcThreads> -d <dir> -g <tests> [-h]"
-    exit 1
+  if [[ "$TESTD" == "g1_evacuations" ]]; then
+    X_FLAGS+=(
+    "-Xbootclasspath/a:./Whitebox/wb.jar"
+    "-XX:+UnlockDiagnosticVMOptions"
+    "-XX:+WhiteBoxAPI"
+    "-XX:InitialTenuringThreshold=5"
+    "-XX:MaxTenuringThreshold=7"
+    "-XX:MaxGCPauseMillis=200"
+    "-XX:G1MixedGCCountTarget=4"
+  )
   fi
 
-  if [[ -z "$EXEC_DIR_NAME" ]]; then
-    echo "Usage: $0 -m <mode> -t <#gcThreads,#gcThreads,#gcThreads> -d <dir> -g <tests> [-h]"
-    exit 1
-  fi
+  case "${MODE:-}" in
+    ""|default)
+      MODE="Default"
+      JVM_FLAGS=( -server "${DEFAULT_FLAGS[@]}" "${X_FLAGS[@]}" )
+      ;;
+    interpreter)
+      MODE="Interpreter"
+      JVM_FLAGS=( "${INT_FLAGS[@]}" "${DEFAULT_FLAGS[@]}" "${X_FLAGS[@]}" )
+      ;;
+    c1)
+      MODE="C1"
+      JVM_FLAGS=( "${C1_FLAGS[@]}" "${DEFAULT_FLAGS[@]}" "${X_FLAGS[@]}" )
+      ;;
+    c2)
+      MODE="C2"
+      JVM_FLAGS=( "${C2_FLAGS[@]}" "${DEFAULT_FLAGS[@]}" "${X_FLAGS[@]}" )
+      ;;
+    debug)
+      MODE="Default with GDB"
+      EXEC_CMD=("gdb" "--args" "${EXEC_CMD}" )
+      JVM_FLAGS=( "${DEFAULT_FLAGS[@]}" "-XX:+ShowMessageBoxOnError" "${X_FLAGS[@]}" )
+      ;;
+    msgbox)
+      MODE="Default with Message Box"
+      JVM_FLAGS=( "${DEFAULT_FLAGS[@]}" "-XX:+ShowMessageBoxOnError" "${X_FLAGS[@]}" )
+      ;;
+  esac
+}
 
-  if [[ -z "$TESTD" ]]; then
-    echo "Usage: $0 -m <mode> -t <#gcThreads,#gcThreads,#gcThreads> -d <dir> -g <tests> [-h]"
-    exit 1
-  fi
+run_benchmark() {
+  local class_file=$1
+  local num_gc_thread=$2
+  local dir=${TESTD}/java
+
+  RUNTIME_FLAGS=(
+    "${JVM_FLAGS[@]}"
+    "-XX:ParallelGCThreads=${num_gc_thread}"
+    "-XX:TeraHeapSize=${H2_SIZE}"
+    "-Xmx${H1_H2_SZ}g"
+    "-Xms${H1_SZ}g"
+    "-Xlog:gc*:file=./${dir}/out/${class_file}_gc.log"
+    "-Xlogth:./${dir}/out/${class_file}_teraheap.txt"
+    "-XX:ErrorFile=./${dir}/out/${class_file}_hs_err.log")
+
+    "${EXEC_CMD[@]}" "${RUNTIME_FLAGS[@]}" \
+      -cp "./${dir}/bin" "${class_file}" \
+      > ./${dir}/out/${class_file}_err 2>&1 > ./${dir}/out/${class_file}_out
 }
 
 print_msg() {
   local gcThread=$1
   local iteration=$2
-  local mode_value
-  local gc_name
-
-  case "${MODE}" in
-    0)
-      mode_value="Default"
-      ;;
-    1)
-      mode_value="Interpreter"
-      ;;
-    2)
-      mode_value="C1"
-      ;;
-    3)
-      mode_value="C2"
-      ;;
-    5)
-      mode_value="Message Box"
-  esac
-
-  case "$TESTD" in
-    g1_evacuations)
-      gc_name="G1 Evacuations"
-      ;;
-    g1_full_gc)
-      gc_name="G1 Full GC"
-      ;;
-    g1_gc)
-      gc_name="G1 GC (other tests)"
-      ;;
-    parallel_gc)
-      gc_name="Parallel Scavenge"
-      ;;
-  esac
 
   echo 
   echo "___________________________________"
-  echo "         Run ${EXEC_DIR_NAME} Tests"
+  echo "         Run Tests"
   echo 
   echo "Iteration:  ${iteration}"
-  echo "GC:         ${gc_name}"
-  echo "Mode:       ${mode_value}"
+  echo "GC:         ${GC_NAME}"
+  echo "Mode:       ${MODE}"
   echo "GC Threads: ${gcThread}"
   echo "___________________________________"
   echo 
 }
 
-parse_test_dir() {
-  local val=$1
-  local gc_opt=("UseG1GC" "UsePSGC") 
-
-  case "$val" in
-    "g1evac")
-      TESTD="g1_evacuations"
-      GC="${gc_opt[0]}"
-      ;;
-    "g1full")
-      TESTD="g1_full_gc"
-      GC="${gc_opt[0]}"
-      ;;
-    "g1")
-      TESTD="g1_gc"
-      GC="${gc_opt[0]}"
-      ;;
-    "ps")
-      TESTD="parallel_gc"
-      GC="${gc_opt[1]}"
-      ;;
-    *)
-      TESTD=""
-      ;;
-  esac
-}
-
 # Check for the input arguments
-while getopts "n:m:t:d:g:h" opt
+while getopts "n:m:t:d:x:s:bh" opt
 do
   case "${opt}" in
     n)
@@ -327,140 +204,67 @@ do
       ;;
     m)
       MODE=${OPTARG}
+      case "$MODE" in
+        all|int|c1|c2|debug|msgbox) ;;
+        *)
+          echo "Error: invalid MODE '$MODE'. Expected one of: all, int, c1, c2, debug, msgbox" >&2
+          usage 1
+          ;;
+      esac
       ;;
     t)
       IFS=',' read -r -a PARALLEL_GC_THREADS <<< "$OPTARG"
       ;;
     d)
-      EXEC_DIR_NAME="${OPTARG}"
-      ;;
-    g)
       parse_test_dir "$OPTARG"
       ;;
+    b)
+      STOP_ON_FAIL=1
+      ;;
+    x)
+      # Split OPTARG on spaces into multiple flags
+      # The "<<<" is used to read a string in bash
+      read -r -a tmp <<< "$OPTARG"
+      X_FLAGS+=( "${tmp[@]}" )
+      ;;
+    s)
+      # Comma-separated list of test names (e.g., -s TestA,TestB,TestC)
+      IFS=',' read -r -a SELECTED_TESTS <<< "$OPTARG"
+      ;;
     h)
-      usage
+      usage 0
       ;;
     *)
-      usage
+      usage 1
       ;;
   esac
 done
 
-check_args
+mkdir -p ${TESTD}/java/out
 
-mkdir -p ${TESTD}/${EXEC_DIR_NAME}/out
-# cd ${EXEC_DIR_NAME} || exit
+set_cmd_jvm_flags
 
-# Additional Test files not used in every case
-if [ "${TESTD}" == "g1_evacuations" ]
-then
-  EXEC_JAVA+=("Array_mine" "Array_List_String")
-elif [ "${TESTD}" == "g1_full_gc" ]
-then
-  EXEC_JAVA+=("Array_List_String" "Humongous" "HumongousChain" "TriggerImplicitGCs")
-elif [ "${TESTD}" == "g1_gc" ]
-then
-  # only call theses
-  EXEC_JAVA=("Test_CM_WeakRef")
+export_env_vars
+
+# Check if selected tests are provided. If yes then run only these
+# tests
+if (( ${#SELECTED_TESTS[@]} > 0 )); then
+  EXEC=( "${SELECTED_TESTS[@]}" )
 fi
-
-# Setup exec files
-if [ "${EXEC_DIR_NAME}" == "java" ]
-then
-  EXEC=(${EXEC_JAVA[@]})
-else
-  EXEC=(${EXEC_PHASES[@]})
-fi
-
-# NOTE: you can overwrite EXEC here to run specific tests
-# Attention: if you overwrite EXEC make sure you have the
-# correct flags.
-# EXEC=("TriggerImplicitGCs")
-
-# Add extra flags
-if [ "$EXEC_DIR_NAME" == "phases" ]
-then
-  X_FLAGS="-XX:G1HeapWastePercent=0 $X_FLAGS"
-elif [ "$TESTD" == "g1_evacuations" ]
-then
-  X_FLAGS="-Xbootclasspath/a:./Whitebox/wb.jar \
-    -XX:+UnlockDiagnosticVMOptions \
-    -XX:+WhiteBoxAPI \
-    -XX:InitialTenuringThreshold=5 -XX:MaxTenuringThreshold=7 \
-    -XX:MaxGCPauseMillis=30000 \
-    -XX:G1MixedGCCountTarget=4 $X_FLAGS"
-elif [ "$TESTD" == "g1_gc" ]
-then
-  X_FLAGS="-Xbootclasspath/a:./Whitebox/wb.jar \
-    -XX:+UnlockDiagnosticVMOptions \
-    -XX:+WhiteBoxAPI $X_FLAGS"
-fi
-
-TMP_X_FLAGS="$X_FLAGS"
 
 for itr in $(seq 1 $ITER)
 do
-  # Run tests
   for gcThread in "${PARALLEL_GC_THREADS[@]}"
   do
     print_msg "$gcThread" "$itr"
 
     for exec_file in "${EXEC[@]}"
     do
-      if [ "${exec_file}" == "ClassInstance" ] || [ "${exec_file}" == "TriggerImplicitGCs" ]
-      then
-        XMS=2
-      elif [ "${exec_file}" == "Array_List" ]
-      then
-        XMS=10
-      elif [[ "${exec_file}" == "HashMap" || "${exec_file}" == "Array_List_String" ]]
-      then
-        XMS=3
-      else
-        XMS=1
-      fi
+      drop_page_cache
 
-      if [ "${exec_file}" == "FGCAfterCM" ]
-      then
-        X_FLAGS="-XX:InitiatingHeapOccupancyPercent=20 -XX:MaxGCPauseMillis=5 $TMP_X_FLAGS"
-      else
-        X_FLAGS="$TMP_X_FLAGS"
-      fi
+      set_heap_size ${exec_file}
 
-      MAX=100
-      TERACACHE_SIZE=$(echo $(( (MAX-XMS)*1024*1024*1024 )))
-      case ${MODE} in
-        0)
-          # clear_env
-          export_env_vars
-          run_tests "$exec_file" "$gcThread"
-          ;;
-        1)
-          # clear_env
-          export_env_vars
-          interpreter_mode "$exec_file" "$gcThread"
-          ;;
-        2)
-          # clear_env
-          export_env_vars
-          c1_mode "$exec_file" "$gcThread"
-          ;;
-        3)
-          # clear_env
-          export_env_vars
-          c2_mode "$exec_file" "$gcThread"
-          ;;
-        4)
-          # clear_env
-          export_env_vars
-          run_tests_debug "$exec_file" "$gcThread"
-          ;;
-        5)
-          # clear_env
-          export_env_vars
-          run_tests_msg_box "$exec_file" "$gcThread"
-          ;;
-      esac
+      run_benchmark "$exec_file" "$gcThread"
 
       ans=$?
 
@@ -471,15 +275,14 @@ do
         echo -e '\e[30G \e[32;1mPASS\e[0m';
       else    
         echo -e '\e[30G \e[31;1mFAIL\e[0m';
-        cp ${TESTD}/${EXEC_DIR_NAME}/out/${exec_file}_out ${TESTD}/${EXEC_DIR_NAME}/out/fail_${exec_file}_out
-        cp ${TESTD}/${EXEC_DIR_NAME}/out/${exec_file}_err ${TESTD}/${EXEC_DIR_NAME}/out/fail_${exec_file}_err
-        # NOTE: uncomment if you want to break when a test fails.
-        # break
+        cp ${TESTD}/java/out/${exec_file}_out ${TESTD}/java/out/fail_${exec_file}_out
+        cp ${TESTD}/java/out/${exec_file}_err ${TESTD}/java/out/fail_${exec_file}_err
+
+        if (( STOP_ON_FAIL  ))
+        then
+          break
+        fi
       fi
     done
-
   done
-
 done
-
-cd - > /dev/null || exit

@@ -11,31 +11,44 @@
 #
 ####################################################
 
+ARCH := $(shell lscpu | awk -F: '/Architecture/ {gsub(/^[ \t]+/, "", $$2); print $$2; exit}')
 JAVA_REPO := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))../../../jdk17
-# JAVA_COMP=$(JAVA_REPO)/build/base-linux/jdk/bin/javac -Xlint:deprecation -sourcepath ../Whitebox/wb.jar -classpath ./bin/
-JAVA_COMP=$(JAVA_REPO)/build/linux-x86_64-server-release/jdk/bin/javac -Xlint:deprecation -sourcepath ../Whitebox/wb.jar -classpath ./bin/
-# JAVA_COMP=$(JAVA_REPO)/build/linux-x86_64-server-slowdebug/jdk/bin/javac -Xlint:deprecation -sourcepath ../Whitebox/wb.jar -classpath ./bin/
-
-
+JAVA_COMP=$(JAVA_REPO)/build/linux-$(ARCH)-server-release/jdk/bin/javac -Xlint:deprecation -sourcepath ../../Whitebox/wb.jar -classpath ./bin/
 JAVAC=$(JAVA_COMP) -d ./bin
+LOGDIR := build_logs
 
-GDB=gdb
+TARGET = $(addprefix bin/, \
+				 GC.class Array.class Array_List.class Array_List_Int.class \
+				 Array_List_String.class Array_mine.class List_Large.class \
+				 MultiList.class Simple_Lambda.class Extend_Lambda.class \
+				 Test_Reflection.class Test_Reference.class HashMap.class Rehashing.class \
+				 Clone.class Groupping.class MultiHashMap.class Test_WeakHashMap.class \
+				 ClassInstance.class Test_CM_WeakRef.class Test_H2_CM_YoungInterrupt.class)
 
-TARGET=GC.class Array.class Array_List.class Array_List_Int.class \
-			 Array_List_String.class Array_mine.class List_Large.class \
-			 MultiList.class Simple_Lambda.class Extend_Lambda.class \
-			 Test_Reflection.class Test_Reference.class HashMap.class Rehashing.class \
-			 Clone.class Groupping.class MultiHashMap.class Test_WeakHashMap.class \
-			 ClassInstance.class
+.PHONY: header
 	   
-all: $(TARGET)
+all: header $(TARGET)
 
-%.class: %.java
-	$(JAVAC) $<
+header:
+	@printf "\n  \033[1;37m%*s\033[0m\n" 32 "Evacuation GC Test Compilation"
+	@printf "  \033[1;37m%-32s\033[0m  \033[1;37m%s\033[0m\n" "Test" "Status"
+	@printf "  \033[1;37m%-32s\033[0m  \033[1;37m%s\033[0m\n" "--------------------------------" "--------"
+
+# Ensure log directory exists
+$(LOGDIR):
+	@mkdir -p $(LOGDIR)
+
+bin/%.class: %.java | $(LOGDIR)
+	@printf "  \033[1;37m%-32s\033[0m  " "$*"
+	@$(JAVAC) $< >"$(LOGDIR)/$(@F).log" 2>&1 && \
+		printf "\033[1;32mSUCCESS\033[0m\n" || { \
+		printf "\033[1;31mFAIL\033[0m (log: %s)\n" "$(LOGDIR)/$(@F).log"; \
+		exit 1; \
+	}
 
 clean:
-	rm -r out
-	rm hotspot_pid*
+	@rm -rf out
+	@rm -f hotspot_pid*
 
 distclean: clean
-	rm -rf bin
+	@rm -rf bin build_logs

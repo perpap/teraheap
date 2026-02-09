@@ -85,11 +85,12 @@ inline void G1ScanClosureBase::handle_non_cset_obj_common_tera(G1HeapRegionAttr 
          && Universe::teraHeap()->is_in_h2(p)
          && !Universe::teraHeap()->is_in_h2(obj), "Sanity check");
 
-  assert(!_g1h->card_table()->is_in_young(obj), "obj should be in old");
+  assert(!_g1h->is_in_young(obj) , "obj should be in old");
 
   //h2->h1
   //back ref found: update h2 card table flag
-  _g1h->th_card_table()->inline_write_ref_field_gc((void*) p, obj, true); 
+  _g1h->th_card_table()->inline_write_ref_field_gc((void*) p, obj, !(_g1h->is_in_young(obj) || region_attr.is_humongous())); 
+  
   // if h1 obj is in opt cset, remember
   handle_non_cset_obj_common(region_attr,p,obj);
 }

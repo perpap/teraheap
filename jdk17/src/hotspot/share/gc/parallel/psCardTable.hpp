@@ -28,6 +28,8 @@
 #include "gc/shared/cardTable.hpp"
 #include "oops/oop.hpp"
 #include "gc/shared/gc_globals.hpp"
+#include "gc/teraHeap/teraHeap.hpp"
+#include "memory/universe.hpp"
 
 class MutableSpace;
 class ObjectStartArray;
@@ -106,10 +108,10 @@ class PSCardTable: public CardTable {
 
   static bool th_card_is_clean(int value, bool scan_old) {
 #ifdef DISABLE_TRAVERSE_OLD_GEN
-	  if (scan_old)
-		  return card_is_clean(value); 
+  if (scan_old)
+	  return card_is_clean(value); 
 
-	  return (card_is_clean(value) || card_is_oldgen(value));
+  return (card_is_clean(value) || card_is_oldgen(value));
 #else
 	  return card_is_clean(value);
 #endif
@@ -121,16 +123,16 @@ class PSCardTable: public CardTable {
   void inline_write_ref_field_gc(void* field, oop new_val, bool promote_to_oldgen=false) {
     CardValue* byte = byte_for(field);
 #ifdef TERA_CARDS
-    if (EnableTeraHeap && Universe::is_field_in_h2(field)) {
-      if (promote_to_oldgen) {
-        // h2->h1 : if h1 is old => promote_to_oldgen=true
-        //          if h1 is young => promote_to_oldgen=false
-        Atomic::cmpxchg(byte, (CardValue)clean_card, (CardValue)oldergen_card);
-        Atomic::cmpxchg(byte, (CardValue)dirty_card, (CardValue)oldergen_card);
-        return;
-      }
-    }
-    *byte = youngergen_card;
+   if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(field)) {
+     if (promote_to_oldgen) {
+       // h2->h1 : if h1 is old => promote_to_oldgen=true
+       //          if h1 is young => promote_to_oldgen=false
+       Atomic::cmpxchg(byte, (CardValue)clean_card, (CardValue)oldergen_card);
+       Atomic::cmpxchg(byte, (CardValue)dirty_card, (CardValue)oldergen_card);
+       return;
+     }
+   }
+   *byte = youngergen_card;
 #else
     *byte = youngergen_card;
 #endif
