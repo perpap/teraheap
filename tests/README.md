@@ -10,11 +10,49 @@ TeraHeap test files are used to test TeraHeap functionalities during
 implementation. All these test files are implemented in JAVA. 
 
 ## Build
-To build all test files testing G1 evacuation and full GC for TeraHeap:
+
+To build the TeraHeap GC test suites, use the top-level build script:
 
 ```sh
 ./compile.sh
 ```
+
+### Build suites
+
+By default, this builds **both** benchmark suites:
+- `g1_evacuations` (G1 evacuation tests)
+- `g1_full_gc` (G1 full GC tests)
+
+You can select which suite(s) to build with `-b`:
+
+```sh
+./compile.sh -b evac   # build only G1 evacuation tests
+./compile.sh -b full   # build only G1 full GC tests
+./compile.sh -b both   # build both suites (default)
+```
+
+### Cleanup mode
+
+You can control the cleanup behavior with `-c`:
+
+- `clean`: clean build logs and benchmarks output logs only
+- `distclean`: remove all binaries (full cleanup)
+
+Examples:
+
+```sh
+./compile.sh -c clean
+./compile.sh -c distclean
+./compile.sh -b evac -c clean
+./compile.sh -b both -c distclean
+```
+
+### Help
+
+```sh
+./compile.sh -h
+```
+
 ## Run Tests
 
 ```sh

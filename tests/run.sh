@@ -64,7 +64,7 @@ parse_test_dir() {
       ;;
     *)
       echo "Error: invalid test dir '$val'. Expected: 'evac' or 'full'." >&2
-      usage
+      usage 1
       ;;
   esac
 }
@@ -81,6 +81,9 @@ set_heap_size() {
       ;;
     HashMap|Array_List_String)
       H1_SZ=3
+      ;;
+    Test_H2_CM_YoungInterrupt)
+      H1_SZ=4
       ;;
     *)
       H1_SZ=1
@@ -122,7 +125,7 @@ set_cmd_jvm_flags() {
     "-XX:+WhiteBoxAPI"
     "-XX:InitialTenuringThreshold=5"
     "-XX:MaxTenuringThreshold=7"
-    "-XX:MaxGCPauseMillis=30000"
+    "-XX:MaxGCPauseMillis=200"
     "-XX:G1MixedGCCountTarget=4"
   )
   fi
@@ -205,7 +208,7 @@ do
         all|int|c1|c2|debug|msgbox) ;;
         *)
           echo "Error: invalid MODE '$MODE'. Expected one of: all, int, c1, c2, debug, msgbox" >&2
-          usage
+          usage 1
           ;;
       esac
       ;;
@@ -232,7 +235,7 @@ do
       usage 0
       ;;
     *)
-      usage
+      usage 1
       ;;
   esac
 done

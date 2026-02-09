@@ -3,7 +3,7 @@
 H2_REGION_SIZE=$((256 * 1024 * 1024))
 H2_CARD_SEGMENT_SIZE=$((8 * 1024))
 STRIPE_SIZE=$(( H2_REGION_SIZE / H2_CARD_SEGMENT_SIZE ))
-H2_SIZE_IN_BYTES=$(echo "100 * 1024 * 1024 * 1024" | bc)
+H2_SIZE_IN_BYTES=$(echo "700 * 1024 * 1024 * 1024" | bc)
 JAVA="../jdk17/build/linux-x86_64-server-release/jdk/bin/java"
 H2_MOUNT_POINT="/mnt/spark/"
 
@@ -33,6 +33,7 @@ ONLY_EVAC_TESTS=(
   "Array_mine"
   "Array_List_String"
   "Test_CM_WeakRef"
+  "Test_H2_CM_YoungInterrupt"
 )
 
 # These tests exist only in full benchmark suite

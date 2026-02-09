@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+CLEAN_MODE="${1:-none}"
 PROJECT_DIR="$(pwd)/../.."
 
 export LIBRARY_PATH=${PROJECT_DIR}/allocator/lib/:$LIBRARY_PATH
@@ -12,7 +13,10 @@ ARCH=$(lscpu | grep "Architecture" | awk '{print $2}')
 JAVAC=../../jdk17/build/linux-${ARCH}-server-release/jdk/bin/javac
 
 # Clean everything
-make --no-print-directory -C java distclean
+if [[ "$CLEAN_MODE" == "clean" || "$CLEAN_MODE" == "distclean" ]]
+then
+  make --no-print-directory -C java ${CLEAN_MODE}
+fi
 
 # Firstly : make the wb.jar
 cd ../Whitebox || exit 1

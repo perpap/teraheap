@@ -17,11 +17,12 @@ JAVA_COMP=$(JAVA_REPO)/build/linux-$(ARCH)-server-release/jdk/bin/javac -Xlint:d
 JAVAC=$(JAVA_COMP) -d ./bin
 LOGDIR := build_logs
 
-TARGET=Array.class Array_List.class Array_List_Int.class Array_List_String.class List_Large.class \
-	   MultiList.class Simple_Lambda.class Extend_Lambda.class \
-	   Test_Reflection.class Test_Reference.class HashMap.class Rehashing.class \
-	   Clone.class Groupping.class MultiHashMap.class Test_WeakHashMap.class \
-	   ClassInstance.class Humongous.class HumongousChain.class TriggerImplicitGCs.class
+TARGET = $(addprefix bin/, \
+				 Array.class Array_List.class Array_List_Int.class Array_List_String.class List_Large.class \
+				 MultiList.class Simple_Lambda.class Extend_Lambda.class \
+				 Test_Reflection.class Test_Reference.class HashMap.class Rehashing.class \
+				 Clone.class Groupping.class MultiHashMap.class Test_WeakHashMap.class \
+				 ClassInstance.class Humongous.class HumongousChain.class TriggerImplicitGCs.class)
 
 .PHONY: header
 	   
@@ -36,13 +37,13 @@ header:
 $(LOGDIR):
 	@mkdir -p $(LOGDIR)
 
-%.class: %.java | $(LOGDIR)
+bin/%.class: %.java | $(LOGDIR)
 	@printf "  \033[1;37m%-32s\033[0m  " "$*"
 	@$(JAVAC) $< >"$(LOGDIR)/$(@F).log" 2>&1 && \
 		printf "\033[1;32mSUCCESS\033[0m\n" || { \
 		printf "\033[1;31mFAIL\033[0m (log: %s)\n" "$(LOGDIR)/$(@F).log"; \
 		exit 1; \
-	}
+		}
 
 clean:
 	@rm -rf out
