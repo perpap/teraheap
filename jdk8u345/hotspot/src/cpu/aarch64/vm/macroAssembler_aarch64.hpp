@@ -776,7 +776,10 @@ public:
   // Stores
   void store_check(Register obj);                // store check for obj - register is destroyed afterwards
   void store_check(Register obj, Address dst);   // same as above, dst is exact store location (reg. is destroyed)
-
+#ifdef TERA_INTERPRETER
+  void h2_store_check_part_1(Register obj);
+  void h2_store_check_part_2(Register obj);
+#endif
 #if INCLUDE_ALL_GCS
 
   void g1_write_barrier_pre(Register obj,
