@@ -3111,10 +3111,35 @@ void MacroAssembler::cmpptr(Register src1, Address src2) {
 }
 
 void MacroAssembler::store_check(Register obj) {
-  // Does a store check for the oop in register obj. The content of
-  // register obj is destroyed afterwards.
-  store_check_part_1(obj);
-  store_check_part_2(obj);
+  Label L_in_h2;
+  Label L_Done;
+
+#ifdef TERA_INTERPRETER
+  if (EnableTeraHeap) {
+    lea(r11, Address((address)Universe::teraHeap()->h2_start_addr(), relocInfo::none));
+    cmp(obj, r11);
+    br(Assembler::GE, L_in_h2);
+
+    store_check_part_1(obj);
+    store_check_part_2(obj);
+    b(L_Done);
+
+    BIND(L_in_h2);
+
+    h2_store_check_part_1(obj);
+    h2_store_check_part_2(obj);
+
+    BIND(L_Done);
+  }else{
+    store_check_part_1(obj);
+    store_check_part_2(obj);
+  }
+#else
+   // Does a store check for the oop in register obj. The content of
+   // register obj is destroyed afterwards.
+   store_check_part_1(obj);
+   store_check_part_2(obj);
+#endif //TERA_INTERPRETER
 }
 
 void MacroAssembler::store_check(Register obj, Address dst) {
@@ -3128,6 +3153,14 @@ void MacroAssembler::store_check_part_1(Register obj) {
   assert(bs->kind() == BarrierSet::CardTableModRef, "Wrong barrier set kind");
   lsr(obj, obj, CardTableModRefBS::card_shift);
 }
+
+#ifdef TERA_INTERPRETER
+void MacroAssembler::h2_store_check_part_1(Register obj) {
+  BarrierSet* bs = Universe::heap()->barrier_set();
+  assert(bs->kind() == BarrierSet::CardTableModRef, "Wrong barrier set kind");
+  lsr(obj, obj, CardTableModRefBS::th_card_shift);
+}
+#endif //TERA_INTERPRETER
 
 void MacroAssembler::store_check_part_2(Register obj) {
   BarrierSet* bs = Universe::heap()->barrier_set();
@@ -3150,6 +3183,30 @@ void MacroAssembler::store_check_part_2(Register obj) {
   }
   strb(zr, Address(obj, rscratch1));
 }
+
+#ifdef TERA_INTERPRETER
+void MacroAssembler::h2_store_check_part_2(Register obj) {
+  BarrierSet* bs = Universe::heap()->barrier_set();
+  assert(bs->kind() == BarrierSet::CardTableModRef, "Wrong barrier set kind");
+  CardTableModRefBS* ct = (CardTableModRefBS*)bs;
+  assert(sizeof(*ct->th_byte_map_base) == sizeof(jbyte), "adjust this code");
+
+  // The calculation for byte_map_base is as follows:
+  // byte_map_base = _byte_map - (uintptr_t(low_bound) >> card_shift);
+  // So this essentially converts an address to a displacement and
+  // it will never need to be relocated.
+
+  // FIXME: It's not likely that disp will fit into an offset so we
+  // don't bother to check, but it could save an instruction.
+  intptr_t disp = (intptr_t) ct->th_byte_map_base;
+  load_th_byte_map_base(rscratch1);
+
+  if (UseConcMarkSweepGC && CMSPrecleaningEnabled) {
+      membar(StoreStore);
+  }
+  strb(zr, Address(obj, rscratch1));
+}
+#endif //TERA_INTERPRETER
 
 void MacroAssembler::load_klass(Register dst, Register src) {
   if (UseCompressedClassPointers) {
