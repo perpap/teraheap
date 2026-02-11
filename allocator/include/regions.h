@@ -19,16 +19,7 @@ extern "C" {
 #define INT_PTR unsigned int
 #endif
 
-  struct _mem_pool {
-    char *mmap_start;     //< Memory mapped allocation start addresss
-    char *start_address;  //< Aligned start address of TeraHeap
-    char *cur_alloc_ptr;  //< Current allocation pointer of TeraHeap
-    char *stop_address;   //< Last address of TeraHeap
-
-    uint64_t size;        //< Current allocated bytes in TeraHeap
-  };
-
-  struct region_list {
+  struct region_list{
     char *start;
     char *end;
     struct region_list *next;
@@ -37,13 +28,13 @@ extern "C" {
   extern uint64_t region_array_size;
   extern uint64_t max_rdd_id; //< Total different rdds
 
-  extern volatile struct _mem_pool th_mem_pool;	//< Allocator pool
+  extern volatile struct _mem_pool th_mem_pool; //< Allocator pool
   extern int fd;              //< File descriptor for the opended file
   extern int num_reqs;        //< Number of asynchronous write requests
 
   // Initialize allocator with start address 'heap_end + 1'. The end of the
   // heap.
-  void      init(uint64_t alignment, const char *h2_file_path, uint64_t h2_file_size);
+  void      init(uint64_t alignment, const char *h2_file_path, uint64_t h2_file_size, uint64_t partitions);
 
   // Return the start address of the memory allocation pool
   char*     start_addr_mem_pool(void);
