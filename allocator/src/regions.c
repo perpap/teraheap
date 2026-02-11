@@ -129,7 +129,7 @@ void init(uint64_t align, const char *h2_file_path, uint64_t h2_file_size, uint6
 
   pthread_mutex_init(&th_mem_pool_lock, NULL);
 
-  init_regions();
+  init_regions(_MAX_PARTITIONS);
   req_init();
 }
 
