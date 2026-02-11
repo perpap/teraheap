@@ -4051,6 +4051,26 @@ void MacroAssembler::load_byte_map_base(Register reg) {
   }
 }
 
+#ifdef TERA_INTERPRETER
+void MacroAssembler::load_th_byte_map_base(Register reg) {
+  jbyte *th_byte_map_base =
+      ((CardTableModRefBS*)(Universe::heap()->barrier_set()))->th_byte_map_base;
+
+  if (is_valid_AArch64_address((address)th_byte_map_base)) {
+    // Strictly speaking the byte_map_base isn't an address at all,
+    // and it might even be negative.
+    unsigned long offset;
+    adrp(reg, ExternalAddress((address)th_byte_map_base), offset);
+    // We expect offset to be zero with most collectors.
+    if (offset != 0) {
+      add(reg, reg, offset);
+    }
+  } else {
+    mov(reg, (uint64_t)th_byte_map_base);
+  }
+}
+#endif
+
 void MacroAssembler::build_frame(int framesize) {
   if (framesize == 0) {
     // Is this even possible?
