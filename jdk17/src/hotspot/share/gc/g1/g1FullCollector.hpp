@@ -113,6 +113,7 @@ public:
 
   inline void set_invalid(uint region_idx);
   inline void update_from_compacting_to_skip_compacting(uint region_idx);
+  inline void set_compacting_for_humongous(HeapRegion* hum_start);
 
   template<class T> static inline bool h2_should_trace(T* p);
 

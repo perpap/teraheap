@@ -75,7 +75,7 @@ template <class T> inline void G1AdjustClosure::adjust_pointer(T* p) {
     // We never move objects in H2 so we shouldn't need to process them.
     return;
   }
-  if (!_collector->is_compacting(obj) && !obj->is_marked_move_h2()) {
+  if (!_collector->is_compacting(obj)) {
     // We never forward objects in non-compacting regions so there is no need to
     // process them further.
     // TODO: probably remove this assertion

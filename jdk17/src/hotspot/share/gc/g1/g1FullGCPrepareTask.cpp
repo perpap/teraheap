@@ -278,6 +278,7 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_humongous_for_h2(H
 
   obj->forward_to(cast_to_oop(h2_address));
   Universe::teraHeap()->h2_push_humongous_start((void *)hr);
+  _collector->set_compacting_for_humongous(hr);
 }
 
 void G1FullGCPrepareTask::prepare_serial_compaction() {
