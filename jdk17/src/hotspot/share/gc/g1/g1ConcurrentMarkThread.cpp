@@ -277,14 +277,6 @@ void G1ConcurrentMarkThread::concurrent_mark_cycle_do() {
   HandleMark hm(Thread::current());
   ResourceMark rm;
 
-  // Reset to find unused regions in H2.
-  if (EnableTeraHeap) {
-  #ifdef DBG_LOST_REGION
-    // NOTE: this is propably not correct here
-    // Universe::teraHeap()->h2_reset_used_field();
-  #endif // DBG_LOST_REGION
-  }
-
   // Phase 1: Clear CLD claimed marks.
   phase_clear_cld_claimed_marks();
 

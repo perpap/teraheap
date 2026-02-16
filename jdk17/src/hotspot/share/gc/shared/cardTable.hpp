@@ -253,7 +253,7 @@ public:
   virtual void invalidate(MemRegion mr);
 #ifdef TERA_CARDS
   virtual void th_write_ref_field(void *obj);
-  virtual void th_clean_cards(HeapWord *start, HeapWord *end);
+  virtual void th_clean_cards(HeapWord *start, HeapWord *end, bool free_regions = false);
   virtual void th_dirty_cards(HeapWord *start, HeapWord *end);
   virtual void th_num_dirty_cards(HeapWord *start, HeapWord *end, bool before);
 #endif //TERA_CARDS

@@ -48,6 +48,8 @@ void G1CodeBlobClosure::HeapRegionGatheringOopClosure::do_oop_work(T* p) {
       // 11 --
       const char *name = "G1CodeBlobClosure::HeapRegionGatheringOopClosure::do_oop_work";
       Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(o), (char *) name);
+    #else 
+      Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(o));
     #endif
       return;
     }

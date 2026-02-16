@@ -30,8 +30,13 @@ static void segv_handler(int sig, siginfo_t *si, void *arg) {
 
   fprintf(stderr, "SIGSEGV at address %p (si_code=%d)\n", addr, si->si_code);
   if (Universe::teraHeap()->is_in_h2(addr)) {
-    uint64_t region = region_containing_addr((char *)addr);
-    fprintf(stderr, "L The address is in H2 in region %lu which is used=%d\n", region, is_used(region));
+    uint64_t region_idx = region_containing_addr((char *)addr);
+    fprintf(stderr, "L The address is in H2 in region %lu which is used=%d\n", region_idx, is_used(region_idx));
+    struct region *region = get_region(region_idx);
+    fprintf(stderr, "L Region: {\n");
+    fprintf(stderr, "     - start:          %p\n", region->start_address);
+    fprintf(stderr, "     - last alloc end: %p\n", region->last_allocated_end);
+    fprintf(stderr, "  }\n");
   }
   _exit(128 + SIGSEGV);
 }
@@ -113,15 +118,6 @@ bool TeraHeap::h2_is_empty() {
 // Check if a pointer belongs to the TeraHeap.
 bool TeraHeap::is_in_h2(const void* p) {
 	const char* cp = (const char *) p;
-#ifdef DBG_LOST_REGION
-    //--- Debug v
-  if (cp >= _start_addr && cp < _stop_addr) {
-    mark_used_region(cast_from_oop<HeapWord*>(cast_to_oop(p)), (char *) "debug");
-    return true;
-  }
-  return false;
-    //--- Debug ^
-#endif // DBG_LOST_REGION
 	return cp >= _start_addr && cp < _stop_addr;
 }
 
@@ -286,27 +282,32 @@ void TeraHeap::h2_print_objects_per_region() {
 	}
 }
 
-#ifdef DBG_LOST_REGION
-#include "gc/g1/g1CollectedHeap.hpp"
-#endif // DBG_LOST_REGION
-
 // Frees all unused regions
 void TeraHeap::free_unused_regions(void) {
-  // fprintf(stderr, "[WARNING] Free is disabled!\n");
-  struct region_list *ptr = free_regions();
-  struct region_list *prev = NULL;
-  while (ptr != NULL) {
-    _start_array.th_region_reset((HeapWord*) ptr->start, (HeapWord*) ptr->end);
+	CardTable* const ct = th_card_table();
+
+  struct region_list *region = free_regions();
+  while (region != NULL) {
+    region_list* const next = region->next;
+
+    HeapWord* const region_start        = reinterpret_cast<HeapWord*>(region->region_start);
+    HeapWord* const last_alloc_start    = reinterpret_cast<HeapWord*>(region->last_allocated_start);
+    HeapWord* const last_alloc_end_excl = reinterpret_cast<HeapWord*>(region->last_allocated_end);
+
+    _start_array.th_region_reset(region_start, last_alloc_start);
+
+    // `last_alloc_end_excl` is an exclusive end (one past the last valid heap
+    // word). Convert to an inclusive end by subtracting one heap word.
+    ct->th_clean_cards(region_start, last_alloc_end_excl - 1, true /* free regions */);
 
 #ifdef DBG_PROTECT_FREE_REGIONS
-    make_region_inaccessible(ptr->start, GCId::current());
+    make_region_inaccessible(region_start, GCId::current());
 #endif // DBG_PROTECT_FREE_REGIONS
-
-    prev = ptr;
-    ptr = ptr->next;
-
-    free(prev);
+    free(region);
+    region = next;
   }
+
+  tera_stats->set_reclaimed_region_count(num_reclaimed_regions());
 }
 
 // Pop the objects that are in `_th_stack` and mark them as live
@@ -491,8 +492,24 @@ void TeraHeap::group_region_enabled(HeapWord* obj, void *obj_field) {
 	ct->th_write_ref_field(h2_obj_field);
 }
 
-// Groups the region of obj with the previously enabled region of a thread (multi-threaded)
-void TeraHeap::thread_group_region_enabled(uint thread_id, HeapWord *obj, void *obj_field) {
+// Check and record metadata for references involving a cross-heap edge (H1 <->
+// H2) and/or a cross-H2-region edge during H1->H2 relocation.
+//
+// This helper is only meaningful while the current thread is processing an
+// object that has an H2 destination (h2_addr_arr[thread_id] != NULL). Otherwise
+// it is a no-op.
+//
+// Behavior:
+//  - If the referenced object (`obj`) is already in H2, record a
+//  cross-H2-region dependency between the destination H2 region of the
+//  relocating object and the H2 region containing `obj` (via group_regions()).
+//  - If the referenced object is in H1, compute the corresponding field slot in
+//    the H2 copy and mark the H2 card table for that slot as dirty, so the H2
+//    side will rescan/remember this backward (H2->H1) reference.
+//  - In some paths (e.g., backward pointer popped from th_adjust_stack where
+//    h1_addr_arr[thread_id] == NULL), do nothing because the card is already
+//    dirty from a prior GC phase.
+void TeraHeap::check_for_cross_heap_cross_h2_region_ref(uint thread_id, HeapWord *obj, void *obj_field) {
 	// Object is not going to be moved to TeraHeap
 	if (h2_addr_arr[thread_id] == NULL) 
 		return;
@@ -510,9 +527,7 @@ void TeraHeap::thread_group_region_enabled(uint thread_id, HeapWord *obj, void *
 
   // Mark the H2 card table as dirty if obj is in H1 (backward
   // reference)
-	BarrierSet* bs = BarrierSet::barrier_set();
-	CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
-	CardTable* ct = ctbs->th_card_table();
+	CardTable* const ct = th_card_table();
 
 	size_t diff =  (HeapWord *)obj_field - h1_addr_arr[thread_id];
 	assert(diff > 0 && (diff <= (uint64_t) cast_to_oop(h1_addr_arr[thread_id])->size()),
@@ -622,7 +637,16 @@ TeraStatistics* TeraHeap::get_tera_stats() {
 }
 
 // Make every card of H2 dirty
-void TeraHeap::dirty_all_cards(CardTable *th_card_table) {
-  th_card_table->th_dirty_cards((HeapWord*) h2_start_addr(), (HeapWord*) h2_end_addr() - 1);
-  fprintf(stderr, "All cards are dirty\n");
+void TeraHeap::dirty_all_cards() {
+  HeapWord* const start = reinterpret_cast<HeapWord*>(_start_addr);
+  HeapWord* const end_excl = reinterpret_cast<HeapWord*>(_stop_addr);
+
+  // Convert exclusive end to inclusive end.
+  th_card_table()->th_dirty_cards(start, end_excl - 1);
+}
+
+CardTable* TeraHeap::th_card_table() {
+  BarrierSet* bs = BarrierSet::barrier_set();
+  CardTableBarrierSet* ctbs = barrier_set_cast<CardTableBarrierSet>(bs);
+  return ctbs->th_card_table();
 }

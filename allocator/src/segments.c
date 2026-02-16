@@ -39,6 +39,8 @@ double		  alloc_elapsedtime = 0.0;
 double		  free_elapsedtime = 0.0;
 #endif
 
+uint reclaimed_regions_count; 
+
 static inline void check_allocation_failure(void *ptr, const char *msg) {
   if (!ptr) {
     perror(msg);
@@ -170,7 +172,7 @@ char* new_region(size_t size) {
     mark_used(region_array[i].start_address);
   #endif /* ifdef DBG_LOST_REGION */
     references(region_array[cur_region].start_address, region_array[i].start_address);
-    //references(region_array[i].start_address, region_array[cur_region].start_address);
+    // references(region_array[i].start_address, region_array[cur_region].start_address);
     region_array[i].last_allocated_start = region_array[cur_region].start_address;
     region_array[i].first_allocated_start = region_array[cur_region].start_address;
     region_array[i].last_allocated_end = region_array[cur_region].start_address + size;
@@ -551,6 +553,7 @@ struct region_list* free_regions() {
 #endif
   int32_t i;
   struct region_list *head = NULL;
+  reclaimed_regions_count = 0;
   for (i = 0; i < region_array_size; i++) {
     if (region_array[i].used == 0 && region_array[i].last_allocated_end != region_array[i].start_address) {
       struct tera_group *ptr = region_array[i].dependency_list;
@@ -569,8 +572,9 @@ struct region_list* free_regions() {
 
       if (region_array[i].last_allocated_start >= region_array[i].start_address) {
         struct region_list *new_node = malloc(sizeof(struct region_list));
-        new_node->start = region_array[i].start_address;
-        new_node->end = region_array[i].last_allocated_start;
+        new_node->region_start = region_array[i].start_address;
+        new_node->last_allocated_start = region_array[i].last_allocated_start;
+        new_node->last_allocated_end = region_array[i].last_allocated_end;
         new_node->next = head;
         head = new_node;
       }
@@ -601,9 +605,7 @@ struct region_list* free_regions() {
 
       region_array[i].rdd_id = MAX_PARTITIONS * max_rdd_id;
 
-#if STATISTICS
-      fprintf(stderr, "Freeing region %d \n",i);
-#endif
+      reclaimed_regions_count++;
     }
   }
 
@@ -1023,3 +1025,9 @@ bool object_starts_from_region(char *obj) {
   return (region_array[seg].first_allocated_start != region_array[seg].start_address) ? false : true;
 }
 #endif
+
+/* Returns the number of regions that were reclaimed (i.e., released back
+to the free pool) during the most recent reclamation cycle. */
+uint num_reclaimed_regions(void) {
+  return reclaimed_regions_count;
+}

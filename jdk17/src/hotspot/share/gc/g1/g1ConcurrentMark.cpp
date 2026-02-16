@@ -1231,15 +1231,6 @@ void G1ConcurrentMark::remark() {
       reclaim_empty_regions();
     }
 
-#if defined(TERA_MAINTENANCE) && defined(DBG_LOST_REGION)
-    if (EnableTeraHeap) {
-      // NOTE: this code was previously in "cleanup"
-      // Free all the regions that are unused after marking
-      // fprintf(stderr, "[WARNING] CM free of H2 regions is disabled!\n");
-      Universe::teraHeap()->free_unused_regions();
-    }
-#endif
-
     // Clean out dead classes
     if (ClassUnloadingWithConcurrentMark) {
       GCTraceTime(Debug, gc, phases) debug("Purge Metaspace", _gc_timer_cm);
@@ -1701,9 +1692,10 @@ public:
     #ifdef DBG_LOST_REGION
       // TODO: should we mark region live here? --> caused error again
       // 3
-      // Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
       const char *name = "G1ObjectCountIsAliveClosure::do_object_b";
       Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+    #else
+      Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
     #endif // DBG_LOST_REGION
       return true;
     }

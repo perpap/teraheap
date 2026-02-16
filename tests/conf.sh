@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-H2_REGION_SIZE=$((256 * 1024 * 1024))
+H2_REGION_SIZE=$((32 * 1024 * 1024))
 H2_CARD_SEGMENT_SIZE=$((8 * 1024))
 STRIPE_SIZE=$(( H2_REGION_SIZE / H2_CARD_SEGMENT_SIZE ))
 H2_SIZE_IN_BYTES=$(echo "700 * 1024 * 1024 * 1024" | bc)
@@ -34,6 +34,8 @@ ONLY_EVAC_TESTS=(
   "Array_List_String"
   "Test_CM_WeakRef"
   "Test_H2_CM_YoungInterrupt"
+  "Test_H2_FreePath_CM_YoungStorm"
+  "Test_H2_DependencyList_Race"
 )
 
 # These tests exist only in full benchmark suite

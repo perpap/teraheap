@@ -3037,7 +3037,6 @@ bool G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_
 
     Universe::teraHeap()->get_tera_stats()->print_gc_stats();
 
-    Universe::teraHeap()->get_tera_stats()->reset_counters();
   } else {
     do_collection_pause_at_safepoint_helper(target_pause_time_ms); 
   }
@@ -3184,11 +3183,8 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
           Universe::teraHeap()->h2_enable_rand_faults();
 
           if (collector_state()->in_concurrent_start_gc()) {
-          #ifdef DBG_LOST_REGION
             // Reset the used field of all regions
-            // NOTE: propably this should not be commented out
             Universe::teraHeap()->h2_reset_used_field();
-          #endif // DBG_LOST_REGION
           }
         }
 #endif       
@@ -3235,6 +3231,9 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
           // Wait to complete all the transfers to H2 and then continue
           // TODO: uncomment
           // Universe::teraHeap()->h2_complete_transfers();  
+          
+          if (collector_state()->in_young_gc_before_mixed())
+            Universe::teraHeap()->free_unused_regions();
         }
 #endif
 
@@ -3370,6 +3369,8 @@ bool G1STWIsAliveClosure::do_object_b(oop p) {
     // 8
     const char *name = "G1STWIsAliveClosure::do_object_b";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(p), (char *) name);
+  #else
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(p));
   #endif // DBG_LOST_REGION
     return true;
   }
@@ -3381,12 +3382,6 @@ bool G1STWIsAliveClosure::do_object_b(oop p) {
 }
 
 bool G1STWSubjectToDiscoveryClosure::do_object_b(oop obj) {
-
-#ifdef TERA_MAINTENANCE 
-  if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj))
-    return false;
-#endif
-
   assert(obj != NULL, "must not be NULL");
   assert(_g1h->is_in_reserved(obj), "Trying to discover obj " PTR_FORMAT " not in heap", p2i(obj));
 
@@ -3397,6 +3392,8 @@ bool G1STWSubjectToDiscoveryClosure::do_object_b(oop obj) {
     // 9
     const char *name = "G1STWSubjectToDiscoveryClosure::do_object_b";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+  #else
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
   #endif // DBG_LOST_REGION
     return true;
   }
@@ -3418,12 +3415,16 @@ public:
     oop obj = *p;
     assert(obj != NULL, "the caller should have filtered out NULL values");
 
+    guarantee(!Universe::teraHeap()->is_in_h2((HeapWord *) p), "Field is in H2");
+
 #ifdef TERA_MAINTENANCE
     if( EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj) ) {
     #ifdef DBG_LOST_REGION
       // 10
       const char *name = "G1KeepAliveClosure::do_oop";
       Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+    #else
+      Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
     #endif // DBG_LOST_REGION
       return;
     }
@@ -3436,6 +3437,7 @@ public:
     if (region_attr.is_in_cset()) {
       assert( obj->is_forwarded(), "invariant" );
       *p = obj->forwardee();
+      //guarantee(!Universe::teraHeap()->is_in_h2(obj->forwardee()), "make region live???");
     } else {
       assert(!obj->is_forwarded(), "invariant" );
       assert(region_attr.is_humongous(),
@@ -3466,6 +3468,9 @@ public:
 
   template <class T> void do_oop_work(T* p) {
     oop obj = RawAccess<>::oop_load(p);
+
+    guarantee(!Universe::teraHeap()->is_in_h2((HeapWord *) p), "P should not be in H2");
+    guarantee(!Universe::teraHeap()->is_in_h2(obj), "obj should not be in H2");
 
     if (_g1h->is_in_cset_or_humongous(obj)) {
       // If the referent object has been forwarded (either copied
@@ -4492,7 +4497,17 @@ class UnregisterNMethodOopClosure: public OopClosure {
 #if defined TERA_C1 || defined TERA_C2
       // if the nmethod is pointing to an h2 obj
       // no need to unregister the nmethod from the rem set (bcs there are no rem sets in h2)
-      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) return;
+      guarantee(!Universe::teraHeap()->is_in_h2((HeapWord *)p), "error");
+      if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
+#ifdef DBG_LOST_REGION
+        // 8
+        const char *name = "UnregisterNMethodOopClosrure::do_oop_work";
+        Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+#else
+        Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
+#endif // DBG_LOST_REGION
+        return;
+      }
 #endif
 
       HeapRegion* hr = _g1h->heap_region_containing(obj);

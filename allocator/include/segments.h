@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+// #define DBG_LOST_REGION
+// #define DBG_PROTECT_FREE_REGIONS
+
 #define ANONYMOUS 0
 #define PR_BUFFER 1
 #define PR_BUFFER_SIZE (2*1024LU*1024) /* Promotion buffer size */
@@ -283,5 +286,9 @@ void buffer_insert(char* obj, char* new_adr, size_t size);
 void free_all_buffers();
 
 #endif
+
+/* Returns the number of regions that were reclaimed (i.e., released back
+to the free pool) during the most recent reclamation cycle. */
+uint num_reclaimed_regions(void);
 
 #endif

@@ -73,6 +73,8 @@ private:
   std::map<oop, int> fwd_ref_histo;
 #endif
 
+  uint reclaimed_regions_count;
+
 public:
 
   TeraStatistics();
@@ -219,6 +221,10 @@ public:
   // Print the histogram
   void h2_print_fwd_ref_stat();
 #endif
+
+  void set_reclaimed_region_count(uint num_reclaimed_regions) {
+    reclaimed_regions_count = num_reclaimed_regions;
+  }
 
 private:
 

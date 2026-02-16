@@ -53,6 +53,7 @@ private:
                           // to H2 if it has back ptrs
                           // to H1
 
+  static CardTable* th_card_table(void);
 public:
   // Constructor
   TeraHeap();
@@ -187,8 +188,10 @@ public:
   // Groups the region of obj with the previously enabled region (single-threaded)
   void group_region_enabled(HeapWord *obj, void *obj_field);
 
-  // Groups the region of obj with the previously enabled region of a thread (multi-threaded)
-  void thread_group_region_enabled(uint thread_id, HeapWord *obj, void *obj_field);
+  // If the current thread is relocating an object to H2, record cross-heap / cross-H2-region
+  // reference metadata (region dependency or H2 card marking) for the reference slot `obj_field`.
+  // No-op if relocation context is not active.
+  void check_for_cross_heap_cross_h2_region_ref(uint thread_id, HeapWord *obj, void *obj_field);
 
   // Frees all unused regions
   void free_unused_regions(void);
@@ -266,7 +269,7 @@ public:
   // Utility functions
   // ------------------
   // Make every card of H2 dirty (used for debugging)
-  void dirty_all_cards(CardTable *th_card_table);
+  void dirty_all_cards();
   // ------------------
 };
 

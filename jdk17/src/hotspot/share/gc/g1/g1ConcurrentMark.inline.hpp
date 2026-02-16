@@ -46,9 +46,10 @@ inline bool G1CMIsAliveClosure::do_object_b(oop obj) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 1
-    // Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
     const char *name = "G1CMIsAliveClosure::do_object_b";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+  #else 
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
   #endif // DBG_LOST_REGION
     return true;
   }
@@ -76,9 +77,10 @@ inline bool G1CMSubjectToDiscoveryClosure::do_object_b(oop obj) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 2
-    // Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
     const char *name = "G1CMSubjectToDiscoveryClosure::do_object_b";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+  #else 
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
   #endif // DBG_LOST_REGION
     return true;
   }

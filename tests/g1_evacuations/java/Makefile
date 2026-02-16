@@ -23,7 +23,8 @@ TARGET = $(addprefix bin/, \
 				 MultiList.class Simple_Lambda.class Extend_Lambda.class \
 				 Test_Reflection.class Test_Reference.class HashMap.class Rehashing.class \
 				 Clone.class Groupping.class MultiHashMap.class Test_WeakHashMap.class \
-				 ClassInstance.class Test_CM_WeakRef.class Test_H2_CM_YoungInterrupt.class)
+				 ClassInstance.class Test_CM_WeakRef.class Test_H2_CM_YoungInterrupt.class \
+				 Test_H2_FreePath_CM_YoungStorm.class Test_H2_DependencyList_Race.class)
 
 .PHONY: header
 	   

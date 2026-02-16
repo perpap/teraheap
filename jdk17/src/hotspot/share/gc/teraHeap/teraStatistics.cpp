@@ -74,6 +74,8 @@ TeraStatistics::TeraStatistics() {
   thlog_or_tty->flush();
 #endif // RUSAGE_MUTATOR
 
+  reclaimed_regions_count = 0;
+
   reset_counters();
 }
 
@@ -155,6 +157,7 @@ void TeraStatistics::print_gc_stats() {
     thlog_or_tty->print_cr("[FULL] | BACK_PTRS = %lu", backward_ref);
     thlog_or_tty->print_cr("[FULL] | TOTAL_OBJECTS  = %lu", total_objects_moved);
     thlog_or_tty->print_cr("[FULL] | TOTAL_OBJECTS_SIZE = %lu", total_objects_size);
+    thlog_or_tty->print_cr("[FULL] | RECLAIMED_REGIONS = %u", reclaimed_regions_count);
     thlog_or_tty->print_cr("[FULL] | TIME_SCAN_H2_CT %.3lf ms", h2_card_table_scan_time_ms);
     thlog_or_tty->print_cr("[FULL] | TIME_TO_ALLOC_H2 %.3lf ms", h2_allocate_ms);
     thlog_or_tty->print_cr("[FULL] | TIME_TO_COPY_H2 %.3lf ms (accurate for single threaded)", h2_copy_ms);
@@ -162,6 +165,7 @@ void TeraStatistics::print_gc_stats() {
     // Young
     thlog_or_tty->print_cr("[YOUNG] | BACK_PTRS = %lu", backward_ref);
     thlog_or_tty->print_cr("[YOUNG] | TIME_SCAN_H2_CT %.3lf ms", h2_card_table_scan_time_ms);
+    thlog_or_tty->print_cr("[YOUNG] | RECLAIMED_REGIONS = %u", reclaimed_regions_count);
   }
 
   thlog_or_tty->flush();
@@ -171,6 +175,7 @@ void TeraStatistics::print_gc_stats() {
   backward_ref = 0;
   _is_mixed_gc = false;
   _is_full_gc = false;
+  reclaimed_regions_count = 0;
 }
 
 double TeraStatistics::get_max_thr_time_alloc_h2() {

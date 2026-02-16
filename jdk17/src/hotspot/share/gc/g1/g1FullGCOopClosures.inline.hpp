@@ -71,18 +71,26 @@ template <class T> inline void G1AdjustClosure::adjust_pointer(T* p) {
 
   oop obj = CompressedOops::decode_not_null(heap_oop);
   assert(Universe::heap()->is_in(obj) || Universe::teraHeap()->is_in_h2(obj), "should be in heap");
+
+  // Case 1: The reference already points into H2.
+  // No pointer adjustment is needed, but we must record the cross-heap /
+  // cross-H2-region metadata for this reference slot (e.g., region dependency
+  // tracking).
   if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
-    // We never move objects in H2 so we shouldn't need to process them.
+    Universe::teraHeap()->check_for_cross_heap_cross_h2_region_ref(_worker_id, cast_from_oop<HeapWord*>(obj), (void *) p);
     return;
   }
+
+  // Case 2: The referent `obj` will not move (not in a compacting region and
+  // not marked for H2 migration). The slot `p` is already correct, so we can
+  // skip forwarding logic. We still run TeraHeap bookkeeping for the reference
+  // slot (cross-heap/region deps or card marking), if enabled.
   if (!_collector->is_compacting(obj) && !obj->is_marked_move_h2()) {
     // We never forward objects in non-compacting regions so there is no need to
     // process them further.
-    // TODO: probably remove this assertion
     assert(!Universe::teraHeap()->is_in_h2(obj->forwardee()), "Object in non-compacting region moves to H2 without being marked.");
-    // TODO: all tests pass even without this line
     if (EnableTeraHeap)
-      Universe::teraHeap()->thread_group_region_enabled(_worker_id, cast_from_oop<HeapWord*>(obj), (void *) p);
+      Universe::teraHeap()->check_for_cross_heap_cross_h2_region_ref(_worker_id, cast_from_oop<HeapWord*>(obj), (void *) p);
     return;
   }
 
@@ -96,8 +104,7 @@ template <class T> inline void G1AdjustClosure::adjust_pointer(T* p) {
            p2i(obj), obj->mark().value(), markWord::prototype_for_klass(obj->klass()).value());
 
     if (EnableTeraHeap)
-      Universe::teraHeap()->thread_group_region_enabled(_worker_id, cast_from_oop<HeapWord*>(obj), (void *) p);
-    
+      Universe::teraHeap()->check_for_cross_heap_cross_h2_region_ref(_worker_id, cast_from_oop<HeapWord*>(obj), (void *) p);
     return;
   }
 
@@ -108,7 +115,7 @@ template <class T> inline void G1AdjustClosure::adjust_pointer(T* p) {
     "should be in object space or H2");
 
   if (EnableTeraHeap)
-    Universe::teraHeap()->thread_group_region_enabled(_worker_id, cast_from_oop<HeapWord*>(forwardee), (void *) p);
+    Universe::teraHeap()->check_for_cross_heap_cross_h2_region_ref(_worker_id, cast_from_oop<HeapWord*>(forwardee), (void *) p);
 
 
 #ifdef TERA_DBG_PHASES
