@@ -103,6 +103,12 @@ public:
     return _live_stats[region_index]._live_words;
   }
 
+  size_t h2_live_words(uint region_index) {
+    assert(region_index < _heap->max_regions(), "sanity");
+    return _live_stats[region_index]._h2_live_words;
+  }
+
+
   void before_marking_update_attribute_table(HeapRegion* hr);
 
   inline bool should_compact_humongous(HeapRegion* hr) const;

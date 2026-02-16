@@ -84,6 +84,9 @@ bool G1FullGCPrepareTask::G1CalculatePointersClosure::do_heap_region(HeapRegion*
       assert(MarkSweepDeadRatio > 0,
              "only skip compaction for other regions when MarkSweepDeadRatio > 0");
 
+      if (EnableTeraHeap && TeraHeapStatistics)
+        Universe::teraHeap()->get_tera_stats()->thr_add_regions_skipped(_worker_id, 1);
+
       // Too many live objects; skip compacting it.
       _collector->update_from_compacting_to_skip_compacting(hr->hrm_index());
       if (hr->is_young()) {
@@ -128,6 +131,9 @@ void G1FullGCPrepareTask::work(uint worker_id) {
 
   compaction_point->update();
 
+  if (EnableTeraHeap && TeraHeapStatistics)
+    Universe::teraHeap()->get_tera_stats()->thr_add_regions_scanned(worker_id, compaction_point->regions()->length());
+
   // Check if any regions was freed by this worker and store in task.
   if (closure.freed_regions()) {
     set_freed_regions();
@@ -149,13 +155,15 @@ bool G1FullGCPrepareTask::G1CalculatePointersClosure::should_compact(HeapRegion*
   if (hr->is_pinned()) {
     return false;
   }
+
   size_t live_words = _collector->live_words(hr->hrm_index());
+  size_t h2_live_words = _collector->h2_live_words(hr->hrm_index());
   size_t live_words_threshold = _collector->scope()->region_compaction_threshold();
+
   // High live ratio region will not be compacted.
-  // return live_words <= live_words_threshold;
-  // FIXME: ignore threshold for now. Should patch it later.
   if (EnableTeraHeap) {
-    return true;
+    // If the region however has h2 candidates, it is better to compact
+    return live_words <= live_words_threshold || h2_live_words > 0;
   } else {
     return live_words <= live_words_threshold;
   }

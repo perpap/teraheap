@@ -74,6 +74,9 @@ TeraStatistics::TeraStatistics() {
   thlog_or_tty->flush();
 #endif // RUSAGE_MUTATOR
 
+  thr_fgc_regions_scanned = NEW_C_HEAP_ARRAY(int, ParallelGCThreads, mtGC);
+  thr_fgc_regions_skipped = NEW_C_HEAP_ARRAY(int, ParallelGCThreads, mtGC);
+
   reset_counters();
 }
 
@@ -83,6 +86,9 @@ void TeraStatistics::reset_counters(void) {
 
   memset(thr_time_alloc_h2, 0, ParallelGCThreads * sizeof(double));
   memset(thr_time_copy_h2, 0, ParallelGCThreads * sizeof(double));
+
+  memset(thr_fgc_regions_scanned, 0, ParallelGCThreads * sizeof(int));
+  memset(thr_fgc_regions_skipped, 0, ParallelGCThreads * sizeof(int));
 }
 
 // Increase by one the counter that shows the total number of
@@ -158,6 +164,9 @@ void TeraStatistics::print_gc_stats() {
     thlog_or_tty->print_cr("[FULL] | TIME_SCAN_H2_CT %.3lf ms", h2_card_table_scan_time_ms);
     thlog_or_tty->print_cr("[FULL] | TIME_TO_ALLOC_H2 %.3lf ms", h2_allocate_ms);
     thlog_or_tty->print_cr("[FULL] | TIME_TO_COPY_H2 %.3lf ms (accurate for single threaded)", h2_copy_ms);
+    
+    thlog_or_tty->print_cr("[FULL] | Regions Scanned = %d", get_total_regions_scanned());
+    thlog_or_tty->print_cr("[FULL] | Regions Skipped = %d", get_total_regions_skipped());
   } else {
     // Young
     thlog_or_tty->print_cr("[YOUNG] | BACK_PTRS = %lu", backward_ref);
@@ -282,4 +291,26 @@ void TeraStatistics::h2_print_fwd_ref_stat() {
 	fwd_ref_histo.clear();
 }
 #endif
+
+void TeraStatistics::thr_add_regions_scanned(uint thread_id, int num_regions) {
+  thr_fgc_regions_scanned[thread_id] += num_regions;
+}
+
+void TeraStatistics::thr_add_regions_skipped(uint thread_id, int num_regions) {
+  thr_fgc_regions_skipped[thread_id] += num_regions;
+}
+
+int TeraStatistics::get_total_regions_scanned() {
+  int num_regions = 0;
+  for (uint i = 0; i < ParallelGCThreads; i++)
+    num_regions += thr_fgc_regions_scanned[i];
+  return num_regions;
+}
+
+int TeraStatistics::get_total_regions_skipped() {
+  int num_regions = 0;
+  for (uint i = 0; i < ParallelGCThreads; i++)
+    num_regions += thr_fgc_regions_skipped[i];
+  return num_regions;
+}
 

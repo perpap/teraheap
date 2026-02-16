@@ -73,6 +73,9 @@ private:
   std::map<oop, int> fwd_ref_histo;
 #endif
 
+  int *thr_fgc_regions_scanned;
+  int *thr_fgc_regions_skipped;
+
 public:
 
   TeraStatistics();
@@ -220,12 +223,18 @@ public:
   void h2_print_fwd_ref_stat();
 #endif
 
+  void thr_add_regions_scanned(uint thread_id, int num_regions);
+  void thr_add_regions_skipped(uint thread_id, int num_regions);
+
 private:
 
   double get_max_thr_time_alloc_h2();
 
   double get_max_thr_time_copy_h2();
 
+  int get_total_regions_scanned();
+
+  int get_total_regions_skipped();
 };
 
 #endif // SHARE_GC_TERAHEAP_TERASTATISTICS_HPP
