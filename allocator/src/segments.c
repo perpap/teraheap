@@ -39,7 +39,7 @@ double		  alloc_elapsedtime = 0.0;
 double		  free_elapsedtime = 0.0;
 #endif
 
-uint reclaimed_regions_count; 
+uint        reclaimed_regions_count; 
 
 static inline void check_allocation_failure(void *ptr, const char *msg) {
   if (!ptr) {

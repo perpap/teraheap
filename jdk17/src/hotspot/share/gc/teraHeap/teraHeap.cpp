@@ -307,7 +307,8 @@ void TeraHeap::free_unused_regions(void) {
     region = next;
   }
 
-  tera_stats->set_reclaimed_region_count(num_reclaimed_regions());
+  if (TeraHeapStatistics)
+    tera_stats->set_reclaimed_region_count(num_reclaimed_regions());
 }
 
 // Pop the objects that are in `_th_stack` and mark them as live

@@ -394,7 +394,7 @@ inline void H2ToH1Closure::do_oop_work(T* p) {
   // h2->h2
   if (Universe::teraHeap()->is_in_h2(obj)) {
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj));
-    return;	
+    return;
   }
 
   const G1HeapRegionAttr region_attr = _g1h->region_attr(obj);
