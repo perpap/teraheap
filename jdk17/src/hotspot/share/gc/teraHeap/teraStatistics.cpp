@@ -84,6 +84,7 @@ TeraStatistics::TeraStatistics() {
 void TeraStatistics::reset_counters(void) {
   forward_ref  = 0;
   backward_ref = 0;
+  reclaimed_regions_count = 0;
 
   memset(thr_time_alloc_h2, 0, ParallelGCThreads * sizeof(double));
   memset(thr_time_copy_h2, 0, ParallelGCThreads * sizeof(double));
@@ -179,11 +180,10 @@ void TeraStatistics::print_gc_stats() {
   thlog_or_tty->flush();
 
   // Init the statistics counters of TeraHeap to zero for the next GC  
-  forward_ref = 0;
-  backward_ref = 0;
   _is_mixed_gc = false;
   _is_full_gc = false;
-  reclaimed_regions_count = 0;
+
+  reset_counters();
 }
 
 double TeraStatistics::get_max_thr_time_alloc_h2() {

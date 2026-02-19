@@ -220,7 +220,6 @@ void G1FullCollector::prepare_collection() {
 
   if (EnableTeraHeap && TeraHeapStatistics) {
     Universe::teraHeap()->get_tera_stats()->set_is_in_full_gc(G1CollectedHeap::heap()->collector_state()->in_full_gc());
-    Universe::teraHeap()->get_tera_stats()->reset_counters();
   }
 }
 
@@ -284,9 +283,6 @@ void G1FullCollector::complete_collection() {
     Universe::teraHeap()->get_tera_stats()->record_h2_max_copy_time();
 
     Universe::teraHeap()->get_tera_stats()->print_gc_stats();
-
-    // Re-initialize counters to allow next GC to measure time.
-    Universe::teraHeap()->get_tera_stats()->reset_counters();
   }
 
   // Restore all marks.
