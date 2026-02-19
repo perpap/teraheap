@@ -29,8 +29,9 @@ extern "C" {
   };
 
   struct region_list {
-    char *start;
-    char *end;
+    char *region_start;
+    char *last_allocated_start;
+    char *last_allocated_end;
     struct region_list *next;
   };
 

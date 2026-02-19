@@ -1318,25 +1318,8 @@ void VMError::report_and_die(Thread* thread, unsigned int sig, address pc, void*
   va_end(detail_args);
 }
 
-#ifdef DBG_LOST_REGION
-#include <regions.h>
-#endif // DBG_LOST_REGION
-
 void VMError::report_and_die(Thread* thread, unsigned int sig, address pc, void* siginfo, void* context)
 {
-#ifdef DBG_LOST_REGION
-  void *addr = ((siginfo_t *)siginfo)->si_addr;
-  fprintf(stderr, "SIGSEGV at address %p (si_code=%d)\n", addr, ((siginfo_t *)siginfo)->si_code);
-  if (Universe::teraHeap()->is_in_h2(addr)) {
-    uint64_t region_idx = region_containing_addr((char *)addr);
-    struct region *region = get_region(region_idx);
-    fprintf(stderr, "L The address is in H2 in region %lu which is used=%d\n", region_idx, is_used(region_idx));
-    fprintf(stderr, "L Region: {\n");
-    fprintf(stderr, "     - start:          %p\n", region->start_address);
-    fprintf(stderr, "     - last alloc end: %p\n", region->last_allocated_end);
-    fprintf(stderr, "  }\n");
-  }
-#endif // DBG_LOST_REGION
   report_and_die(thread, sig, pc, siginfo, context, "%s", "");
 }
 

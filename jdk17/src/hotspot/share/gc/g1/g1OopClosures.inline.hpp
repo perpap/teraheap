@@ -113,7 +113,7 @@ inline void G1ScanEvacuatedObjClosure::do_oop_work(T* p) {
   }
   
   oop obj = CompressedOops::decode_not_null(heap_oop);
-  assert(!Universe::teraHeap()->is_in_h2(p), "Parent is an h2 obj. wrong closure");
+  guarantee(!Universe::teraHeap()->is_in_h2(p), "Parent is an h2 obj. wrong closure");
 
 #ifdef TERA_MAINTENANCE
   // h1->h2 : Fence
@@ -122,6 +122,8 @@ inline void G1ScanEvacuatedObjClosure::do_oop_work(T* p) {
     // 5
     const char *name = "G1ScanEvacuatedObjClosure::do_oop_work";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+  #else
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
   #endif // DBG_LOST_REGION
     return;
   }
@@ -208,6 +210,7 @@ inline void G1RootRegionScanClosure::do_oop_work(T* p) {
   // it is also iterated by oop_iterate.
   // So here we find all the outgoing pointers, from the root regions.
   // An outgoing pointer may be in H1 old gen or in H2
+  guarantee(!Universe::teraHeap()->is_in_h2((HeapWord *) p), "should not be in H2 the parent object field");
 
   //If obj is in H2
   //  (1) set H2 region live bit
@@ -279,6 +282,8 @@ inline void G1ConcurrentRefineOopClosure::do_oop_work(T* p) {
     // 6
     const char *name = "G1ConcurrentRefineOopClosure::do_oop_work";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+  #else
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
   #endif // DBG_LOST_REGION
     return;
   }
@@ -328,14 +333,15 @@ inline void G1ScanCardClosure::do_oop_work(T* p) {
   #ifdef DBG_LOST_REGION
     // TODO: should we mark region live here? --> caused error again
     // 4
-    // Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
     const char *name = "G1ScanCardClosure::do_oop_work";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
+  #else
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
   #endif // DBG_LOST_REGION
     return;
   }
 
-  if (!Universe::teraHeap()->is_in_h2(p))
+  if (EnableTeraHeap && !Universe::teraHeap()->is_in_h2(p))
     check_obj_during_refinement(p, obj);
   
   assert(Universe::teraHeap()->is_in_h2(p) || !_g1h->is_in_cset((HeapWord*)p),
@@ -388,16 +394,7 @@ inline void H2ToH1Closure::do_oop_work(T* p) {
   // h2->h2
   if (Universe::teraHeap()->is_in_h2(obj)) {
     Universe::teraHeap()->group_regions((HeapWord *)p, cast_from_oop<HeapWord*>(obj));
-    if (should_mark) {
-    #ifdef DBG_LOST_REGION
-      const char *name = "H2ToH1Closure::do_oop_work";
-      Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj), (char *) name);
-    #else
-      Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
-    #endif // DBG_LOST_REGION
-    }
-
-		return;	
+    return;	
   }
 
   const G1HeapRegionAttr region_attr = _g1h->region_attr(obj);
@@ -472,6 +469,8 @@ void G1ParCopyHelper::do_cld_barrier(oop new_obj) {
     // 7
     const char *name = "G1ParCopyHelper::do_cld_barrier";
     Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(new_obj), (char *) name);
+  #else
+    Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(new_obj));
   #endif // DBG_LOST_REGION
     return;
   }
@@ -506,13 +505,13 @@ void G1ParCopyClosure<barrier, should_mark>::do_oop_work(T* p) {
 
   oop obj = CompressedOops::decode_not_null(heap_oop);
 
+  guarantee(!Universe::teraHeap()->is_in_h2((HeapWord *) p), "should group regions!!!");
   //If obj is in H2
   //  (1) if (should_mark) set H2 region live bit
   //  (2) Fence heap traversal to H2
 #ifdef TERA_MAINTENANCE  
   if (EnableTeraHeap && Universe::teraHeap()->is_in_h2(obj)) {
     //set H2 region live bit
-    if (should_mark) {
     #ifdef DBG_LOST_REGION
       // NOTE: why only when should_mark?
       const char *name = "G1ParCopyClosure<barrier, should_mark>::do_oop_work";
@@ -520,8 +519,6 @@ void G1ParCopyClosure<barrier, should_mark>::do_oop_work(T* p) {
     #else
       Universe::teraHeap()->mark_used_region(cast_from_oop<HeapWord*>(obj));
     #endif // DBG_LOST_REGION
-    }
-
     return;
   }
 #endif

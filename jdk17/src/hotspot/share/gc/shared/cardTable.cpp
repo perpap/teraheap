@@ -563,18 +563,20 @@ void CardTable::th_write_ref_field(void *obj) {
   *card = dirty_card;
 }
 
-void CardTable::th_clean_cards(HeapWord *start, HeapWord* end) {
+void CardTable::th_clean_cards(HeapWord *start, HeapWord* end, bool free_regions) {
   assert((HeapWord*)align_down((uintptr_t)start, HeapWordSize) == start, "Unaligned start");
   assert((HeapWord*)align_up  ((uintptr_t)end,   HeapWordSize) == end,   "Unaligned end"  );
   CardValue* cur  = byte_for(start);
   CardValue* last = byte_for(end);
-      
+  size_t delta = pointer_delta(last, cur, sizeof(CardValue));
+
   // H2 card table is reserved but memory is protected for reads and
   // writes. We need to remove protection for the specific address
-  // range
-  os::protect_memory((char *) cur, (last-cur)-1, os::MEM_PROT_RW);
+  // range at the start of the JVM.
+  if (!free_regions)
+    os::protect_memory((char *) cur, delta, os::MEM_PROT_RW);
 
-  memset(cur, clean_card, (last-cur)-1);
+  memset(cur, clean_card, delta);
 }
 
 // TODO: remove
@@ -584,12 +586,7 @@ void CardTable::th_dirty_cards(HeapWord *start, HeapWord* end) {
   CardValue* cur  = byte_for(start);
   CardValue* last = byte_for(end);
       
-  // H2 card table is reserved but memory is protected for reads and
-  // writes. We need to remove protection for the specific address
-  // range
-  os::protect_memory((char *) cur, (last-cur)-1, os::MEM_PROT_RW);
-
-  memset(cur, dirty_card, (last-cur)-1);
+  memset(cur, dirty_card, pointer_delta(last, cur, sizeof(CardValue)));
 }
 
 void CardTable::th_num_dirty_cards(HeapWord *start, HeapWord* end, bool before) {

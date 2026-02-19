@@ -85,6 +85,9 @@ set_heap_size() {
     Test_H2_CM_YoungInterrupt)
       H1_SZ=4
       ;;
+    Test_H2_FreePath_CM_YoungStorm)
+      H1_SZ=70
+      ;;
     *)
       H1_SZ=1
       ;;

@@ -75,6 +75,7 @@ private:
 
   int *thr_fgc_regions_scanned;
   int *thr_fgc_regions_skipped;
+  uint reclaimed_regions_count;
 
 public:
 
@@ -225,6 +226,9 @@ public:
 
   void thr_add_regions_scanned(uint thread_id, int num_regions);
   void thr_add_regions_skipped(uint thread_id, int num_regions);
+  void set_reclaimed_region_count(uint num_reclaimed_regions) {
+    reclaimed_regions_count = num_reclaimed_regions;
+  }
 
 private:
 
