@@ -80,12 +80,7 @@ template <class T> inline void G1AdjustClosure::adjust_pointer(T* p) {
     Universe::teraHeap()->check_for_cross_heap_cross_h2_region_ref(_worker_id, cast_from_oop<HeapWord*>(obj), (void *) p);
     return;
   }
-
-  // Case 2: The referent `obj` will not move (not in a compacting region and
-  // not marked for H2 migration). The slot `p` is already correct, so we can
-  // skip forwarding logic. We still run TeraHeap bookkeeping for the reference
-  // slot (cross-heap/region deps or card marking), if enabled.
-  if (!_collector->is_compacting(obj) && !obj->is_marked_move_h2()) {
+  if (!_collector->is_compacting(obj)) {
     // We never forward objects in non-compacting regions so there is no need to
     // process them further.
     assert(!Universe::teraHeap()->is_in_h2(obj->forwardee()), "Object in non-compacting region moves to H2 without being marked.");

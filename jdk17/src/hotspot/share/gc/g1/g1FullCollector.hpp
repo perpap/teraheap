@@ -111,6 +111,12 @@ public:
     return _live_stats[region_index]._live_words;
   }
 
+  size_t h2_live_words(uint region_index) {
+    assert(region_index < _heap->max_regions(), "sanity");
+    return _live_stats[region_index]._h2_live_words;
+  }
+
+
   void before_marking_update_attribute_table(HeapRegion* hr);
 
   inline bool should_compact_humongous(HeapRegion* hr) const;
@@ -121,6 +127,7 @@ public:
 
   inline void set_invalid(uint region_idx);
   inline void update_from_compacting_to_skip_compacting(uint region_idx);
+  inline void set_compacting_for_humongous(HeapRegion* hum_start);
 
   template<class T> static inline bool h2_should_trace(T* p);
 

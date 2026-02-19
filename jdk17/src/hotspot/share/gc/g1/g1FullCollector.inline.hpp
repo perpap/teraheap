@@ -60,6 +60,18 @@ void G1FullCollector::update_from_compacting_to_skip_compacting(uint region_idx)
   _region_attr_table.set_skip_compacting(region_idx);
 }
 
+void G1FullCollector::set_compacting_for_humongous(HeapRegion* hum_start) {
+  if (!EnableTeraHeap)
+    return;
+
+  assert(hum_start->is_humongous()
+         && hum_start == hum_start->humongous_start_region()
+         && cast_to_oop(hum_start->bottom())->is_marked_move_h2(),
+         "Region should be the beginning of H2 candidate Humongous object");
+
+  _region_attr_table.set_compacting(hum_start->hrm_index());
+}
+
 template<class T>
 inline bool G1FullCollector::h2_should_trace(T* p) {
   T heap_oop = RawAccess<>::oop_load(p);

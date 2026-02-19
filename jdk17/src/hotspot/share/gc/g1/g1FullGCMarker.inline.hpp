@@ -112,6 +112,7 @@ template <class T> inline void G1FullGCMarker::mark_and_push(T* p) {
       // Object is an H2 candidate
       if (!obj->is_marked_move_h2() && !Universe::teraHeap()->is_metadata(obj)) {
         obj->mark_move_h2(_h2_group_id, _h2_part_id);
+        _mark_stats_cache.add_h2_live_words(obj); // estimation: may double calculate an object
       }
 #ifdef TERA_DBG_PHASES
       if (Universe::teraHeap()->is_metadata(obj))
