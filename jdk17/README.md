@@ -9,9 +9,8 @@ or either of these files:
 
 ## HOWTO build Teraheap for the aarch64 and x86_64 platforms.
 ```
-./compile.sh -t aarch64 -b /archive/users/perpap/openjdk/aarch64/jdk-16.0.2+7/ -i release -s internal
-./compile.sh -t x86_64 -b /archive/users/perpap/openjdk/aarch64/jdk-16.0.2+7/ -i release -s internal
-
+./compile.sh -t aarch64 -i release
+./compile.sh -t x86_64 -i release
 ```
 
 See <https://openjdk.java.net/> for more information about
