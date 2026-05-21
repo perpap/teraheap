@@ -13,7 +13,7 @@
 
 static uint64_t _MAX_PARTITIONS;
 
-struct offset{
+struct offset {
   uint64_t offset;
   struct offset *next;
 };
@@ -24,17 +24,17 @@ struct offset{
  */
 struct pr_buffer {
   pthread_mutex_t buffer_lock;  /* Lock per buffer */
-  char *buffer;                                         /* Allocation buffer */
-  char *first_obj_addr;                     /* First object address in region */
-  char *alloc_ptr;                              /* Allocation pointer for the buffer */
-  size_t size;                                          /* Current size of the buffer */
+  char *buffer;                 /* Allocation buffer */
+  char *first_obj_addr;         /* First object address in region */
+  char *alloc_ptr;              /* Allocation pointer for the buffer */
+  size_t size;					/* Current size of the buffer */
 };
 #endif
 
 /*
  * The struct for tera_group array
  */
-struct tera_group{
+struct tera_group {
     struct region *region;
     struct tera_group *next;
 };
@@ -42,7 +42,7 @@ struct tera_group{
 /*
  * The struct for regions
  */
-struct region{
+struct region {
     char *start_address;
     char *last_allocated_end;
     char *last_allocated_start;
