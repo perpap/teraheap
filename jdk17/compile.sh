@@ -68,12 +68,12 @@ function usage() {
   echo
   echo "   Examples:"
   echo
-  echo "  ./compile.sh -b /archive/users/perpap/openjdk/aarch64/jdk-16.0.2+7/ -i \"release\" -s \"internal\"                 Configure and build a \"release\" image with \"internal\" debug symbols for the aarch64 platform. "
-  echo "  ./compile.sh -t aarch64 -b /archive/users/perpap/openjdk/aarch64/jdk-16.0.2+7/ -i \"release\" -s \"internal\"      Configure and build a \"release\" image with \"internal\" debug symbols for the aarch64 platform. "
-  echo "  ./compile.sh -b /archive/users/perpap/openjdk/aarch64/jdk-16.0.2+7/ -i \"release\" -s \"internal\" -m \"release\"  Incremental build for a \"release\" image with \"internal\" debug symbols for the aarch64 platform. "
-  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"release\"                                 Configure and build a \"release\" image for the x86_64 platform."
-  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ -i \"optimized\" -s \"internal\"               Configure and build an \"optimized\" image with \"internal\" debug symbols for the x86_64 platform."
-  echo "  ./compile.sh -t x86_64 -b /spare/perpap/openjdk/jdk16/jdk-16.0.2+7/ --image \"fastdebug\"                          Configure and build a \"fastdebug\" image for the x86_64 platform."
+  echo "  ./compile.sh -b <path-to-boot-jdk> -i \"release\" -s \"internal\"                   Configure and build a \"release\" image with \"internal\" debug symbols for the aarch64 platform. "
+  echo "  ./compile.sh -t aarch64 -b <path-to-boot-jdk> -i \"release\" -s \"internal\"        Configure and build a \"release\" image with \"internal\" debug symbols for the aarch64 platform. "
+  echo "  ./compile.sh -b <path-to-boot-jdk> -i \"release\" -s \"internal\" -m \"release\"    Incremental build for a \"release\" image with \"internal\" debug symbols for the aarch64 platform. "
+  echo "  ./compile.sh -t x86_64 -b <path-to-boot-jdk> -i \"release\"                         Configure and build a \"release\" image for the x86_64 platform."
+  echo "  ./compile.sh -t x86_64 -b <path-to-boot-jdk> -i \"optimized\" -s \"internal\"       Configure and build an \"optimized\" image with \"internal\" debug symbols for the x86_64 platform."
+  echo "  ./compile.sh -t x86_64 -b <path-to-boot-jdk> --image \"fastdebug\"                  Configure and build a \"fastdebug\" image for the x86_64 platform."
   return 0 2>/dev/null || exit 0
 }
 
