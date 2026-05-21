@@ -100,7 +100,7 @@ static inline void check_allocation_failure(void *ptr, const char *msg) {
 /*
  * Initialize region array, tera_group array and their fields
  */
-void init_regions(uint64_t partitions){
+void init_regions(uint64_t partitions) {
   int32_t i;
   _MAX_PARTITIONS = partitions;
 
